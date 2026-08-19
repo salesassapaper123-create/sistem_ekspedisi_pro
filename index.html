@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <style>
   :root{
     --navy-900:#0f1b30; --navy-800:#16233d; --navy-700:#1f3054; --navy-600:#2b3f68;
@@ -2043,22 +2044,41 @@ const firebaseConfig = {
 };
 let fbDb = null;
 let fbListenersAttached = false;
+let fbAuthReady = false;
+let fbAuthReadyResolve = null;
+const fbAuthReadyPromise = new Promise(resolve => { fbAuthReadyResolve = resolve; });
 try{
   firebase.initializeApp(firebaseConfig);
   fbDb = firebase.database();
+  // Masuk secara anonim ke Firebase — supaya database hanya bisa diakses lewat aplikasi ini (yang otomatis "login diam-diam" ke Firebase),
+  // bukan oleh sembarang orang yang cuma tahu alamat databaseURL-nya dari luar aplikasi.
+  firebase.auth().signInAnonymously().catch(err => {
+    console.warn('Firebase anonymous sign-in gagal, sinkron real-time mungkin tidak berfungsi:', err);
+  });
+  firebase.auth().onAuthStateChanged(user => {
+    if(user && !fbAuthReady){
+      fbAuthReady = true;
+      fbAuthReadyResolve();
+    }
+  });
 }catch(err){
   console.warn('Firebase gagal diinisialisasi, sistem tetap jalan pakai penyimpanan lokal saja:', err);
 }
 
 function fbPush(path, value){
   if(!fbDb) return;
-  try{ fbDb.ref(path).set(value); }catch(err){ /* diam-diam gagal, data tetap aman di localStorage */ }
+  fbAuthReadyPromise.then(() => {
+    try{ fbDb.ref(path).set(value); }catch(err){ /* diam-diam gagal, data tetap aman di localStorage */ }
+  });
 }
 
 /* Dipasang sekali setelah login — begitu ada perubahan data dari PERANGKAT LAIN, otomatis update & render di sini juga */
 function attachFirebaseListeners(){
   if(!fbDb || fbListenersAttached) return;
   fbListenersAttached = true;
+  fbAuthReadyPromise.then(() => attachFirebaseListenersInner());
+}
+function attachFirebaseListenersInner(){
 
   function currentViewName(){
     const activeView = document.querySelector('.view.active');
@@ -5245,6 +5265,10 @@ document.getElementById('loginForm').addEventListener('submit', function(e){
   const pass = document.getElementById('loginPass').value;
   const acc = findAccount(email);
   if(acc && pass === acc.password){
+    if(acc.approved === false){
+      document.getElementById('loginError').textContent = 'Akun kamu masih menunggu persetujuan admin. Hubungi admin untuk mengaktifkan akun ini.';
+      return;
+    }
     sessionStorage.setItem(SESSION_KEY, normEmail(acc.email));
     showApp();
   }else{
@@ -5256,6 +5280,7 @@ document.getElementById('registerForm').addEventListener('submit', function(e){
   e.preventDefault();
   const errEl = document.getElementById('registerError');
   errEl.textContent = '';
+  errEl.style.color = '';
   const nama = document.getElementById('regNama').value.trim();
   const email = document.getElementById('regEmail').value.trim();
   const pass = document.getElementById('regPass').value;
@@ -5272,33 +5297,51 @@ document.getElementById('registerForm').addEventListener('submit', function(e){
     errEl.textContent = 'Email ini sudah terdaftar. Silakan masuk.'; return;
   }
 
-  accounts.push({email: email.trim(), password: pass, nama: nama});
+  accounts.push({email: email.trim(), password: pass, nama: nama, role: 'user', approved: false});
   saveAccounts(accounts);
-  sessionStorage.setItem(SESSION_KEY, normEmail(email));
-  showApp();
+  this.reset();
+  errEl.style.color = 'var(--green-600)';
+  errEl.textContent = 'Pendaftaran berhasil! Akun kamu perlu disetujui admin dulu sebelum bisa login — hubungi admin sistem ini.';
+  setAuthTab('login');
 });
 
 /* ---------- Pengaturan: profil akun aktif ---------- */
 function accountRole(a){ return (a && a.role) ? a.role : 'admin'; }
+function accountApproved(a){ return a.approved !== false; }
 
 function renderAccountList(){
   const wrap = document.getElementById('accountListWrap');
   const accounts = loadAccounts();
   const acc = currentAccount();
   document.getElementById('accountCountLbl').textContent = `(${accounts.length}/${MAX_ACCOUNTS})`;
-  wrap.innerHTML = accounts.map(a => `
+  const pendingCount = accounts.filter(a => !accountApproved(a)).length;
+  wrap.innerHTML = (pendingCount > 0 ? `<p class="hint" style="color:var(--amber-600); font-weight:600; margin-bottom:10px;">${pendingCount} akun menunggu persetujuan kamu — klik "Setujui" supaya bisa login.</p>` : '')
+    + accounts.map(a => `
     <div class="account-row">
       <div class="info">
-        <div class="em">${esc(a.email)}</div>
+        <div class="em">${esc(a.email)} ${!accountApproved(a) ? '<span class="badge badge-legal-warn" style="margin-left:6px;"><span class="badge-dot"></span>Menunggu persetujuan</span>' : ''}</div>
         <div class="nm">${esc(a.nama || 'Tanpa nama')} — ${accountRole(a) === 'admin' ? 'Admin (akses penuh)' : 'Terbatas (profil &amp; password saja)'}</div>
       </div>
       ${acc && normEmail(a.email) === normEmail(acc.email)
         ? '<span class="account-badge-you">AKUN INI</span>'
-        : `<button type="button" class="icon-btn del" data-email="${esc(a.email)}" title="Hapus akun">
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-           </button>`}
+        : `<div style="display:flex; gap:6px;">
+             ${!accountApproved(a) ? `<button type="button" class="btn btn-primary approve" data-email="${esc(a.email)}" style="padding:6px 12px; font-size:11.5px;">Setujui</button>` : ''}
+             <button type="button" class="icon-btn del" data-email="${esc(a.email)}" title="Hapus akun">
+               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+             </button>
+           </div>`}
     </div>`).join('');
   document.getElementById('btnShowAddAccount').style.display = accounts.length >= MAX_ACCOUNTS ? 'none' : '';
+  wrap.querySelectorAll('.approve').forEach(btn => btn.addEventListener('click', function(){
+    let list = loadAccounts();
+    const target = list.find(a => normEmail(a.email) === normEmail(this.dataset.email));
+    if(target){
+      target.approved = true;
+      saveAccounts(list);
+      renderAccountList();
+      showToast(`Akun ${this.dataset.email} disetujui, sekarang bisa login`, 'success');
+    }
+  }));
   wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
     if(confirm(`Hapus akun ${this.dataset.email}?`)){
       let list = loadAccounts().filter(a => normEmail(a.email) !== normEmail(this.dataset.email));
@@ -5333,7 +5376,7 @@ document.getElementById('formAddAccount').addEventListener('submit', function(e)
   if(accounts.length >= MAX_ACCOUNTS){ errEl.textContent = `Kuota maksimal ${MAX_ACCOUNTS} akun sudah tercapai.`; return; }
   if(accounts.some(a => normEmail(a.email) === normEmail(email))){ errEl.textContent = 'Email ini sudah terdaftar.'; return; }
 
-  accounts.push({email: email.trim(), password: pass, nama: nama, role: role});
+  accounts.push({email: email.trim(), password: pass, nama: nama, role: role, approved: true});
   saveAccounts(accounts);
   this.reset();
   this.style.display = 'none';
