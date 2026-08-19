@@ -2072,6 +2072,29 @@ function fbPush(path, value){
   });
 }
 
+/* Akun (login) disinkronkan sejak halaman dibuka (sebelum login pun), supaya pendaftaran akun baru dari perangkat mana pun
+   langsung terlihat oleh admin di perangkat lain untuk disetujui, dan status disetujui/ditolak langsung berlaku di semua perangkat. */
+let fbAccountsListenerAttached = false;
+function attachFirebaseAccountsListener(){
+  if(!fbDb || fbAccountsListenerAttached) return;
+  fbAccountsListenerAttached = true;
+  fbAuthReadyPromise.then(() => {
+    fbDb.ref('accounts').on('value', snap => {
+      const val = snap.val();
+      if(Array.isArray(val) && val.length > 0){
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(val));
+        if(document.getElementById('accountListWrap') && document.querySelector('.view.active[data-view="pengaturan"]')){
+          renderAccountList();
+        }
+      }else if(val == null){
+        const local = loadAccounts();
+        if(local.length > 0) fbPush('accounts', local); // Firebase masih kosong -> unggah data lokal sebagai data awal
+      }
+    });
+  });
+}
+attachFirebaseAccountsListener();
+
 /* Dipasang sekali setelah login — begitu ada perubahan data dari PERANGKAT LAIN, otomatis update & render di sini juga */
 function attachFirebaseListeners(){
   if(!fbDb || fbListenersAttached) return;
@@ -5196,7 +5219,7 @@ function loadAccounts(){
   }
   return list;
 }
-function saveAccounts(list){ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list)); }
+function saveAccounts(list){ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list)); fbPush('accounts', list); }
 function normEmail(v){ return String(v || '').trim().toLowerCase(); }
 function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 function findAccount(email){
