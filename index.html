@@ -746,11 +746,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
             Input Data Kendaraan
           </button>
-          <button class="nav-item nav-sub" data-view="driver" data-open-modal="driver">
+          <button class="nav-item nav-sub" data-view="driver-input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Input Driver
           </button>
-          <button class="nav-item nav-sub" data-view="legalitas">
+          <button class="nav-item nav-sub" data-view="legalitas-input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
             Input Legalitas Kendaraan
           </button>
@@ -1155,6 +1155,43 @@
         </div>
       </div>
 
+      <!-- INPUT LEGALITAS KENDARAAN (form input langsung, tanpa tabel — hasilnya tampil di Daftar > Legalitas Kendaraan) -->
+      <div class="view" data-view="legalitas-input">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Input legalitas kendaraan</h2>
+              <p>Input/update tanggal dokumen KIR &amp; Pajak kendaraan — hasilnya tampil di menu Daftar &gt; Legalitas Kendaraan, bukan di halaman ini</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <form id="formLegalitasInput">
+              <div class="grid2">
+                <div class="field">
+                  <label for="liNopol">Pilih kendaraan</label>
+                  <select id="liNopol" required><option value="">— pilih nopol —</option></select>
+                </div>
+                <div class="field">
+                  <label for="liJenis">Jenis dokumen</label>
+                  <select id="liJenis" required>
+                    <option value="kirTerakhir">Uji KIR</option>
+                    <option value="pajak1Terakhir">Pajak STNK 1 Tahun</option>
+                    <option value="pajak5Terakhir">Pajak/ganti STNK 5 Tahun</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="liTanggal">Tanggal terakhir</label>
+                  <input type="date" id="liTanggal" required>
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">Simpan dokumen legalitas</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
       <!-- MODAL: TAMBAH KENDARAAN -->
       <div class="form-modal-overlay" id="kendaraanModalOverlay">
         <div class="form-modal">
@@ -1250,6 +1287,51 @@
           </div>
           <div class="panel-body" style="padding:0;">
             <div id="driverTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT DRIVER (form input langsung, tanpa tabel — hasilnya tampil di Daftar > Driver) -->
+      <div class="view" data-view="driver-input">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Input driver</h2>
+              <p>Tambah data driver/supir baru — hasilnya tampil di menu Daftar &gt; Driver, bukan di halaman ini</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <form id="formDriverInput">
+              <div class="grid2">
+                <div class="field">
+                  <label for="diNama">Nama driver</label>
+                  <input type="text" id="diNama" placeholder="cth. Budi Santoso" required>
+                </div>
+                <div class="field">
+                  <label for="diHp">No. HP / WhatsApp</label>
+                  <input type="text" id="diHp" placeholder="cth. 081234567890">
+                </div>
+                <div class="field">
+                  <label for="diSim">No. SIM</label>
+                  <input type="text" id="diSim" placeholder="cth. 123456789012">
+                </div>
+                <div class="field">
+                  <label for="diSimExp">Masa berlaku SIM <span class="hint">(opsional)</span></label>
+                  <input type="date" id="diSimExp">
+                </div>
+                <div class="field">
+                  <label for="diNopol">Kendaraan yang biasa dipakai <span class="hint">(opsional)</span></label>
+                  <input type="text" id="diNopol" list="kendaraanList" placeholder="cth. B 1234 XYZ" style="text-transform:uppercase;">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="diAlamat">Alamat <span class="hint">(opsional)</span></label>
+                  <input type="text" id="diAlamat" placeholder="cth. Jl. Raya Cikarang No. 10">
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">Simpan driver</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -2711,7 +2793,7 @@ function renumberMonth(ym){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', legalitas:'Legalitas Kendaraan', driver:'Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan'};
+const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -2721,6 +2803,7 @@ function goTo(view){
   if(view === 'rekap') renderTable();
   if(view === 'kendaraan') renderKendaraan();
   if(view === 'legalitas') renderLegalitas();
+  if(view === 'legalitas-input') populateLegalitasInputSelect();
   if(view === 'driver') renderDriver();
   if(view === 'service') renderServiceMonitoring();
   if(view === 'ritase') initRitaseView();
@@ -2752,7 +2835,6 @@ function goTo(view){
 }
 const NAV_MODAL_OPENERS = {
   kendaraan: () => openKendaraanModal(),
-  driver: () => openDriverModal(),
 };
 document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -3852,6 +3934,24 @@ function closeDriverModal(){
   });
 })();
 
+/* ---------- INPUT DRIVER (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Driver) ---------- */
+document.getElementById('formDriverInput').addEventListener('submit', function(e){
+  e.preventDefault();
+  driverList.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    nama: document.getElementById('diNama').value.trim(),
+    hp: document.getElementById('diHp').value.trim(),
+    sim: document.getElementById('diSim').value.trim(),
+    simExp: document.getElementById('diSimExp').value,
+    nopol: document.getElementById('diNopol').value.trim().toUpperCase(),
+    alamat: document.getElementById('diAlamat').value.trim(),
+  });
+  saveDriver();
+  renderDriver();
+  this.reset();
+  showToast('Data driver berhasil disimpan, cek menu Daftar > Driver', 'success');
+});
+
 /* ---------- MONITORING LEGALITAS KENDARAAN (KIR & PAJAK) ---------- */
 /* KIR berlaku 6 bulan, Pajak STNK 1 Tahun berlaku 12 bulan, Pajak/ganti STNK 5 Tahun berlaku 5 tahun.
    Jatuh tempo berikutnya dihitung otomatis dari tanggal terakhir + masa berlaku, lalu dibandingkan
@@ -4111,6 +4211,44 @@ document.getElementById('legalModalSave').addEventListener('click', function(){
     showToast('Tanggal dokumen berhasil diperbarui, jatuh tempo berikutnya otomatis terhitung ulang', 'success');
   }
   closeLegalModal();
+});
+
+/* ---------- INPUT LEGALITAS KENDARAAN (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Legalitas Kendaraan) ---------- */
+function populateLegalitasInputSelect(){
+  const sel = document.getElementById('liNopol');
+  if(!sel) return;
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">— pilih nopol —</option>' + kendaraanList.map(k => `<option value="${esc(k.id)}">${esc(k.nopol)}</option>`).join('');
+  if(currentVal && kendaraanList.some(k => k.id === currentVal)){
+    sel.value = currentVal;
+  }
+  syncLegalitasInputTanggal();
+}
+function syncLegalitasInputTanggal(){
+  const sel = document.getElementById('liNopol');
+  const jenisEl = document.getElementById('liJenis');
+  const tgl = document.getElementById('liTanggal');
+  if(!sel || !jenisEl || !tgl) return;
+  const k = kendaraanList.find(x => x.id === sel.value);
+  tgl.value = (k && k[jenisEl.value]) ? k[jenisEl.value] : '';
+}
+document.getElementById('liNopol').addEventListener('change', syncLegalitasInputTanggal);
+document.getElementById('liJenis').addEventListener('change', syncLegalitasInputTanggal);
+document.getElementById('formLegalitasInput').addEventListener('submit', function(e){
+  e.preventDefault();
+  const id = document.getElementById('liNopol').value;
+  const field = document.getElementById('liJenis').value;
+  const tanggal = document.getElementById('liTanggal').value;
+  if(!id){ showToast('Pilih kendaraan terlebih dahulu', 'danger'); return; }
+  const k = kendaraanList.find(x => x.id === id);
+  if(!k){ showToast('Kendaraan tidak ditemukan', 'danger'); return; }
+  k[field] = tanggal;
+  saveKendaraan();
+  renderLegalitas();
+  renderKendaraan();
+  updatePeringatanBadge();
+  this.reset();
+  showToast('Dokumen legalitas berhasil disimpan, cek menu Daftar > Legalitas Kendaraan', 'success');
 });
 
 /* ---------- NOTIFIKASI WHATSAPP: JATUH TEMPO KIR & PAJAK ---------- */
