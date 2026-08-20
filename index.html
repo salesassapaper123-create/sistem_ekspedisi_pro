@@ -1149,11 +1149,48 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h2>Input maintenance / perbaikan</h2>
+              <h2>Riwayat perbaikan</h2>
+              <p>Seluruh catatan maintenance kendaraan beserta biayanya — dipakai untuk perhitungan margin</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnTambahMaintenance">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+              Tambah Perbaikan
+            </button>
+          </div>
+          <div class="panel-body" style="padding:0;">
+            <div id="maintenanceTableWrap"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Monitoring service berkala (KM)</h2>
+              <p>Status berwarna otomatis saat mendekati atau melewati target — KM dari GPS Cartrack update otomatis real-time lewat Firebase</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnTambahService">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+              Update KM / Service
+            </button>
+          </div>
+          <div class="panel-body" style="padding:0;">
+            <div id="serviceTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: TAMBAH PERBAIKAN -->
+      <div class="form-modal-overlay" id="maintenanceModalOverlay">
+        <div class="form-modal">
+          <div class="form-modal-head">
+            <div>
+              <h3>Tambah catatan perbaikan</h3>
               <p>Catat perbaikan kendaraan beserta biayanya — dipakai untuk perhitungan margin</p>
             </div>
+            <button type="button" class="form-modal-close" id="btnCloseMaintenanceModal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
           </div>
-          <div class="panel-body">
+          <div class="form-modal-body">
             <form id="formMaintenance">
               <div class="grid2">
                 <div class="field">
@@ -1185,21 +1222,29 @@
                   </select>
                 </div>
               </div>
-              <div class="btn-row">
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnBatalMaintenance">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan perbaikan</button>
               </div>
             </form>
           </div>
         </div>
-        <div class="panel">
-          <div class="panel-head">
+      </div>
+
+      <!-- MODAL: UPDATE KM / SERVICE BERKALA -->
+      <div class="form-modal-overlay" id="serviceModalOverlay">
+        <div class="form-modal">
+          <div class="form-modal-head">
             <div>
-              <h2>Monitoring service berkala (KM)</h2>
-              <p>Update KM kendaraan &amp; jadwal service — status berwarna otomatis saat mendekati atau melewati target, pengingat bisa dikirim ke WhatsApp</p>
+              <h3>Update KM &amp; jadwal service</h3>
+              <p>Update KM kendaraan &amp; jadwal service — pengingat bisa dikirim ke WhatsApp</p>
             </div>
+            <button type="button" class="form-modal-close" id="btnCloseServiceModal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
           </div>
-          <div class="panel-body">
-            <form id="formService" style="max-width:720px; margin-bottom:20px;">
+          <div class="form-modal-body">
+            <form id="formService">
               <div class="grid2">
                 <div class="field">
                   <label for="svNopol">Nopol kendaraan</label>
@@ -1223,23 +1268,12 @@
                 </div>
               </div>
               <div class="login-error" id="serviceFormError" style="text-align:left;"></div>
-              <div class="btn-row">
+              <p class="hint" style="margin-top:8px;">KM dari GPS Cartrack update otomatis di sini secara real-time lewat Firebase — tidak perlu tarik manual lagi.</p>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnBatalService">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan / update service</button>
               </div>
-              <p class="hint" style="margin-top:8px;">KM dari GPS Cartrack update otomatis di sini secara real-time lewat Firebase — tidak perlu tarik manual lagi.</p>
             </form>
-            <div id="serviceTableWrap"></div>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Riwayat perbaikan</h2>
-              <p>Seluruh catatan maintenance kendaraan</p>
-            </div>
-          </div>
-          <div class="panel-body" style="padding:0;">
-            <div id="maintenanceTableWrap"></div>
           </div>
         </div>
       </div>
@@ -3544,7 +3578,7 @@ function renderServiceMonitoring(){
   if(!wrap) return;
   const list = kendaraanList.filter(hasServiceData);
   if(list.length === 0){
-    wrap.innerHTML = emptyState('Belum ada kendaraan dengan data service berkala. Isi form di atas untuk mulai memonitor.');
+    wrap.innerHTML = emptyState('Belum ada kendaraan dengan data service berkala. Klik "Update KM / Service" di atas untuk mulai memonitor.');
     return;
   }
   wrap.innerHTML = `<table class="sv-table"><thead><tr>
@@ -3579,13 +3613,7 @@ function renderServiceMonitoring(){
   wrap.querySelectorAll('.sv-row').forEach(tr => tr.addEventListener('click', function(){
     const k = kendaraanList.find(x => x.id === this.dataset.id);
     if(!k) return;
-    document.getElementById('svNopol').value = k.nopol || '';
-    document.getElementById('svKmSaatIni').value = k.kmSaatIni || '';
-    document.getElementById('svKmTerakhir').value = k.kmServiceTerakhir || '';
-    document.getElementById('svInterval').value = k.serviceInterval || 10000;
-    document.getElementById('svTanggalTerakhir').value = k.tglServiceTerakhir || '';
-    document.getElementById('formService').scrollIntoView({ behavior:'smooth', block:'center' });
-    document.getElementById('svKmSaatIni').focus();
+    openServiceModal(k);
   }));
 }
 document.getElementById('formService').addEventListener('submit', function(e){
@@ -3604,10 +3632,43 @@ document.getElementById('formService').addEventListener('submit', function(e){
   k.tglServiceTerakhir = document.getElementById('svTanggalTerakhir').value || '';
   saveKendaraan();
   renderServiceMonitoring();
-  this.reset();
-  document.getElementById('svInterval').value = 10000;
+  closeServiceModal();
   showToast('Data service berkala berhasil disimpan', 'success');
 });
+
+/* ---------- MODAL UPDATE KM / SERVICE BERKALA ---------- */
+function openServiceModal(k){
+  const errEl = document.getElementById('serviceFormError');
+  if(errEl) errEl.textContent = '';
+  document.getElementById('svNopol').value = k && k.nopol ? k.nopol : '';
+  document.getElementById('svKmSaatIni').value = k && k.kmSaatIni ? k.kmSaatIni : '';
+  document.getElementById('svKmTerakhir').value = k && k.kmServiceTerakhir ? k.kmServiceTerakhir : '';
+  document.getElementById('svInterval').value = (k && k.serviceInterval) || 10000;
+  document.getElementById('svTanggalTerakhir').value = k && k.tglServiceTerakhir ? k.tglServiceTerakhir : '';
+  const overlay = document.getElementById('serviceModalOverlay');
+  if(overlay) overlay.classList.add('show');
+}
+function closeServiceModal(){
+  const overlay = document.getElementById('serviceModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formService');
+  if(form) form.reset();
+  const errEl = document.getElementById('serviceFormError');
+  if(errEl) errEl.textContent = '';
+  document.getElementById('svInterval').value = 10000;
+}
+(function(){
+  const btnOpen = document.getElementById('btnTambahService');
+  const btnClose = document.getElementById('btnCloseServiceModal');
+  const btnCancel = document.getElementById('btnBatalService');
+  const overlay = document.getElementById('serviceModalOverlay');
+  if(btnOpen) btnOpen.addEventListener('click', function(){ openServiceModal(null); });
+  if(btnClose) btnClose.addEventListener('click', closeServiceModal);
+  if(btnCancel) btnCancel.addEventListener('click', closeServiceModal);
+  if(overlay) overlay.addEventListener('click', function(e){
+    if(e.target === overlay) closeServiceModal();
+  });
+})();
 
 function renderLegalitas(){
   const wrap = document.getElementById('legalitasTableWrap');
@@ -3815,7 +3876,7 @@ document.getElementById('btnCopyWaScript').addEventListener('click', function(){
 function renderMaintenance(){
   const wrap = document.getElementById('maintenanceTableWrap');
   const list = maintenanceList.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
-  if(list.length === 0){ wrap.innerHTML = emptyState('Belum ada catatan perbaikan.'); return; }
+  if(list.length === 0){ wrap.innerHTML = emptyState('Belum ada catatan perbaikan. Klik "Tambah Perbaikan" di atas untuk mulai mencatat.'); return; }
   wrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th><th>Status</th><th></th></tr></thead><tbody>${list.map(m => `
     <tr>
       <td>${fmtDate(m.tanggal)}</td>
@@ -3857,11 +3918,35 @@ document.getElementById('formMaintenance').addEventListener('submit', function(e
     status: document.getElementById('mStatus').value,
   });
   saveMaintenance();
-  this.reset();
-  document.getElementById('mTanggal').valueAsDate = new Date();
   renderMaintenance();
+  closeMaintenanceModal();
   showToast('Data perbaikan berhasil disimpan', 'success');
 });
+
+/* ---------- MODAL TAMBAH PERBAIKAN ---------- */
+function openMaintenanceModal(){
+  document.getElementById('mTanggal').valueAsDate = new Date();
+  const overlay = document.getElementById('maintenanceModalOverlay');
+  if(overlay) overlay.classList.add('show');
+}
+function closeMaintenanceModal(){
+  const overlay = document.getElementById('maintenanceModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formMaintenance');
+  if(form) form.reset();
+}
+(function(){
+  const btnOpen = document.getElementById('btnTambahMaintenance');
+  const btnClose = document.getElementById('btnCloseMaintenanceModal');
+  const btnCancel = document.getElementById('btnBatalMaintenance');
+  const overlay = document.getElementById('maintenanceModalOverlay');
+  if(btnOpen) btnOpen.addEventListener('click', openMaintenanceModal);
+  if(btnClose) btnClose.addEventListener('click', closeMaintenanceModal);
+  if(btnCancel) btnCancel.addEventListener('click', closeMaintenanceModal);
+  if(overlay) overlay.addEventListener('click', function(e){
+    if(e.target === overlay) closeMaintenanceModal();
+  });
+})();
 
 /* ---------- PUSAT PERINGATAN ---------- */
 function renderPeringatan(){
