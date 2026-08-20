@@ -257,8 +257,7 @@
   .st-doc-head .st-brand{font-weight:700; font-size:15px; letter-spacing:.03em;}
   .st-doc-head .st-sub{font-size:11px; color:#555; margin-top:3px; letter-spacing:.02em;}
   .st-doc-title{text-align:center; font-weight:700; font-size:14px; text-decoration:underline; letter-spacing:.04em; margin:16px 0 5px;}
-  .st-doc-noref{text-align:center; font-size:12px; color:#444; margin-bottom:18px;}
-  .st-doc-intro{font-size:12px; margin-bottom:14px; line-height:1.7; text-align:justify;}
+  .st-doc-intro{font-size:12px; margin-bottom:14px; line-height:1.7; text-align:justify; margin-top:18px;}
   .st-doc-table{width:100%; border-collapse:collapse; margin-bottom:16px;}
   .st-doc-table td{padding:4px 6px; font-size:12px; vertical-align:top; border:none; line-height:1.6;}
   .st-doc-table td.st-label{width:175px; color:#333;}
@@ -963,10 +962,6 @@
                   <input type="date" id="tanggal" required>
                 </div>
                 <div class="field">
-                  <label for="noTol">No. DO</label>
-                  <input type="text" id="noTol" readonly style="background:#f5f6f8; font-family:'IBM Plex Mono',monospace; font-weight:600;">
-                </div>
-                <div class="field">
                   <label for="nopol">Nopol</label>
                   <input type="text" id="nopol" placeholder="cth. B 1234 XYZ" required style="text-transform:uppercase;">
                 </div>
@@ -977,6 +972,10 @@
                 <div class="field">
                   <label for="uangJalan">Uang jalan driver (Rp)</label>
                   <input type="number" id="uangJalan" min="0" step="1000" placeholder="cth. 250000">
+                </div>
+                <div class="field">
+                  <label for="biayaLain">Biaya lain-lain (Rp)</label>
+                  <input type="number" id="biayaLain" min="0" step="1000" placeholder="cth. 50000">
                 </div>
                 <div class="field">
                   <label>Jenis pengiriman</label>
@@ -1353,7 +1352,7 @@
           <div class="panel-head">
             <div>
               <h2>Biaya pengeluaran ekspedisi</h2>
-              <p>Rekap uang jalan driver &amp; biaya perbaikan kendaraan pada periode yang dipilih</p>
+              <p>Rekap uang jalan driver, biaya lain-lain &amp; biaya perbaikan kendaraan pada periode yang dipilih</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1371,7 +1370,7 @@
             <div id="bpSummaryWrap"></div>
             <h3 style="margin:18px 0 10px; font-size:14px;">Rincian biaya perbaikan</h3>
             <div id="bpPerbaikanWrap"></div>
-            <h3 style="margin:22px 0 10px; font-size:14px;">Rincian uang jalan driver per DO</h3>
+            <h3 style="margin:22px 0 10px; font-size:14px;">Rincian uang jalan driver &amp; biaya lain-lain per DO</h3>
             <div id="bpUangJalanWrap"></div>
           </div>
         </div>
@@ -2703,31 +2702,6 @@ function emptyState(msg){
   </div>`;
 }
 
-/* ---------- NO. DO OTOMATIS: EKS-0001-MM-YYYY (nomor urut reset tiap bulan) ---------- */
-function generateNoDO(tanggalIso){
-  if(!tanggalIso) return '';
-  const [y, m] = tanggalIso.split('-');
-  const countThisMonth = records.filter(r => r.tanggal && r.tanggal.startsWith(`${y}-${m}`)).length;
-  const urut = String(countThisMonth + 1).padStart(4, '0');
-  return `EKS-${urut}-${m}-${y}`;
-}
-function refreshNoDO(){
-  document.getElementById('noTol').value = generateNoDO(document.getElementById('tanggal').value);
-}
-/* Susun ulang nomor urut DO dalam satu bulan (YYYY-MM) supaya selalu rapat 0001, 0002, dst.
-   Dipanggil setiap ada data ditambah/dihapus, sehingga jika data no. 002 dihapus,
-   nomor sesudahnya otomatis mundur (003 jadi 002, dst) dan nomor berikutnya kembali ke urutan terkecil yang kosong. */
-function renumberMonth(ym){
-  if(!ym) return;
-  const [y, m] = ym.split('-');
-  const group = records
-    .filter(r => r.tanggal && r.tanggal.startsWith(ym))
-    .sort((a, b) => (a.tanggal === b.tanggal ? (a.id < b.id ? -1 : 1) : (a.tanggal < b.tanggal ? -1 : 1)));
-  group.forEach((r, i) => {
-    r.noTol = `EKS-${String(i + 1).padStart(4, '0')}-${m}-${y}`;
-  });
-}
-
 /* ---------- NAVIGATION ---------- */
 const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan'};
 function goTo(view){
@@ -2845,8 +2819,6 @@ const SIDEBAR_COLLAPSED_KEY = 'ekspedisi_pro_sidebar_collapsed';
 document.getElementById('nopol').addEventListener('input', function(){
   this.value = this.value.toUpperCase();
 });
-document.getElementById('tanggal').addEventListener('change', refreshNoDO);
-
 /* Tampilkan hanya blok tujuan muat/bongkar sesuai checkbox BK / Roll yang dipilih */
 function toggleJenisSections(){
   const bk = document.getElementById('cbBK').checked;
@@ -3430,6 +3402,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     kota: document.getElementById('doKota').value.trim(),
     pendapatan: calcPendapatan(document.getElementById('jenisArmada').value, document.getElementById('doKota').value.trim(), kirimBK ? tonase1Val : null, kirimRoll ? tonase2Val : null, kirimOCC ? tonase3Val : null),
     uangJalan: document.getElementById('uangJalan').value === '' ? 0 : parseFloat(document.getElementById('uangJalan').value),
+    biayaLain: document.getElementById('biayaLain').value === '' ? 0 : parseFloat(document.getElementById('biayaLain').value),
     tujuanMuat: kirimBK ? tujuanMuatVal : '',
     tujuanBongkar: kirimBK ? tujuanBongkarVal : '',
     tujuanMuat2: kirimRoll ? tujuanMuat2Val : '',
@@ -3446,11 +3419,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   if(editingId){
     const rec = records.find(r => r.id === editingId);
     if(rec){
-      const oldMonth = (rec.tanggal || '').slice(0,7);
       Object.assign(rec, fieldsData);
-      const newMonth = tanggal.slice(0,7);
-      if(oldMonth && oldMonth !== newMonth) renumberMonth(oldMonth);
-      renumberMonth(newMonth);
       savedRecordId = rec.id;
     }
     showToast('Data DO berhasil diperbarui', 'success');
@@ -3458,9 +3427,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     const newId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
     records.push(Object.assign({
       id: newId,
-      noTol: generateNoDO(tanggal),
     }, fieldsData));
-    renumberMonth(tanggal.slice(0,7));
     savedRecordId = newId;
     showToast('Data DO berhasil disimpan', 'success');
   }
@@ -3479,7 +3446,6 @@ function editRecordDO(id){
   editingId = id;
 
   document.getElementById('tanggal').value = rec.tanggal || '';
-  document.getElementById('noTol').value = rec.noTol || '';
   document.getElementById('nopol').value = rec.nopol || '';
   document.getElementById('sopir').value = rec.sopir || '';
   document.getElementById('cbBK').checked = recKirimBK(rec);
@@ -3488,6 +3454,7 @@ function editRecordDO(id){
   document.getElementById('jenisArmada').value = rec.jenisArmada || 'tronton';
   document.getElementById('doKota').value = rec.kota || '';
   document.getElementById('uangJalan').value = rec.uangJalan || '';
+  document.getElementById('biayaLain').value = rec.biayaLain || '';
   document.getElementById('tujuanMuat').value = rec.tujuanMuat || '';
   document.getElementById('tujuanBongkar').value = rec.tujuanBongkar || '';
   document.getElementById('tonase1').value = rec.tonase1 ?? '';
@@ -3513,7 +3480,6 @@ function cancelEditDO(){
   document.getElementById('formDO').reset();
   document.getElementById('formError').textContent = '';
   document.getElementById('tanggal').valueAsDate = new Date();
-  refreshNoDO();
   toggleJenisSections();
   document.getElementById('inputDOTitle').textContent = 'Input Surat Tugas';
   document.getElementById('btnSubmitDOLabel').textContent = 'Simpan DO';
@@ -3525,7 +3491,6 @@ document.getElementById('btnReset').addEventListener('click', function(){
   document.getElementById('formDO').reset();
   document.getElementById('formError').textContent = '';
   document.getElementById('tanggal').valueAsDate = new Date();
-  refreshNoDO();
   toggleJenisSections();
 });
 document.getElementById('btnCancelEdit').addEventListener('click', cancelEditDO);
@@ -3659,7 +3624,6 @@ function buildSuratTugasHtml(r){
       <div class="st-sub">Divisi Operasional &amp; Armada</div>
     </div>
     <div class="st-doc-title">SURAT TUGAS PENGIRIMAN</div>
-    <div class="st-doc-noref">No. Referensi DO: ${esc(r.noTol || '-')}</div>
     <div class="st-doc-intro">
       Dengan ini menugaskan driver di bawah untuk melaksanakan pengiriman barang sesuai rincian berikut. Surat tugas ini merangkap sebagai bukti serah terima tugas dari admin/dispatcher kepada driver.
     </div>
@@ -3671,6 +3635,7 @@ function buildSuratTugasHtml(r){
       <tr><td class="st-label">Kota tujuan</td><td class="st-colon">:</td><td class="st-value">${esc(r.kota || '-')}</td></tr>
       <tr><td class="st-label">Jenis pengiriman</td><td class="st-colon">:</td><td class="st-value">${esc(jenisLabel(r))}</td></tr>
       <tr><td class="st-label">Uang jalan driver</td><td class="st-colon">:</td><td class="st-value">${rupiah(Number(r.uangJalan) || 0)}</td></tr>
+      <tr><td class="st-label">Biaya lain-lain</td><td class="st-colon">:</td><td class="st-value">${rupiah(Number(r.biayaLain) || 0)}</td></tr>
     </tbody></table>
     ${rutes}
     <div class="st-doc-status-line">Status pengiriman saat surat ini dicetak: <b>${esc(meta.label)}</b></div>
@@ -4328,7 +4293,7 @@ function computePeringatanItems(){
     const label = (STATUS_META[normalizeStatus(r.status)] || STATUS_META.dijadwalkan).label;
     items.push({
       type:'info',
-      title:`DO ${esc(r.noTol)} berstatus ${esc(label)}`,
+      title:`DO ${esc(r.nopol)} (${fmtDate(r.tanggal)}) berstatus ${esc(label)}`,
       desc:`${esc(r.nopol)} — ${fmtDate(r.tanggal)} — ${esc(r.tujuanMuat)} &rarr; ${esc(r.tujuanBongkar)}`,
     });
   });
@@ -4594,7 +4559,6 @@ function generateHppMargin(){
     totalHpp += hppEstimasi;
     return `<tr>
       <td>${fmtDate(r.tanggal)}</td>
-      <td class="mono">${esc(r.noTol || '-')}</td>
       <td class="mono">${esc(r.nopol || '-')}</td>
       <td>${armadaLabel(key)}</td>
       <td class="mono">${h.jarak > 0 ? h.jarak.toLocaleString('id-ID') + ' km' : '-'}</td>
@@ -4616,7 +4580,7 @@ function generateHppMargin(){
       <div class="stat-card"><div class="num" style="color:${warnaTotal};">${totalMarginPct.toFixed(1)}%</div><div class="lbl">Margin riil (%)</div></div>
     </div>
     <table><thead><tr>
-      <th>Tanggal</th><th>No. DO</th><th>Nopol</th><th>Armada</th><th>Jarak</th><th>Pendapatan</th><th>HPP estimasi</th><th>Margin (Rp)</th><th>Margin (%)</th>
+      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Jarak</th><th>Pendapatan</th><th>HPP estimasi</th><th>Margin (Rp)</th><th>Margin (%)</th>
     </tr></thead><tbody>${rowsHtml}</tbody></table>
     <p style="font-size:11.5px; color:var(--text-faint); margin-top:10px;">
       *HPP estimasi dihitung per rit berdasarkan asumsi biaya jenis armada pada panel di atas (BBM, uang jalan, tol/retribusi, alokasi biaya tetap).
@@ -4868,7 +4832,7 @@ function renderTable(){
   if(fTgl) list = list.filter(r => r.tanggal === fTgl);
   else if(fBln) list = list.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
   if(fStatus) list = list.filter(r => normalizeStatus(r.status) === fStatus);
-  if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,r.noTol,jenisLabel(r),r.kota]
+  if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota]
     .some(v => (v||'').toLowerCase().includes(q)));
 
   const wrap = document.getElementById('tableWrap');
@@ -4876,17 +4840,17 @@ function renderTable(){
 
 
   wrap.innerHTML = `<table class="do-table"><thead><tr>
-    <th class="do-th-tanggal">Tanggal</th><th class="do-th-notol">No. DO</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-kota">Kota</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-jenis">Jenis</th>
+    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-kota">Kota</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
     <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-pendapatan">Pendapatan (Rp)</th><th class="do-th-status">Status</th><th class="do-th-aksi"></th>
   </tr></thead><tbody>${list.map(r => `
     <tr>
       <td class="do-td-tanggal">${fmtDate(r.tanggal)}</td>
-      <td class="do-td-notol mono">${esc(r.noTol)}</td>
       <td class="do-td-nopol"><span class="plate-cell">${esc(r.nopol)}</span></td>
       <td class="do-td-armada">${esc(armadaLabel(r.jenisArmada))}</td>
       <td class="do-td-kota">${esc(r.kota || '-')}</td>
       <td class="do-td-sopir">${esc(r.sopir || '-')}</td>
       <td class="do-td-uang mono">${rupiah(Number(r.uangJalan) || 0)}</td>
+      <td class="do-td-biayalain mono">${rupiah(Number(r.biayaLain) || 0)}</td>
       <td class="do-td-jenis">${jenisBadge(r)}</td>
       <td class="do-td-rute">${tujuanList(r)}</td>
       <td class="do-td-bk">
@@ -4936,8 +4900,9 @@ function renderTable(){
       </td>
     </tr>`).join('')}
     <tr class="do-total-row">
-      <td class="do-td-tanggal" colspan="6" style="text-align:right;">TOTAL (${list.length} DO)</td>
+      <td class="do-td-tanggal" colspan="5" style="text-align:right;">TOTAL (${list.length} DO)</td>
       <td class="do-td-uang mono">${rupiah(list.reduce((s,r) => s + (Number(r.uangJalan)||0), 0))}</td>
+      <td class="do-td-biayalain mono">${rupiah(list.reduce((s,r) => s + (Number(r.biayaLain)||0), 0))}</td>
       <td class="do-td-jenis"></td>
       <td class="do-td-rute"></td>
       <td class="do-td-bk mono">${list.reduce((s,r) => s + (Number(r.tonase1)||0), 0).toLocaleString('id-ID')} kg</td>
@@ -4976,9 +4941,7 @@ function renderTable(){
   }));
   wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
     if(confirm('Hapus data DO ini?')){
-      const target = records.find(x => x.id === this.dataset.id);
       records = records.filter(x => x.id !== this.dataset.id);
-      if(target && target.tanggal) renumberMonth(target.tanggal.slice(0,7));
       save(); renderTable();
       showToast('Data DO berhasil dihapus', 'danger');
     }
@@ -5059,11 +5022,10 @@ function generateLaporan(){
   const totalPendapatan = data.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
 
   lWrap.innerHTML = `<table><thead><tr>
-    <th>Tanggal</th><th>No. DO</th><th>Nopol</th><th>Armada</th><th>Kota</th><th>Sopir</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Tonase BK</th><th>Tonase Roll Assa</th><th>Tonase OCC</th><th>Pendapatan (Rp)</th><th>Status</th>
+    <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Kota</th><th>Sopir</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Tonase BK</th><th>Tonase Roll Assa</th><th>Tonase OCC</th><th>Pendapatan (Rp)</th><th>Status</th>
   </tr></thead><tbody>${data.map(r => `
     <tr>
       <td>${fmtDate(r.tanggal)}</td>
-      <td class="mono">${esc(r.noTol)}</td>
       <td><span class="plate-cell">${esc(r.nopol)}</span></td>
       <td>${esc(armadaLabel(r.jenisArmada))}</td>
       <td>${esc(r.kota || '-')}</td>
@@ -5077,7 +5039,7 @@ function generateLaporan(){
       <td>${statusBadge(r.status)}</td>
     </tr>`).join('')}</tbody>
     <tfoot><tr style="font-weight:700; background:#fafbfc;">
-      <td colspan="8" style="text-align:right;">TOTAL</td>
+      <td colspan="7" style="text-align:right;">TOTAL</td>
       <td class="mono">${totalT1.toLocaleString('id-ID')} kg</td>
       <td class="mono">${totalT2.toLocaleString('id-ID')} kg</td>
       <td class="mono">${totalT3.toLocaleString('id-ID')} kg</td>
@@ -5205,12 +5167,14 @@ function generateBiayaPengeluaran(){
   const doBulan = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate);
   const totalBiayaPerbaikan = biayaBulan.reduce((s,m) => s + (Number(m.biaya)||0), 0);
   const totalUangJalan = doBulan.reduce((s,r) => s + (Number(r.uangJalan)||0), 0);
-  const totalKeseluruhan = totalBiayaPerbaikan + totalUangJalan;
+  const totalBiayaLain = doBulan.reduce((s,r) => s + (Number(r.biayaLain)||0), 0);
+  const totalKeseluruhan = totalBiayaPerbaikan + totalUangJalan + totalBiayaLain;
 
   sWrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>
   <div class="stat-grid" style="margin-bottom:18px;">
     <div class="stat-card"><div class="num">${rupiah(totalBiayaPerbaikan)}</div><div class="lbl">Biaya perbaikan</div></div>
     <div class="stat-card"><div class="num">${rupiah(totalUangJalan)}</div><div class="lbl">Uang jalan driver</div></div>
+    <div class="stat-card"><div class="num">${rupiah(totalBiayaLain)}</div><div class="lbl">Biaya lain-lain</div></div>
     <div class="stat-card"><div class="num">${rupiah(totalKeseluruhan)}</div><div class="lbl">Total pengeluaran</div></div>
   </div>`;
 
@@ -5229,20 +5193,20 @@ function generateBiayaPengeluaran(){
       <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="3" style="text-align:right;">TOTAL</td><td class="mono">${rupiah(totalBiayaPerbaikan)}</td><td></td></tr></tfoot></table>`;
   }
 
-  const doWithUangJalan = doBulan.filter(r => Number(r.uangJalan) > 0);
+  const doWithUangJalan = doBulan.filter(r => Number(r.uangJalan) > 0 || Number(r.biayaLain) > 0);
   if(doWithUangJalan.length === 0){
-    uWrap.innerHTML = emptyState('Tidak ada data uang jalan driver pada periode ini.');
+    uWrap.innerHTML = emptyState('Tidak ada data uang jalan driver / biaya lain-lain pada periode ini.');
   }else{
     const sorted2 = doWithUangJalan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
-    uWrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>No. DO</th><th>Nopol</th><th>Sopir</th><th>Uang Jalan</th></tr></thead><tbody>${sorted2.map(r => `
+    uWrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Nopol</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya lain-lain</th></tr></thead><tbody>${sorted2.map(r => `
       <tr>
         <td>${fmtDate(r.tanggal)}</td>
-        <td class="mono">${esc(r.noTol)}</td>
         <td><span class="plate-cell">${esc(r.nopol)}</span></td>
         <td>${esc(r.sopir || '-')}</td>
-        <td class="mono">${rupiah(r.uangJalan)}</td>
+        <td class="mono">${rupiah(Number(r.uangJalan) || 0)}</td>
+        <td class="mono">${rupiah(Number(r.biayaLain) || 0)}</td>
       </tr>`).join('')}</tbody>
-      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="4" style="text-align:right;">TOTAL</td><td class="mono">${rupiah(totalUangJalan)}</td></tr></tfoot></table>`;
+      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="3" style="text-align:right;">TOTAL</td><td class="mono">${rupiah(totalUangJalan)}</td><td class="mono">${rupiah(totalBiayaLain)}</td></tr></tfoot></table>`;
   }
 }
 function initBiayaPengeluaranView(){
@@ -5366,8 +5330,8 @@ function xlsxColLetter(n){
   return s;
 }
 
-const LAPORAN_XLSX_HEADERS = ['Tanggal','No. DO','Nopol','Armada','Kota','Sopir','Jenis','Rute muat','Rute bongkar','Tonase BK (kg)','Tonase Roll Assa (kg)','Tonase OCC (kg)','Pendapatan (Rp)','Status'];
-const LAPORAN_XLSX_WIDTHS = [13,18,14,12,14,16,10,22,22,15,18,15,16,12];
+const LAPORAN_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Kota','Sopir','Jenis','Rute muat','Rute bongkar','Tonase BK (kg)','Tonase Roll Assa (kg)','Tonase OCC (kg)','Pendapatan (Rp)','Status'];
+const LAPORAN_XLSX_WIDTHS = [13,14,12,14,16,10,22,22,15,18,15,16,12];
 /* Indeks style (cocok dengan urutan cellXfs di xl/styles.xml) */
 const XS = { TITLE:1, SUB:2, HEAD:3, CELL:4, CELL_ALT:5, NUM:6, NUM_ALT:7, CUR:8, CUR_ALT:9, TOTAL_LABEL:10, TOTAL_NUM:11, TOTAL_CUR:12 };
 
@@ -5397,7 +5361,6 @@ function buildLaporanSheetXml(periodLabel, data){
     const sCur = alt ? XS.CUR_ALT : XS.CUR;
     const textVals = [
       fmtDate(r.tanggal),
-      r.noTol || '',
       r.nopol || '',
       armadaLabel(r.jenisArmada),
       r.kota || '-',
@@ -5411,14 +5374,14 @@ function buildLaporanSheetXml(periodLabel, data){
       cells += `<c r="${xlsxColLetter(ci+1)}${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(String(v))}</t></is></c>`;
     });
     const t1 = r.tonase1 ? Number(r.tonase1) : null;
-    cells += t1 != null ? `<c r="J${rowIdx}" s="${sNum}"><v>${t1}</v></c>` : `<c r="J${rowIdx}" s="${sNum}"/>`;
+    cells += t1 != null ? `<c r="I${rowIdx}" s="${sNum}"><v>${t1}</v></c>` : `<c r="I${rowIdx}" s="${sNum}"/>`;
     const t2 = r.tonase2 ? Number(r.tonase2) : null;
-    cells += t2 != null ? `<c r="K${rowIdx}" s="${sNum}"><v>${t2}</v></c>` : `<c r="K${rowIdx}" s="${sNum}"/>`;
+    cells += t2 != null ? `<c r="J${rowIdx}" s="${sNum}"><v>${t2}</v></c>` : `<c r="J${rowIdx}" s="${sNum}"/>`;
     const t3 = r.tonase3 ? Number(r.tonase3) : null;
-    cells += t3 != null ? `<c r="L${rowIdx}" s="${sNum}"><v>${t3}</v></c>` : `<c r="L${rowIdx}" s="${sNum}"/>`;
+    cells += t3 != null ? `<c r="K${rowIdx}" s="${sNum}"><v>${t3}</v></c>` : `<c r="K${rowIdx}" s="${sNum}"/>`;
     const pend = r.status === 'selesai' ? (Number(r.pendapatan) || 0) : null;
-    cells += pend != null ? `<c r="M${rowIdx}" s="${sCur}"><v>${pend}</v></c>` : `<c r="M${rowIdx}" s="${sCur}"/>`;
-    cells += `<c r="N${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(r.status === 'selesai' ? 'Selesai' : 'On Proses')}</t></is></c>`;
+    cells += pend != null ? `<c r="L${rowIdx}" s="${sCur}"><v>${pend}</v></c>` : `<c r="L${rowIdx}" s="${sCur}"/>`;
+    cells += `<c r="M${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(r.status === 'selesai' ? 'Selesai' : 'On Proses')}</t></is></c>`;
     rowsXml += `<row r="${rowIdx}">${cells}</row>`;
   });
 
@@ -5426,11 +5389,11 @@ function buildLaporanSheetXml(periodLabel, data){
   const totalT2 = data.reduce((s,r) => s + (Number(r.tonase2)||0), 0);
   const totalT3 = data.reduce((s,r) => s + (Number(r.tonase3)||0), 0);
   const totalPendapatan = data.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
-  let totalCells = `<c r="I${totalRowIdx}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>TOTAL</t></is></c>`;
-  totalCells += `<c r="J${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(J${firstDataRow}:J${lastDataRow})</f><v>${totalT1}</v></c>`;
-  totalCells += `<c r="K${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(K${firstDataRow}:K${lastDataRow})</f><v>${totalT2}</v></c>`;
-  totalCells += `<c r="L${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(L${firstDataRow}:L${lastDataRow})</f><v>${totalT3}</v></c>`;
-  totalCells += `<c r="M${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(M${firstDataRow}:M${lastDataRow})</f><v>${totalPendapatan}</v></c>`;
+  let totalCells = `<c r="H${totalRowIdx}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>TOTAL</t></is></c>`;
+  totalCells += `<c r="I${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(I${firstDataRow}:I${lastDataRow})</f><v>${totalT1}</v></c>`;
+  totalCells += `<c r="J${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(J${firstDataRow}:J${lastDataRow})</f><v>${totalT2}</v></c>`;
+  totalCells += `<c r="K${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(K${firstDataRow}:K${lastDataRow})</f><v>${totalT3}</v></c>`;
+  totalCells += `<c r="L${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(L${firstDataRow}:L${lastDataRow})</f><v>${totalPendapatan}</v></c>`;
   rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
 
   const colsXml = LAPORAN_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
@@ -5655,7 +5618,6 @@ function buildLaporanPrintHtml(periodLabel, data){
   const rowsHtml = data.map(r => `
     <tr>
       <td>${esc(fmtDate(r.tanggal))}</td>
-      <td>${esc(r.noTol || '')}</td>
       <td>${esc(r.nopol || '')}</td>
       <td>${esc(armadaLabel(r.jenisArmada))}</td>
       <td>${esc(r.kota || '-')}</td>
@@ -5712,11 +5674,11 @@ function buildLaporanPrintHtml(periodLabel, data){
   <h2>Detail Pengiriman (per DO)</h2>
   <table>
     <thead><tr>
-      <th>Tanggal</th><th>No. DO</th><th>Nopol</th><th>Armada</th><th>Kota</th><th>Sopir</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Tonase BK</th><th>Tonase Roll Assa</th><th>Tonase OCC</th><th>Pendapatan (Rp)</th><th>Status</th>
+      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Kota</th><th>Sopir</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Tonase BK</th><th>Tonase Roll Assa</th><th>Tonase OCC</th><th>Pendapatan (Rp)</th><th>Status</th>
     </tr></thead>
     <tbody>${rowsHtml}</tbody>
     <tfoot><tr>
-      <td colspan="8" style="text-align:right;">TOTAL</td>
+      <td colspan="7" style="text-align:right;">TOTAL</td>
       <td style="text-align:right;">${esc(totalT1.toLocaleString('id-ID'))} kg</td>
       <td style="text-align:right;">${esc(totalT2.toLocaleString('id-ID'))} kg</td>
       <td style="text-align:right;">${esc(totalT3.toLocaleString('id-ID'))} kg</td>
@@ -5787,7 +5749,6 @@ function currentAccount(){
 function initApp(){
   document.getElementById('tanggal').valueAsDate = new Date();
   document.getElementById('mTanggal').valueAsDate = new Date();
-  refreshNoDO();
   renderDashboard();
   renderTable();
   renderKendaraan();
