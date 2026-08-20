@@ -379,11 +379,12 @@
   tbody tr:hover{background:#fafbfc;}
   tfoot td{padding:11px 12px; vertical-align:middle;}
   /* Border antar kolom khusus tabel di Rekap Data dan Laporan Bulanan */
-  /* (Data Kendaraan sekarang pakai .sv-table — style orange-header seperti Monitoring Service Berkala) */
-  .view[data-view="rekap"] table th,
-  .view[data-view="rekap"] table td,
-  .view[data-view="laporan"] table th,
-  .view[data-view="laporan"] table td{
+  /* (Data Kendaraan & Rekap per Nopol sekarang pakai .sv-table — style orange-header seperti Monitoring Service Berkala. */
+  /*  :not(.sv-table) supaya tabel "Rekap ritase & tonase per kendaraan" di Laporan Pengiriman tidak ikut ke-override balik ke border abu-abu.) */
+  .view[data-view="rekap"] table:not(.sv-table) th,
+  .view[data-view="rekap"] table:not(.sv-table) td,
+  .view[data-view="laporan"] table:not(.sv-table) th,
+  .view[data-view="laporan"] table:not(.sv-table) td{
     border:1px solid var(--border);
   }
   .badge{
@@ -1128,10 +1129,6 @@
               <h2>Daftar kendaraan</h2>
               <p>Seluruh armada yang terdaftar di sistem</p>
             </div>
-            <button type="button" class="btn btn-primary" id="btnTambahKendaraan">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
-              Tambah Kendaraan
-            </button>
           </div>
           <div class="panel-body" style="padding:0;">
             <div id="kendaraanTableWrap"></div>
@@ -1265,86 +1262,6 @@
         </div>
       </div>
 
-      <!-- MODAL: TAMBAH KENDARAAN -->
-      <div class="form-modal-overlay" id="kendaraanModalOverlay">
-        <div class="form-modal">
-          <div class="form-modal-head">
-            <div>
-              <h3>Tambah kendaraan baru</h3>
-              <p>Data master armada, supir, dan rute/area — dipakai sebagai referensi Input DO</p>
-            </div>
-            <button type="button" class="form-modal-close" id="btnCloseKendaraanModal" aria-label="Tutup">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div class="form-modal-body">
-            <form id="formKendaraan">
-              <div class="grid2">
-                <div class="field">
-                  <label for="kNopol">Nopol</label>
-                  <input type="text" id="kNopol" placeholder="cth. B 1234 XYZ" required style="text-transform:uppercase;">
-                </div>
-                <div class="field">
-                  <label for="kJenisArmada">Jenis armada</label>
-                  <select id="kJenisArmada">
-                    <option value="tronton">Tronton</option>
-                    <option value="engkel">Engkel</option>
-                    <option value="cdd">CDD</option>
-                    <option value="lainnya">Lainnya</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label for="kSupir">Nama supir</label>
-                  <input type="text" id="kSupir" placeholder="cth. Budi Santoso">
-                </div>
-                <div class="field">
-                  <label for="kRute">Rute &amp; area</label>
-                  <input type="text" id="kRute" placeholder="cth. Cikarang - Priok">
-                </div>
-                <div class="field">
-                  <label for="kKapasitas">Kapasitas muatan (kg)</label>
-                  <input type="number" id="kKapasitas" min="0" step="1" placeholder="cth. 8000">
-                </div>
-                <div class="field">
-                  <label for="kMerk">Merk kendaraan <span class="hint">(opsional)</span></label>
-                  <input type="text" id="kMerk" placeholder="cth. Hino">
-                </div>
-                <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
-                  <label style="margin-bottom:10px;">Data identitas kendaraan <span class="hint">(dokumen legalitas/KIR &amp; pajak diisi lewat menu Input Legalitas Kendaraan)</span></label>
-                </div>
-                <div class="field">
-                  <label for="kNoMesin">No. Mesin</label>
-                  <input type="text" id="kNoMesin" placeholder="cth. JB1EA123456" style="text-transform:uppercase;">
-                </div>
-                <div class="field">
-                  <label for="kNoRangka">No. Rangka</label>
-                  <input type="text" id="kNoRangka" placeholder="cth. MHFC1JG2K123456" style="text-transform:uppercase;">
-                </div>
-                <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
-                  <label style="margin-bottom:10px;">Spesifikasi bak (P - L - T) <span class="hint">(dalam cm)</span></label>
-                </div>
-                <div class="field">
-                  <label for="kPanjang">Panjang (P)</label>
-                  <input type="number" id="kPanjang" min="0" step="1" placeholder="cth. 600">
-                </div>
-                <div class="field">
-                  <label for="kLebar">Lebar (L)</label>
-                  <input type="number" id="kLebar" min="0" step="1" placeholder="cth. 220">
-                </div>
-                <div class="field">
-                  <label for="kTinggi">Tinggi (T)</label>
-                  <input type="number" id="kTinggi" min="0" step="1" placeholder="cth. 200">
-                </div>
-              </div>
-              <div class="btn-row" style="justify-content:flex-end;">
-                <button type="button" class="btn btn-secondary" id="btnBatalKendaraan">Batal</button>
-                <button type="submit" class="btn btn-primary">Simpan kendaraan</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
       <!-- DRIVER -->
       <div class="view" data-view="driver">
         <div class="panel">
@@ -1353,10 +1270,6 @@
               <h2>Daftar driver</h2>
               <p>Seluruh driver/supir yang terdaftar di sistem</p>
             </div>
-            <button type="button" class="btn btn-primary" id="btnTambahDriver">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
-              Tambah Driver
-            </button>
           </div>
           <div class="panel-body" style="padding:0;">
             <div id="driverTableWrap"></div>
@@ -1401,55 +1314,6 @@
                 </div>
               </div>
               <div class="btn-row" style="justify-content:flex-end;">
-                <button type="submit" class="btn btn-primary">Simpan driver</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- MODAL: TAMBAH DRIVER -->
-      <div class="form-modal-overlay" id="driverModalOverlay">
-        <div class="form-modal">
-          <div class="form-modal-head">
-            <div>
-              <h3>Tambah driver baru</h3>
-              <p>Data master driver/supir — dipakai sebagai referensi Input DO &amp; Surat Tugas</p>
-            </div>
-            <button type="button" class="form-modal-close" id="btnCloseDriverModal" aria-label="Tutup">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div class="form-modal-body">
-            <form id="formDriver">
-              <div class="grid2">
-                <div class="field">
-                  <label for="dNama">Nama driver</label>
-                  <input type="text" id="dNama" placeholder="cth. Budi Santoso" required>
-                </div>
-                <div class="field">
-                  <label for="dHp">No. HP / WhatsApp</label>
-                  <input type="text" id="dHp" placeholder="cth. 081234567890">
-                </div>
-                <div class="field">
-                  <label for="dSim">No. SIM</label>
-                  <input type="text" id="dSim" placeholder="cth. 123456789012">
-                </div>
-                <div class="field">
-                  <label for="dSimExp">Masa berlaku SIM <span class="hint">(opsional)</span></label>
-                  <input type="date" id="dSimExp">
-                </div>
-                <div class="field">
-                  <label for="dNopol">Kendaraan yang biasa dipakai <span class="hint">(opsional)</span></label>
-                  <input type="text" id="dNopol" list="kendaraanList" placeholder="cth. B 1234 XYZ" style="text-transform:uppercase;">
-                </div>
-                <div class="field full" style="grid-column:1 / -1;">
-                  <label for="dAlamat">Alamat <span class="hint">(opsional)</span></label>
-                  <input type="text" id="dAlamat" placeholder="cth. Jl. Raya Cikarang No. 10">
-                </div>
-              </div>
-              <div class="btn-row" style="justify-content:flex-end;">
-                <button type="button" class="btn btn-secondary" id="btnBatalDriver">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan driver</button>
               </div>
             </form>
@@ -3854,7 +3718,7 @@ window.addEventListener('afterprint', function(){ document.title = ORIGINAL_DOC_
 function renderKendaraan(){
   const wrap = document.getElementById('kendaraanTableWrap');
   if(kendaraanList.length === 0){
-    wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar.');
+    wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan lewat menu Administrasi &gt; Input Data Kendaraan.');
   }else{
     wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nopol</th><th>Jenis Armada</th><th>Supir</th><th>Rute &amp; Area</th><th>Kapasitas Muatan</th><th>No. Mesin</th><th>No. Rangka</th><th>Bak (P-L-T)</th><th></th></tr></thead><tbody>${kendaraanList.map(k => `
       <tr>
@@ -3900,17 +3764,6 @@ function buildKendaraanFromFields(prefix){
     tinggi: document.getElementById(prefix + 'Tinggi').value.trim(),
   };
 }
-document.getElementById('formKendaraan').addEventListener('submit', function(e){
-  e.preventDefault();
-  kendaraanList.push(buildKendaraanFromFields('k'));
-  saveKendaraan();
-  this.reset();
-  renderKendaraan();
-  renderLegalitas();
-  closeKendaraanModal();
-  showToast('Data kendaraan berhasil disimpan', 'success');
-});
-
 /* ---------- INPUT DATA KENDARAAN (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Data Kendaraan) ---------- */
 document.getElementById('formKendaraanInput').addEventListener('submit', function(e){
   e.preventDefault();
@@ -3922,36 +3775,12 @@ document.getElementById('formKendaraanInput').addEventListener('submit', functio
   showToast('Data kendaraan berhasil disimpan, cek menu Daftar > Data Kendaraan', 'success');
 });
 
-/* ---------- MODAL TAMBAH KENDARAAN ---------- */
-function openKendaraanModal(){
-  const overlay = document.getElementById('kendaraanModalOverlay');
-  if(overlay) overlay.classList.add('show');
-}
-function closeKendaraanModal(){
-  const overlay = document.getElementById('kendaraanModalOverlay');
-  if(overlay) overlay.classList.remove('show');
-  const form = document.getElementById('formKendaraan');
-  if(form) form.reset();
-}
-(function(){
-  const btnOpen = document.getElementById('btnTambahKendaraan');
-  const btnClose = document.getElementById('btnCloseKendaraanModal');
-  const btnCancel = document.getElementById('btnBatalKendaraan');
-  const overlay = document.getElementById('kendaraanModalOverlay');
-  if(btnOpen) btnOpen.addEventListener('click', openKendaraanModal);
-  if(btnClose) btnClose.addEventListener('click', closeKendaraanModal);
-  if(btnCancel) btnCancel.addEventListener('click', closeKendaraanModal);
-  if(overlay) overlay.addEventListener('click', function(e){
-    if(e.target === overlay) closeKendaraanModal();
-  });
-})();
-
 /* ---------- DRIVER ---------- */
 function renderDriver(){
   const wrap = document.getElementById('driverTableWrap');
   if(!wrap) return;
   if(driverList.length === 0){
-    wrap.innerHTML = emptyState('Belum ada driver terdaftar. Klik "Tambah Driver" di atas untuk mulai mencatat.');
+    wrap.innerHTML = emptyState('Belum ada driver terdaftar. Tambahkan lewat menu Administrasi &gt; Input Driver.');
   }else{
     wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nama</th><th>No. HP / WA</th><th>No. SIM</th><th>Masa Berlaku SIM</th><th>Kendaraan Biasa</th><th>Alamat</th><th></th></tr></thead><tbody>${driverList.map(d => `
       <tr>
@@ -3977,45 +3806,6 @@ function renderDriver(){
     }));
   }
 }
-document.getElementById('formDriver').addEventListener('submit', function(e){
-  e.preventDefault();
-  driverList.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    nama: document.getElementById('dNama').value.trim(),
-    hp: document.getElementById('dHp').value.trim(),
-    sim: document.getElementById('dSim').value.trim(),
-    simExp: document.getElementById('dSimExp').value,
-    nopol: document.getElementById('dNopol').value.trim().toUpperCase(),
-    alamat: document.getElementById('dAlamat').value.trim(),
-  });
-  saveDriver();
-  renderDriver();
-  closeDriverModal();
-  showToast('Data driver berhasil disimpan', 'success');
-});
-function openDriverModal(){
-  const overlay = document.getElementById('driverModalOverlay');
-  if(overlay) overlay.classList.add('show');
-}
-function closeDriverModal(){
-  const overlay = document.getElementById('driverModalOverlay');
-  if(overlay) overlay.classList.remove('show');
-  const form = document.getElementById('formDriver');
-  if(form) form.reset();
-}
-(function(){
-  const btnOpen = document.getElementById('btnTambahDriver');
-  const btnClose = document.getElementById('btnCloseDriverModal');
-  const btnCancel = document.getElementById('btnBatalDriver');
-  const overlay = document.getElementById('driverModalOverlay');
-  if(btnOpen) btnOpen.addEventListener('click', openDriverModal);
-  if(btnClose) btnClose.addEventListener('click', closeDriverModal);
-  if(btnCancel) btnCancel.addEventListener('click', closeDriverModal);
-  if(overlay) overlay.addEventListener('click', function(e){
-    if(e.target === overlay) closeDriverModal();
-  });
-})();
-
 /* ---------- INPUT DRIVER (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Driver) ---------- */
 document.getElementById('formDriverInput').addEventListener('submit', function(e){
   e.preventDefault();
@@ -4211,7 +4001,7 @@ function renderLegalitas(){
   const wrap = document.getElementById('legalitasTableWrap');
   if(!wrap) return;
   if(kendaraanList.length === 0){
-    wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan kendaraan beserta tanggal KIR/pajak terakhir di form di atas.');
+    wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan lewat menu Administrasi &gt; Input Data Kendaraan.');
     return;
   }
   wrap.innerHTML = `<table class="sv-table"><thead><tr>
@@ -5325,7 +5115,7 @@ function buildRekapNopolTable(data){
 
   const sum = (field) => rows.reduce((s,g) => s + g[field], 0);
 
-  return `<table><thead><tr>
+  return `<table class="sv-table"><thead><tr>
     <th>Nopol</th><th>Armada</th>
     <th>Ritase BK</th><th>Tonase BK (Kg)</th>
     <th>Ritase Roll</th><th>Tonase Roll (Kg)</th>
@@ -5334,28 +5124,28 @@ function buildRekapNopolTable(data){
   </tr></thead><tbody>${rows.map(g => `
     <tr>
       <td><span class="plate-cell">${esc(g.nopol)}</span></td>
-      <td>${esc(armadaLabel(g.jenisArmada))}</td>
-      <td class="mono">${g.ritBK || '-'}</td>
-      <td class="mono">${g.tonBK ? g.tonBK.toLocaleString('id-ID') : '-'}</td>
-      <td class="mono">${g.ritRoll || '-'}</td>
-      <td class="mono">${g.tonRoll ? g.tonRoll.toLocaleString('id-ID') : '-'}</td>
-      <td class="mono">${g.ritOCC || '-'}</td>
-      <td class="mono">${g.tonOCC ? g.tonOCC.toLocaleString('id-ID') : '-'}</td>
-      <td class="mono" style="font-weight:700;">${g.totalRitase}</td>
-      <td class="mono" style="font-weight:700;">${g.totalTonase.toLocaleString('id-ID')}</td>
-      <td class="mono">${rupiah(g.totalPendapatan)}</td>
+      <td class="sv-left">${esc(armadaLabel(g.jenisArmada))}</td>
+      <td class="mono sv-num">${g.ritBK || '-'}</td>
+      <td class="mono sv-num">${g.tonBK ? g.tonBK.toLocaleString('id-ID') : '-'}</td>
+      <td class="mono sv-num">${g.ritRoll || '-'}</td>
+      <td class="mono sv-num">${g.tonRoll ? g.tonRoll.toLocaleString('id-ID') : '-'}</td>
+      <td class="mono sv-num">${g.ritOCC || '-'}</td>
+      <td class="mono sv-num">${g.tonOCC ? g.tonOCC.toLocaleString('id-ID') : '-'}</td>
+      <td class="mono sv-num" style="font-weight:700;">${g.totalRitase}</td>
+      <td class="mono sv-num" style="font-weight:700;">${g.totalTonase.toLocaleString('id-ID')}</td>
+      <td class="mono sv-num">${rupiah(g.totalPendapatan)}</td>
     </tr>`).join('')}</tbody>
     <tfoot><tr style="font-weight:700; background:#fafbfc;">
-      <td colspan="2" style="text-align:right;">TOTAL KESELURUHAN</td>
-      <td class="mono">${sum('ritBK')}</td>
-      <td class="mono">${sum('tonBK').toLocaleString('id-ID')}</td>
-      <td class="mono">${sum('ritRoll')}</td>
-      <td class="mono">${sum('tonRoll').toLocaleString('id-ID')}</td>
-      <td class="mono">${sum('ritOCC')}</td>
-      <td class="mono">${sum('tonOCC').toLocaleString('id-ID')}</td>
-      <td class="mono">${sum('totalRitase')}</td>
-      <td class="mono">${sum('totalTonase').toLocaleString('id-ID')}</td>
-      <td class="mono">${rupiah(sum('totalPendapatan'))}</td>
+      <td colspan="2" class="sv-left">TOTAL KESELURUHAN</td>
+      <td class="mono sv-num">${sum('ritBK')}</td>
+      <td class="mono sv-num">${sum('tonBK').toLocaleString('id-ID')}</td>
+      <td class="mono sv-num">${sum('ritRoll')}</td>
+      <td class="mono sv-num">${sum('tonRoll').toLocaleString('id-ID')}</td>
+      <td class="mono sv-num">${sum('ritOCC')}</td>
+      <td class="mono sv-num">${sum('tonOCC').toLocaleString('id-ID')}</td>
+      <td class="mono sv-num">${sum('totalRitase')}</td>
+      <td class="mono sv-num">${sum('totalTonase').toLocaleString('id-ID')}</td>
+      <td class="mono sv-num">${rupiah(sum('totalPendapatan'))}</td>
     </tr></tfoot></table>`;
 }
 document.getElementById('btnGenerate').addEventListener('click', generateLaporan);
