@@ -510,6 +510,7 @@
 
   /* ---------- ONGKOS BORONGAN — tampilan kartu ala Google Sheet sumber ---------- */
   .ob-sheet-title{font-size:19px; font-weight:800; letter-spacing:.01em; margin:0 0 16px; color:#000;}
+  .ob-title-row{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px;}
   .ob-filterbar{
     display:inline-flex; flex-direction:column; border:2px solid #000; margin-bottom:18px;
     box-shadow:0 1px 0 rgba(0,0,0,.05);
@@ -527,9 +528,12 @@
   .ob-filterbar select:focus{outline:2px solid var(--navy-600);}
 
   .ob-card{
-    display:grid; grid-template-columns:1.1fr 1.5fr 1fr 1.9fr;
+    display:grid; grid-template-columns:1.1fr 1.5fr 1fr 1.9fr; position:relative;
     border:2px solid #000; margin-bottom:16px; background:#fff; overflow:hidden;
   }
+  .ob-card-actions{position:absolute; top:6px; right:6px; display:flex; gap:4px; z-index:2;}
+  .ob-card-actions .icon-btn{background:rgba(255,255,255,.9); border-radius:6px;}
+  .ob-card-actions .icon-btn:hover{background:#fff;}
   .ob-col{display:flex; flex-direction:column; border-right:2px solid #000;}
   .ob-col:last-child{border-right:none;}
   .ob-head{
@@ -1393,7 +1397,21 @@
       <div class="view" data-view="borongan">
         <div class="panel">
           <div class="panel-body">
-            <h1 class="ob-sheet-title">Perhitungan Harga Angkutan Karya Jaya Group 2026</h1>
+            <div class="toolbar" style="margin-bottom:10px;">
+              <div class="field" style="flex:1; min-width:220px;">
+                <label>Cari</label>
+                <input type="text" id="boronganSearch" placeholder="Tujuan, rute, armada, angkutan...">
+              </div>
+            </div>
+            <p class="hint" id="boronganInfoLine" style="margin:-4px 0 18px;"></p>
+
+            <div class="ob-title-row">
+              <h1 class="ob-sheet-title" style="margin-bottom:0;">Perhitungan Harga Angkutan Karya Jaya Group 2026</h1>
+              <button type="button" class="btn btn-primary" id="btnTambahBorongan1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+                Tambah Data
+              </button>
+            </div>
             <div class="ob-filterbar" style="margin-bottom:18px;">
               <div class="ob-filterbar-row">
                 <div class="ob-filterbar-label">Jenis Layanan</div>
@@ -1406,7 +1424,13 @@
             </div>
             <div id="borongan1TableWrap"></div>
 
-            <h1 class="ob-sheet-title" style="margin-top:34px;">Harga Ongkos PA Luar</h1>
+            <div class="ob-title-row" style="margin-top:34px;">
+              <h1 class="ob-sheet-title" style="margin-bottom:0;">Harga Ongkos PA Luar</h1>
+              <button type="button" class="btn btn-primary" id="btnTambahBorongan2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+                Tambah Data
+              </button>
+            </div>
             <div class="ob-filterbar" style="margin-bottom:18px;">
               <div class="ob-filterbar-row">
                 <div class="ob-filterbar-label">Angkutan</div>
@@ -1418,6 +1442,124 @@
               </div>
             </div>
             <div id="borongan2TableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: TAMBAH/EDIT DATA ONGKOS BORONGAN -->
+      <div class="form-modal-overlay" id="borongan1ModalOverlay">
+        <div class="form-modal">
+          <div class="form-modal-head">
+            <div>
+              <h3 id="borongan1ModalTitle">Tambah data ongkos borongan</h3>
+              <p>Data harga borongan per rute (BK / Roll / OCC)</p>
+            </div>
+            <button type="button" class="form-modal-close" id="btnCloseBorongan1Modal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="form-modal-body">
+            <form id="formBorongan1">
+              <div class="grid2">
+                <div class="field">
+                  <label for="ob1JenisLayanan">Jenis layanan</label>
+                  <input type="text" id="ob1JenisLayanan" placeholder="cth. OCC, ROLL, BK">
+                </div>
+                <div class="field">
+                  <label for="ob1Armada">Armada</label>
+                  <input type="text" id="ob1Armada" placeholder="cth. AJ/UB/UD">
+                </div>
+                <div class="field">
+                  <label for="ob1Start">Start</label>
+                  <input type="text" id="ob1Start" placeholder="cth. LKJ">
+                </div>
+                <div class="field">
+                  <label for="ob1Midle">Midle <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ob1Midle" placeholder="cth. KJ">
+                </div>
+                <div class="field">
+                  <label for="ob1Tujuan">Tujuan</label>
+                  <input type="text" id="ob1Tujuan" placeholder="cth. ASSA">
+                </div>
+                <div class="field">
+                  <label for="ob1Kategori">Kategori</label>
+                  <input type="text" id="ob1Kategori" placeholder="cth. ISI, KOSONGAN">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="ob1Rute">Rute</label>
+                  <input type="text" id="ob1Rute" placeholder="cth. LKJ → KJ → ASSA → LKJ">
+                </div>
+                <div class="field">
+                  <label for="ob1Jarak">Jarak</label>
+                  <input type="text" id="ob1Jarak" placeholder="cth. 163 (KM)">
+                </div>
+                <div class="field">
+                  <label for="ob1Kapasitas">Kapasitas <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ob1Kapasitas" placeholder="cth. ± 24 T">
+                </div>
+                <div class="field">
+                  <label for="ob1Nominal">Nominal harga</label>
+                  <input type="text" id="ob1Nominal" placeholder="cth. Rp 1,300,000">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="ob1Keterangan">Keterangan <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ob1Keterangan" placeholder="cth. dari ASSA bawa roll untuk LKJ">
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnBatalBorongan1">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan data</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: TAMBAH/EDIT HARGA ONGKOS PA LUAR -->
+      <div class="form-modal-overlay" id="borongan2ModalOverlay">
+        <div class="form-modal">
+          <div class="form-modal-head">
+            <div>
+              <h3 id="borongan2ModalTitle">Tambah harga ongkos PA luar</h3>
+              <p>Data harga per rute berdasarkan angkutan</p>
+            </div>
+            <button type="button" class="form-modal-close" id="btnCloseBorongan2Modal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="form-modal-body">
+            <form id="formBorongan2">
+              <div class="grid2">
+                <div class="field">
+                  <label for="ob2Angkutan">Angkutan</label>
+                  <input type="text" id="ob2Angkutan" placeholder="cth. AGENDA">
+                </div>
+                <div class="field">
+                  <label for="ob2Tujuan">Tujuan</label>
+                  <input type="text" id="ob2Tujuan" placeholder="cth. JEPARA">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="ob2Rute">Rute</label>
+                  <input type="text" id="ob2Rute" placeholder="cth. ASSA → JEPARA">
+                </div>
+                <div class="field">
+                  <label for="ob2Tonase">Tonase</label>
+                  <input type="text" id="ob2Tonase" placeholder="cth. 23000">
+                </div>
+                <div class="field">
+                  <label for="ob2HargaKg">Harga per Kg</label>
+                  <input type="text" id="ob2HargaKg" placeholder="cth. 270">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="ob2Harga">Harga total</label>
+                  <input type="text" id="ob2Harga" placeholder="cth. Rp 6,210,000">
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnBatalBorongan2">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan data</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -1852,7 +1994,7 @@ function sendWhatsApp(message){
             </div>
           </div>
           <div class="panel-body">
-            <p class="hint" id="tarifInfoLine" style="margin:-4px 0 14px;">Tarif belum tersinkron. Buka Pengaturan &rarr; Sinkronisasi Tarif.</p>
+            <p class="hint" id="tarifInfoLine" style="margin:-4px 0 14px;">Belum ada data tarif. Tambahkan lewat form di bawah ini.</p>
             <form id="formTarif" style="max-width:560px; margin-bottom:16px;">
               <div class="grid2">
                 <div class="field">
@@ -1882,151 +2024,6 @@ function sendWhatsApp(message){
               </div>
             </form>
             <div id="tarifTableWrap" style="margin-bottom:16px;"></div>
-
-            <div style="border-top:1px solid var(--border); padding-top:14px; margin-bottom:14px;">
-              <label style="margin-bottom:8px; display:block;">Sinkronisasi massal dari Google Sheet <span class="hint">(opsional — mengisi database tarif di atas sekaligus banyak)</span></label>
-              <div class="field" style="max-width:520px; margin-bottom:10px;">
-                <label for="tarifSheetUrl">URL Web App Google Apps Script <span class="hint">(bukan URL sheet biasa — lihat cara setup di bawah)</span></label>
-                <input type="text" id="tarifSheetUrl" placeholder="https://script.google.com/macros/s/xxxxx/exec">
-              </div>
-              <div class="btn-row" style="margin-bottom:4px;">
-                <button type="button" class="btn btn-secondary" id="btnSyncTarif">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-                  Sinkronkan sekarang
-                </button>
-                <span id="tarifSyncStatus" class="hint" style="align-self:center;"></span>
-              </div>
-            </div>
-
-            <div style="border-top:1px solid var(--border); padding-top:14px;">
-              <label style="margin-bottom:8px; display:block;">Cara membuat Web App tarif dari Google Sheet</label>
-              <p class="hint" style="line-height:1.6; margin-bottom:8px;">
-                1. Buat Google Sheet dengan 3 kolom: <b>Armada</b> (tronton / engkel / cdd / lainnya), <b>Kota</b> (kota tujuan, cth. Bandung) dan <b>HargaPerKg</b> (angka, Rupiah per kg).<br>
-                2. Buka Extensions &rarr; Apps Script pada sheet tersebut, hapus isi default, lalu tempel kode di bawah ini.<br>
-                3. Klik Deploy &rarr; New deployment &rarr; pilih tipe "Web app", akses "Anyone", lalu Deploy.<br>
-                4. Salin URL Web App yang dihasilkan (diakhiri /exec) ke kolom di atas, lalu klik "Sinkronkan sekarang".
-              </p>
-              <textarea id="appsScriptCode" readonly style="width:100%; min-height:150px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Sheet1');
-  var data = sheet.getDataRange().getValues();
-  var out = [];
-  for (var i = 1; i < data.length; i++) {
-    if (!data[i][0]) continue;
-    out.push({
-      armada: String(data[i][0]).toLowerCase().trim(),
-      kota: String(data[i][1]).toLowerCase().trim(),
-      hargaPerKg: Number(data[i][2]) || 0
-    });
-  }
-  return ContentService.createTextOutput(JSON.stringify(out))
-    .setMimeType(ContentService.MimeType.JSON);
-}</textarea>
-              <button type="button" class="btn btn-secondary" id="btnCopyScript" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin kode</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Database ongkos borongan</h2>
-              <p>Daftar harga borongan per rute — tampilan disamakan persis dengan Google Sheet "MASTER ONGKOS BORONGAN", dan bisa disinkronkan otomatis. Hanya akun admin yang bisa mengatur sinkronisasi ini.</p>
-            </div>
-          </div>
-          <div class="panel-body">
-            <p class="hint" id="boronganInfoLine" style="margin:-4px 0 14px;">Data borongan belum tersinkron. Buka bagian "Cara membuat Web App" di bawah.</p>
-
-            <div class="toolbar">
-              <div class="field">
-                <label>Cari</label>
-                <input type="text" id="boronganSearch" placeholder="Tujuan, rute, armada, angkutan...">
-              </div>
-              <button type="button" class="btn btn-secondary" id="btnBoronganSyncNow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-                Sinkronkan sekarang
-              </button>
-              <span id="boronganSyncStatus" class="hint" style="align-self:center;"></span>
-            </div>
-
-            <div style="border-top:1px solid var(--border); padding-top:14px; margin-top:14px;">
-              <div class="field" style="max-width:520px; margin-bottom:10px;">
-                <label for="boronganSheetUrl">URL Web App Google Apps Script <span class="hint">(bukan URL sheet biasa — lihat cara setup di bawah)</span></label>
-                <input type="text" id="boronganSheetUrl" placeholder="https://script.google.com/macros/s/xxxxx/exec">
-              </div>
-              <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin-bottom:12px;">
-                <input type="checkbox" id="boronganAutoSync" style="width:16px; height:16px; cursor:pointer;">
-                Sinkron otomatis setiap 5 menit selagi sistem ini terbuka
-              </label>
-              <div class="btn-row" style="margin-bottom:4px;">
-                <button type="button" class="btn btn-primary" id="btnSaveBoronganUrl">Simpan &amp; sinkronkan sekarang</button>
-              </div>
-            </div>
-
-            <div style="border-top:1px solid var(--border); padding-top:14px; margin-top:14px;">
-              <label style="margin-bottom:8px; display:block;">Cara membuat Web App ongkos borongan dari Google Sheet</label>
-              <p class="hint" style="line-height:1.6; margin-bottom:8px;">
-                1. Buka Google Sheet Anda, pada tab/sheet <b>MASTER ONGKOS BORONGAN PA LUAR</b> (sheet yang sama seperti yang sudah Anda pakai selama ini).<br>
-                2. Buka menu Extensions &rarr; Apps Script pada sheet tersebut, hapus isi default, lalu tempel kode di bawah ini.<br>
-                3. Jika nama tab sheet Anda berbeda dari <span class="mono">MASTER ONGKOS BORONGAN PA LUAR</span>, ganti nilai <span class="mono">SHEET_NAME</span> di baris pertama kode sesuai nama tab Anda.<br>
-                4. Klik Deploy &rarr; New deployment &rarr; pilih tipe "Web app", bagian "Who has access" pilih "Anyone", lalu Deploy.<br>
-                5. Salin URL Web App yang dihasilkan (diakhiri /exec) ke kolom di atas, lalu klik "Simpan &amp; sinkronkan sekarang".<br>
-                6. Setelah itu, setiap Anda mengubah data di Google Sheet, klik "Sinkronkan sekarang" di sini (atau centang sinkron otomatis 5 menit) supaya sistem selalu menampilkan data terbaru — tidak perlu deploy ulang.
-              </p>
-              <textarea id="boronganAppsScriptCode" readonly style="width:100%; min-height:320px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">var SHEET_NAME = 'MASTER ONGKOS BORONGAN PA LUAR';
-
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    return ContentService.createTextOutput(JSON.stringify({ error: 'Sheet "' + SHEET_NAME + '" tidak ditemukan' }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-  var data = sheet.getDataRange().getValues();
-  var table1 = [];
-  var table2 = [];
-  var mode = 1; // 1 = tabel BK/ROLL/OCC (kolom: JENIS LAYANAN...), 2 = tabel per Angkutan (kolom: ANGKUTAN...)
-
-  for (var i = 1; i < data.length; i++) {
-    var row = data[i];
-    var isEmpty = row.every(function (c) { return c === '' || c === null; });
-    if (isEmpty) continue;
-
-    // Baris header kedua di dalam sheet yang sama (mis. "ANGKUTAN, TUJUAN, ...") menandai mulai tabel kedua
-    if (String(row[0]).trim().toUpperCase() === 'ANGKUTAN') {
-      mode = 2;
-      continue;
-    }
-
-    if (mode === 1) {
-      table1.push({
-        jenisLayanan: String(row[0] || '').trim(),
-        start: String(row[1] || '').trim(),
-        midle: String(row[2] || '').trim(),
-        tujuan: String(row[3] || '').trim(),
-        kategori: String(row[4] || '').trim(),
-        rute: String(row[5] || '').trim(),
-        jarak: String(row[6] || '').trim(),
-        kapasitas: String(row[7] || '').trim(),
-        armada: String(row[8] || '').trim(),
-        nominal: String(row[9] || '').trim(),
-        keterangan: String(row[10] || '').trim()
-      });
-    } else {
-      table2.push({
-        angkutan: String(row[0] || '').trim(),
-        tujuan: String(row[1] || '').trim(),
-        tonase: String(row[4] || '').trim(),
-        rute: String(row[5] || '').trim(),
-        hargaKg: String(row[6] || '').trim(),
-        harga: String(row[9] || '').trim()
-      });
-    }
-  }
-
-  return ContentService.createTextOutput(JSON.stringify({ table1: table1, table2: table2 }))
-    .setMimeType(ContentService.MimeType.JSON);
-}</textarea>
-              <button type="button" class="btn btn-secondary" id="btnCopyBoronganScript" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin kode</button>
-            </div>
           </div>
         </div>
         </div>
@@ -2218,6 +2215,30 @@ function attachFirebaseListenersInner(){
       fbPush('maintenance', maintenanceList);
     }
   });
+
+  fbDb.ref('tarif').on('value', snap => {
+    const val = snap.val();
+    if(val && Array.isArray(val.items)){
+      tarifData = val;
+      localStorage.setItem(TARIF_KEY, JSON.stringify(tarifData));
+      const v = currentViewName();
+      if(v === 'hpp'){ renderTarifTable(); updateTarifInfoLine(); updateKotaDatalists(); }
+    }else if(val == null && tarifData.items && tarifData.items.length > 0){
+      fbPush('tarif', tarifData);
+    }
+  });
+
+  fbDb.ref('borongan').on('value', snap => {
+    const val = snap.val();
+    if(val && (Array.isArray(val.table1) || Array.isArray(val.table2))){
+      boronganData = { table1: Array.isArray(val.table1) ? val.table1 : [], table2: Array.isArray(val.table2) ? val.table2 : [] };
+      localStorage.setItem(BORONGAN_KEY, JSON.stringify(boronganData));
+      const v = currentViewName();
+      if(v === 'borongan') renderBoronganTables();
+    }else if(val == null && ((boronganData.table1 || []).length > 0 || (boronganData.table2 || []).length > 0)){
+      fbPush('borongan', boronganData);
+    }
+  });
 }
 
 const STORAGE_KEY = 'ekspedisi_pro_records';
@@ -2238,11 +2259,10 @@ function saveMaintenance(){ localStorage.setItem(MAINTENANCE_KEY, JSON.stringify
 function loadHpp(){ try{ return JSON.parse(localStorage.getItem(HPP_KEY)) || {}; }catch(e){ return {}; } }
 function saveHpp(){ localStorage.setItem(HPP_KEY, JSON.stringify(hppAsumsi)); }
 
-/* ---------- TARIF ONGKOS ANGKUT (sinkron Google Sheet) ---------- */
+/* ---------- TARIF ONGKOS ANGKUT (dikelola langsung di aplikasi, tersinkron via Firebase) ---------- */
 const TARIF_KEY = 'ekspedisi_pro_tarif';
-const TARIF_URL_KEY = 'ekspedisi_pro_tarif_url';
 function loadTarif(){ try{ return JSON.parse(localStorage.getItem(TARIF_KEY)) || { items: [], lastSync: null }; }catch(e){ return { items: [], lastSync: null }; } }
-function saveTarif(data){ localStorage.setItem(TARIF_KEY, JSON.stringify(data)); }
+function saveTarif(data){ localStorage.setItem(TARIF_KEY, JSON.stringify(data)); fbPush('tarif', data); }
 let tarifData = loadTarif();
 
 function getHargaPerKg(armada, kota){
@@ -2277,7 +2297,7 @@ function renderTarifTable(){
   if(!wrap) return;
   const items = tarifData.items || [];
   if(!items.length){
-    wrap.innerHTML = '<p class="hint">Belum ada data tarif. Tambahkan lewat form di atas, atau sinkronkan dari Google Sheet.</p>';
+    wrap.innerHTML = '<p class="hint">Belum ada data tarif. Tambahkan lewat form di atas.</p>';
     return;
   }
   let html = '<table><thead><tr><th>Jenis armada</th><th>Kota</th><th>Harga per kg (Rp)</th><th></th></tr></thead><tbody>';
@@ -2329,55 +2349,7 @@ function updateTarifInfoLine(){
   const el = document.getElementById('tarifInfoLine');
   if(!el) return;
   const count = (tarifData.items || []).length;
-  if(!count){
-    el.textContent = 'Tarif belum tersinkron. Buka Pengaturan → Sinkronisasi Tarif.';
-  } else if(tarifData.lastSync){
-    const d = new Date(tarifData.lastSync);
-    el.textContent = `${count} jenis armada tersimpan di database tarif — sinkron terakhir: ${d.toLocaleString('id-ID')}`;
-  } else {
-    el.textContent = `${count} jenis armada tersimpan di database tarif.`;
-  }
-}
-
-/* Tambah/ubah satu tarif secara manual (dipakai oleh form maupun oleh sinkronisasi sheet) */
-function upsertTarif(armada, kota, hargaPerKg){
-  const armadaKey = String(armada || '').toLowerCase().trim();
-  const kotaKey = String(kota || '').trim();
-  if(!armadaKey || !kotaKey) return;
-  if(!tarifData.items) tarifData.items = [];
-  const found = tarifData.items.find(t =>
-    (t.armada || '').toLowerCase().trim() === armadaKey &&
-    (t.kota || '').toLowerCase().trim() === kotaKey.toLowerCase()
-  );
-  if(found){ found.hargaPerKg = Number(hargaPerKg) || 0; }
-  else{ tarifData.items.push({ armada: armadaKey, kota: kotaKey, hargaPerKg: Number(hargaPerKg) || 0 }); }
-}
-
-async function syncTarifFromSheet(url){
-  const statusEl = document.getElementById('tarifSyncStatus');
-  if(!url){
-    if(statusEl){ statusEl.textContent = 'Isi URL Web App terlebih dahulu.'; statusEl.style.color = 'var(--orange-700)'; }
-    return;
-  }
-  if(statusEl){ statusEl.textContent = 'Menyinkronkan...'; statusEl.style.color = 'var(--text-muted)'; }
-  try{
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-    if(!Array.isArray(json)) throw new Error('Format data tidak sesuai (harus array JSON).');
-    if(!tarifData.items) tarifData.items = [];
-    json.forEach(item => upsertTarif(item.armada, item.kota, item.hargaPerKg));
-    tarifData.lastSync = new Date().toISOString();
-    saveTarif(tarifData);
-    localStorage.setItem(TARIF_URL_KEY, url);
-    renderTarifTable();
-    updateTarifInfoLine();
-    updateKotaDatalists();
-    if(statusEl){ statusEl.textContent = `Berhasil — ${json.length} tarif ditambahkan/diperbarui di database.`; statusEl.style.color = 'var(--green-600)'; }
-    showToast('Tarif berhasil disinkronkan', 'success');
-  }catch(err){
-    if(statusEl){ statusEl.textContent = 'Gagal sinkron: ' + err.message; statusEl.style.color = '#c0392b'; }
-  }
+  el.textContent = count ? `${count} jenis armada tersimpan di database tarif.` : 'Belum ada data tarif. Tambahkan lewat form di bawah ini.';
 }
 
 /* Hitung pendapatan DO otomatis dari database tarif (Rp/kg) x total tonase
@@ -2669,38 +2641,17 @@ document.getElementById('formTarif').addEventListener('submit', function(e){
 document.getElementById('btnCancelEditTarif').addEventListener('click', cancelEditTarif);
 
 (function initTarif(){
-  const savedUrl = localStorage.getItem(TARIF_URL_KEY) || '';
-  const urlInput = document.getElementById('tarifSheetUrl');
-  if(urlInput) urlInput.value = savedUrl;
   renderTarifTable();
   updateTarifInfoLine();
   updateKotaDatalists();
 })();
-document.getElementById('btnSyncTarif').addEventListener('click', function(){
-  const url = document.getElementById('tarifSheetUrl').value.trim();
-  syncTarifFromSheet(url);
-});
-document.getElementById('btnCopyScript').addEventListener('click', function(){
-  const ta = document.getElementById('appsScriptCode');
-  ta.select();
-  ta.setSelectionRange(0, 999999);
-  try{
-    document.execCommand('copy');
-    showToast('Kode Apps Script disalin', 'success');
-  }catch(e){
-    navigator.clipboard && navigator.clipboard.writeText(ta.value);
-    showToast('Kode Apps Script disalin', 'success');
-  }
-});
 toggleJenisSections();
 
-/* ---------- ONGKOS BORONGAN: database & sinkronisasi Google Sheet ---------- */
+/* ---------- ONGKOS BORONGAN: database (dikelola langsung di aplikasi, tersinkron via Firebase) ---------- */
 const BORONGAN_KEY = 'ekspedisi_pro_borongan';
-const BORONGAN_URL_KEY = 'ekspedisi_pro_borongan_url';
-const BORONGAN_AUTOSYNC_KEY = 'ekspedisi_pro_borongan_autosync';
 
 /* Data awal — hasil import pertama dari sheet "MASTER ONGKOS BORONGAN PA LUAR" milik user (18 Agustus 2026).
-   Dipakai hanya sebagai isi default sebelum sinkronisasi Apps Script pertama kali dijalankan. */
+   Dipakai sebagai isi default sebelum admin mulai menambah/mengubah data langsung lewat form di aplikasi. */
 function boronganDefaultData(){
   return {
     table1: [
@@ -2807,20 +2758,23 @@ function loadBorongan(){
     return parsed;
   }catch(e){ return boronganDefaultData(); }
 }
-function saveBorongan(data){ localStorage.setItem(BORONGAN_KEY, JSON.stringify(data)); }
+function saveBorongan(data){ localStorage.setItem(BORONGAN_KEY, JSON.stringify(data)); fbPush('borongan', data); }
 let boronganData = loadBorongan();
 
 function updateBoronganInfoLine(){
   const el = document.getElementById('boronganInfoLine');
   if(!el) return;
   const total = (boronganData.table1 || []).length + (boronganData.table2 || []).length;
-  if(!total){
-    el.textContent = 'Data borongan belum tersinkron. Buka bagian "Sinkronisasi dari Google Sheet" di bawah.';
-  }else if(boronganData.lastSync){
-    const d = new Date(boronganData.lastSync);
-    el.textContent = `${total} baris data borongan tersimpan — sinkron terakhir: ${d.toLocaleString('id-ID')}`;
-  }else{
-    el.textContent = `${total} baris data borongan tersimpan (data awal — belum pernah sinkron dari Google Sheet).`;
+  el.textContent = total ? `${total} baris data ongkos borongan tersimpan.` : 'Belum ada data ongkos borongan. Tambahkan lewat tombol "+ Tambah Data" di bawah.';
+}
+function isAdminUser(){
+  try{
+    const acc = currentAccount();
+    return !acc || accountRole(acc) === 'admin';
+  }catch(e){
+    // Dipanggil saat render awal sebelum login (variabel sesi belum siap) — anggap bukan admin dulu,
+    // nanti otomatis dirender ulang dengan status yang benar setelah login lewat goTo('borongan').
+    return false;
   }
 }
 
@@ -2852,21 +2806,31 @@ function populateBorongan1Filters(){
 function renderBorongan1Cards(filter){
   const wrap = document.getElementById('borongan1TableWrap');
   if(!wrap) return;
-  let items = boronganData.table1 || [];
+  const all = boronganData.table1 || [];
+  let items = all.map((r, i) => ({ r, i }));
   const jenisSel = document.getElementById('ob1FilterJenis');
   const armadaSel = document.getElementById('ob1FilterArmada');
   const jenisVal = jenisSel ? jenisSel.value : '';
   const armadaVal = armadaSel ? armadaSel.value : '';
-  if(jenisVal) items = items.filter(r => (r.jenisLayanan || '').trim() === jenisVal);
-  if(armadaVal) items = items.filter(r => (r.armada || '').trim() === armadaVal);
-  if(filter) items = items.filter(r => boronganRowMatches(Object.values(r), filter));
+  if(jenisVal) items = items.filter(x => (x.r.jenisLayanan || '').trim() === jenisVal);
+  if(armadaVal) items = items.filter(x => (x.r.armada || '').trim() === armadaVal);
+  if(filter) items = items.filter(x => boronganRowMatches(Object.values(x.r), filter));
 
   if(!items.length){ wrap.innerHTML = '<div class="ob-empty">Tidak ada rute yang cocok dengan filter ini.</div>'; return; }
 
-  wrap.innerHTML = items.map(r => {
+  const admin = isAdminUser();
+  wrap.innerHTML = items.map(({r, i}) => {
     const kode = boronganKodeRute(r) || '-';
     const harga = (r.nominal || '').replace(/^Rp\s*/i, '').trim();
     return `<div class="ob-card">
+      ${admin ? `<div class="ob-card-actions">
+        <button type="button" class="icon-btn edit ob1-edit" data-idx="${i}" title="Edit data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        </button>
+        <button type="button" class="icon-btn del ob1-del" data-idx="${i}" title="Hapus data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>` : ''}
       <div class="ob-col ob-col-tujuan">
         <div class="ob-head">Tujuan</div>
         <div class="ob-val">${esc(kode)}</div>
@@ -2887,6 +2851,21 @@ function renderBorongan1Cards(filter){
       </div>
     </div>`;
   }).join('');
+
+  if(admin){
+    wrap.querySelectorAll('.ob1-edit').forEach(btn => btn.addEventListener('click', function(){
+      openBorongan1Modal(Number(this.dataset.idx));
+    }));
+    wrap.querySelectorAll('.ob1-del').forEach(btn => btn.addEventListener('click', function(){
+      const idx = Number(this.dataset.idx);
+      if(confirm('Hapus data ongkos borongan ini?')){
+        boronganData.table1.splice(idx, 1);
+        saveBorongan(boronganData);
+        renderBoronganTables();
+        showToast('Data ongkos borongan berhasil dihapus', 'danger');
+      }
+    }));
+  }
 }
 
 function populateBorongan2Filters(){
@@ -2908,22 +2887,32 @@ function populateBorongan2Filters(){
 function renderBorongan2Cards(filter){
   const wrap = document.getElementById('borongan2TableWrap');
   if(!wrap) return;
-  let items = boronganData.table2 || [];
+  const all = boronganData.table2 || [];
+  let items = all.map((r, i) => ({ r, i }));
   const angkutanSel = document.getElementById('ob2FilterAngkutan');
   const tujuanSel = document.getElementById('ob2FilterTujuan');
   const angkutanVal = angkutanSel ? angkutanSel.value : '';
   const tujuanVal = tujuanSel ? tujuanSel.value : '';
-  if(angkutanVal) items = items.filter(r => (r.angkutan || '').trim() === angkutanVal);
-  if(tujuanVal) items = items.filter(r => (r.tujuan || '').trim() === tujuanVal);
-  if(filter) items = items.filter(r => boronganRowMatches(Object.values(r), filter));
+  if(angkutanVal) items = items.filter(x => (x.r.angkutan || '').trim() === angkutanVal);
+  if(tujuanVal) items = items.filter(x => (x.r.tujuan || '').trim() === tujuanVal);
+  if(filter) items = items.filter(x => boronganRowMatches(Object.values(x.r), filter));
 
   if(!items.length){ wrap.innerHTML = '<div class="ob-empty">Tidak ada rute yang cocok dengan filter ini.</div>'; return; }
 
-  wrap.innerHTML = items.map(r => {
+  const admin = isAdminUser();
+  wrap.innerHTML = items.map(({r, i}) => {
     const hargaRaw = r.harga || '';
     const isRupiah = /^Rp/i.test(hargaRaw.trim());
     const hargaDisplay = isRupiah ? hargaRaw.replace(/^Rp\s*/i, '').trim() : hargaRaw;
     return `<div class="ob-card">
+      ${admin ? `<div class="ob-card-actions">
+        <button type="button" class="icon-btn edit ob2-edit" data-idx="${i}" title="Edit data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        </button>
+        <button type="button" class="icon-btn del ob2-del" data-idx="${i}" title="Hapus data">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>` : ''}
       <div class="ob-col ob-col-tujuan">
         <div class="ob-head">Tujuan</div>
         <div class="ob-val">${esc(r.angkutan ? `${r.angkutan}-${r.tujuan || ''}` : (r.tujuan || '-'))}</div>
@@ -2944,6 +2933,21 @@ function renderBorongan2Cards(filter){
       </div>
     </div>`;
   }).join('');
+
+  if(admin){
+    wrap.querySelectorAll('.ob2-edit').forEach(btn => btn.addEventListener('click', function(){
+      openBorongan2Modal(Number(this.dataset.idx));
+    }));
+    wrap.querySelectorAll('.ob2-del').forEach(btn => btn.addEventListener('click', function(){
+      const idx = Number(this.dataset.idx);
+      if(confirm('Hapus data harga ongkos ini?')){
+        boronganData.table2.splice(idx, 1);
+        saveBorongan(boronganData);
+        renderBoronganTables();
+        showToast('Data harga ongkos berhasil dihapus', 'danger');
+      }
+    }));
+  }
 }
 
 function renderBoronganTables(){
@@ -2956,69 +2960,10 @@ function renderBoronganTables(){
   updateBoronganInfoLine();
 }
 
-async function syncBoronganFromSheet(url, silent){
-  const statusEl = document.getElementById('boronganSyncStatus');
-  if(!url){
-    if(!silent && statusEl){ statusEl.textContent = 'Isi URL Web App terlebih dahulu.'; statusEl.style.color = 'var(--orange-700)'; }
-    return;
-  }
-  if(!silent && statusEl){ statusEl.textContent = 'Menyinkronkan...'; statusEl.style.color = 'var(--text-muted)'; }
-  try{
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const json = await res.json();
-    if(!json || (!Array.isArray(json.table1) && !Array.isArray(json.table2))) throw new Error('Format data tidak sesuai.');
-    boronganData = {
-      table1: Array.isArray(json.table1) ? json.table1 : [],
-      table2: Array.isArray(json.table2) ? json.table2 : [],
-      lastSync: new Date().toISOString(),
-    };
-    saveBorongan(boronganData);
-    localStorage.setItem(BORONGAN_URL_KEY, url);
-    renderBoronganTables();
-    if(statusEl){ statusEl.textContent = `Berhasil — ${boronganData.table1.length + boronganData.table2.length} baris disinkronkan.`; statusEl.style.color = 'var(--green-600)'; }
-    if(!silent) showToast('Data ongkos borongan berhasil disinkronkan', 'success');
-  }catch(err){
-    if(statusEl){ statusEl.textContent = 'Gagal sinkron: ' + err.message; statusEl.style.color = '#c0392b'; }
-  }
-}
-
-let boronganAutoSyncTimer = null;
-function setupBoronganAutoSync(){
-  if(boronganAutoSyncTimer){ clearInterval(boronganAutoSyncTimer); boronganAutoSyncTimer = null; }
-  const enabled = localStorage.getItem(BORONGAN_AUTOSYNC_KEY) === '1';
-  const url = localStorage.getItem(BORONGAN_URL_KEY) || '';
-  if(enabled && url){
-    boronganAutoSyncTimer = setInterval(() => syncBoronganFromSheet(url, true), 5 * 60 * 1000);
-  }
-}
-
 (function initBorongan(){
-  const savedUrl = localStorage.getItem(BORONGAN_URL_KEY) || '';
-  const urlInput = document.getElementById('boronganSheetUrl');
-  if(urlInput) urlInput.value = savedUrl;
-  const autoChk = document.getElementById('boronganAutoSync');
-  if(autoChk) autoChk.checked = localStorage.getItem(BORONGAN_AUTOSYNC_KEY) === '1';
   renderBoronganTables();
-  setupBoronganAutoSync();
-  // Sinkron otomatis sekali saat aplikasi dibuka, jika URL Apps Script sudah pernah disimpan
-  if(savedUrl) syncBoronganFromSheet(savedUrl, true);
 })();
 
-document.getElementById('btnSaveBoronganUrl').addEventListener('click', function(){
-  const url = document.getElementById('boronganSheetUrl').value.trim();
-  localStorage.setItem(BORONGAN_URL_KEY, url);
-  setupBoronganAutoSync();
-  syncBoronganFromSheet(url, false);
-});
-document.getElementById('btnBoronganSyncNow').addEventListener('click', function(){
-  const url = document.getElementById('boronganSheetUrl').value.trim() || localStorage.getItem(BORONGAN_URL_KEY) || '';
-  syncBoronganFromSheet(url, false);
-});
-document.getElementById('boronganAutoSync').addEventListener('change', function(){
-  localStorage.setItem(BORONGAN_AUTOSYNC_KEY, this.checked ? '1' : '0');
-  setupBoronganAutoSync();
-});
 document.getElementById('boronganSearch').addEventListener('input', function(){
   renderBoronganTables();
 });
@@ -3038,17 +2983,123 @@ document.getElementById('ob2FilterTujuan').addEventListener('change', function()
   const filter = document.getElementById('boronganSearch').value.trim().toLowerCase();
   renderBorongan2Cards(filter);
 });
-document.getElementById('btnCopyBoronganScript').addEventListener('click', function(){
-  const ta = document.getElementById('boronganAppsScriptCode');
-  ta.select();
-  ta.setSelectionRange(0, 999999);
-  try{
-    document.execCommand('copy');
-    showToast('Kode Apps Script disalin', 'success');
-  }catch(e){
-    navigator.clipboard && navigator.clipboard.writeText(ta.value);
-    showToast('Kode Apps Script disalin', 'success');
+
+/* ---------- MODAL TAMBAH/EDIT: Ongkos Borongan (table1) ---------- */
+let editingBorongan1Idx = null;
+function openBorongan1Modal(idx){
+  editingBorongan1Idx = (typeof idx === 'number' && !isNaN(idx)) ? idx : null;
+  const overlay = document.getElementById('borongan1ModalOverlay');
+  const form = document.getElementById('formBorongan1');
+  const titleEl = document.getElementById('borongan1ModalTitle');
+  if(form) form.reset();
+  if(editingBorongan1Idx !== null){
+    const r = (boronganData.table1 || [])[editingBorongan1Idx] || {};
+    document.getElementById('ob1JenisLayanan').value = r.jenisLayanan || '';
+    document.getElementById('ob1Start').value = r.start || '';
+    document.getElementById('ob1Midle').value = r.midle || '';
+    document.getElementById('ob1Tujuan').value = r.tujuan || '';
+    document.getElementById('ob1Kategori').value = r.kategori || '';
+    document.getElementById('ob1Rute').value = r.rute || '';
+    document.getElementById('ob1Jarak').value = r.jarak || '';
+    document.getElementById('ob1Kapasitas').value = r.kapasitas || '';
+    document.getElementById('ob1Armada').value = r.armada || '';
+    document.getElementById('ob1Nominal').value = r.nominal || '';
+    document.getElementById('ob1Keterangan').value = r.keterangan || '';
+    if(titleEl) titleEl.textContent = 'Edit data ongkos borongan';
+  }else if(titleEl) titleEl.textContent = 'Tambah data ongkos borongan';
+  if(overlay) overlay.classList.add('show');
+}
+function closeBorongan1Modal(){
+  editingBorongan1Idx = null;
+  const overlay = document.getElementById('borongan1ModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formBorongan1');
+  if(form) form.reset();
+}
+document.getElementById('btnTambahBorongan1').addEventListener('click', function(){ openBorongan1Modal(null); });
+document.getElementById('btnCloseBorongan1Modal').addEventListener('click', closeBorongan1Modal);
+document.getElementById('btnBatalBorongan1').addEventListener('click', closeBorongan1Modal);
+document.getElementById('borongan1ModalOverlay').addEventListener('click', function(e){ if(e.target === this) closeBorongan1Modal(); });
+document.getElementById('formBorongan1').addEventListener('submit', function(e){
+  e.preventDefault();
+  const row = {
+    jenisLayanan: document.getElementById('ob1JenisLayanan').value.trim(),
+    start: document.getElementById('ob1Start').value.trim(),
+    midle: document.getElementById('ob1Midle').value.trim(),
+    tujuan: document.getElementById('ob1Tujuan').value.trim(),
+    kategori: document.getElementById('ob1Kategori').value.trim(),
+    rute: document.getElementById('ob1Rute').value.trim(),
+    jarak: document.getElementById('ob1Jarak').value.trim(),
+    kapasitas: document.getElementById('ob1Kapasitas').value.trim(),
+    armada: document.getElementById('ob1Armada').value.trim(),
+    nominal: document.getElementById('ob1Nominal').value.trim(),
+    keterangan: document.getElementById('ob1Keterangan').value.trim(),
+  };
+  if(!boronganData.table1) boronganData.table1 = [];
+  if(editingBorongan1Idx !== null){
+    boronganData.table1[editingBorongan1Idx] = row;
+    showToast('Data ongkos borongan berhasil diperbarui', 'success');
+  }else{
+    boronganData.table1.push(row);
+    showToast('Data ongkos borongan berhasil ditambahkan', 'success');
   }
+  saveBorongan(boronganData);
+  closeBorongan1Modal();
+  renderBoronganTables();
+});
+
+/* ---------- MODAL TAMBAH/EDIT: Harga Ongkos PA Luar (table2) ---------- */
+let editingBorongan2Idx = null;
+function openBorongan2Modal(idx){
+  editingBorongan2Idx = (typeof idx === 'number' && !isNaN(idx)) ? idx : null;
+  const overlay = document.getElementById('borongan2ModalOverlay');
+  const form = document.getElementById('formBorongan2');
+  const titleEl = document.getElementById('borongan2ModalTitle');
+  if(form) form.reset();
+  if(editingBorongan2Idx !== null){
+    const r = (boronganData.table2 || [])[editingBorongan2Idx] || {};
+    document.getElementById('ob2Angkutan').value = r.angkutan || '';
+    document.getElementById('ob2Tujuan').value = r.tujuan || '';
+    document.getElementById('ob2Tonase').value = r.tonase || '';
+    document.getElementById('ob2Rute').value = r.rute || '';
+    document.getElementById('ob2HargaKg').value = r.hargaKg || '';
+    document.getElementById('ob2Harga').value = r.harga || '';
+    if(titleEl) titleEl.textContent = 'Edit harga ongkos PA luar';
+  }else if(titleEl) titleEl.textContent = 'Tambah harga ongkos PA luar';
+  if(overlay) overlay.classList.add('show');
+}
+function closeBorongan2Modal(){
+  editingBorongan2Idx = null;
+  const overlay = document.getElementById('borongan2ModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formBorongan2');
+  if(form) form.reset();
+}
+document.getElementById('btnTambahBorongan2').addEventListener('click', function(){ openBorongan2Modal(null); });
+document.getElementById('btnCloseBorongan2Modal').addEventListener('click', closeBorongan2Modal);
+document.getElementById('btnBatalBorongan2').addEventListener('click', closeBorongan2Modal);
+document.getElementById('borongan2ModalOverlay').addEventListener('click', function(e){ if(e.target === this) closeBorongan2Modal(); });
+document.getElementById('formBorongan2').addEventListener('submit', function(e){
+  e.preventDefault();
+  const row = {
+    angkutan: document.getElementById('ob2Angkutan').value.trim(),
+    tujuan: document.getElementById('ob2Tujuan').value.trim(),
+    tonase: document.getElementById('ob2Tonase').value.trim(),
+    rute: document.getElementById('ob2Rute').value.trim(),
+    hargaKg: document.getElementById('ob2HargaKg').value.trim(),
+    harga: document.getElementById('ob2Harga').value.trim(),
+  };
+  if(!boronganData.table2) boronganData.table2 = [];
+  if(editingBorongan2Idx !== null){
+    boronganData.table2[editingBorongan2Idx] = row;
+    showToast('Data harga ongkos berhasil diperbarui', 'success');
+  }else{
+    boronganData.table2.push(row);
+    showToast('Data harga ongkos berhasil ditambahkan', 'success');
+  }
+  saveBorongan(boronganData);
+  closeBorongan2Modal();
+  renderBoronganTables();
 });
 
 document.getElementById('formDO').addEventListener('submit', function(e){
