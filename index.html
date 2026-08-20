@@ -342,11 +342,10 @@
   tbody td{padding:11px 12px; border-bottom:1px solid var(--border); vertical-align:middle;}
   tbody tr:hover{background:#fafbfc;}
   tfoot td{padding:11px 12px; vertical-align:middle;}
-  /* Border antar kolom khusus tabel di Rekap Data, Data Kendaraan, dan Laporan Bulanan */
+  /* Border antar kolom khusus tabel di Rekap Data dan Laporan Bulanan */
+  /* (Data Kendaraan sekarang pakai .sv-table — style orange-header seperti Monitoring Service Berkala) */
   .view[data-view="rekap"] table th,
   .view[data-view="rekap"] table td,
-  .view[data-view="kendaraan"] table th,
-  .view[data-view="kendaraan"] table td,
   .view[data-view="laporan"] table th,
   .view[data-view="laporan"] table td{
     border:1px solid var(--border);
@@ -3422,16 +3421,16 @@ function renderKendaraan(){
   if(kendaraanList.length === 0){
     wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar.');
   }else{
-    wrap.innerHTML = `<table><thead><tr><th>Nopol</th><th>Jenis Armada</th><th>Supir</th><th>Rute &amp; Area</th><th>Kapasitas Muatan</th><th>Bak (P-L-T)</th><th></th></tr></thead><tbody>${kendaraanList.map(k => `
+    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nopol</th><th>Jenis Armada</th><th>Supir</th><th>Rute &amp; Area</th><th>Kapasitas Muatan</th><th>Bak (P-L-T)</th><th></th></tr></thead><tbody>${kendaraanList.map(k => `
       <tr>
         <td><span class="plate-cell">${esc(k.nopol)}</span></td>
         <td>${esc(armadaLabel(k.jenisArmada))}</td>
-        <td>${esc(k.supir || '-')}</td>
-        <td>${esc(k.rute || '-')}</td>
-        <td class="mono">${k.kapasitas ? Number(k.kapasitas).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-left">${esc(k.supir || '-')}</td>
+        <td class="sv-left">${esc(k.rute || '-')}</td>
+        <td class="sv-num">${k.kapasitas ? Number(k.kapasitas).toLocaleString('id-ID') + ' kg' : '-'}</td>
         <td class="mono">${(k.panjang || k.lebar || k.tinggi) ? `${esc(k.panjang||'-')} x ${esc(k.lebar||'-')} x ${esc(k.tinggi||'-')} cm` : '-'}</td>
-        <td class="row-actions">
-          <button class="icon-btn del" data-id="${k.id}" title="Hapus kendaraan ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px;">
+        <td>
+          <button class="icon-btn del" data-id="${k.id}" title="Hapus kendaraan ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
             Hapus
           </button>
@@ -3677,7 +3676,7 @@ function renderLegalitas(){
     wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan kendaraan beserta tanggal KIR/pajak terakhir di form di atas.');
     return;
   }
-  wrap.innerHTML = `<table><thead><tr>
+  wrap.innerHTML = `<table class="sv-table"><thead><tr>
     <th>No</th><th>Nopol</th><th>Merk</th>
     <th>KIR Terakhir</th><th>KIR Selanjutnya</th><th>Status KIR</th>
     <th>Pajak 1 Th Terakhir</th><th>Pajak 1 Th Selanjutnya</th><th>Status Pajak 1 Th</th>
@@ -3687,7 +3686,7 @@ function renderLegalitas(){
     return `<tr>
       <td>${i + 1}</td>
       <td><span class="plate-cell">${esc(k.nopol)}</span></td>
-      <td>${esc(k.merk || '-')}</td>
+      <td class="sv-left">${esc(k.merk || '-')}</td>
       <td>
         <button class="tonase-cell-btn legal-edit" data-id="${k.id}" data-field="kirTerakhir" data-label="Uji KIR" title="Klik untuk update tanggal KIR terbaru">
           ${k.kirTerakhir ? `<span class="mono">${fmtDate(k.kirTerakhir)}</span>` : `<span class="tonase-empty">+ Isi tanggal</span>`}
