@@ -59,6 +59,16 @@
 
   .sidebar-foot{border-top:1px solid var(--navy-700); padding-top:14px; font-size:11px; color:#697389;}
 
+  .sidebar-logout{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px;
+    color:#aeb6c8; text-decoration:none; font-size:13.5px; font-weight:500; cursor:pointer;
+    border:none; background:none; width:100%; text-align:left; white-space:nowrap; overflow:hidden;
+    margin-top:10px; border-top:1px solid var(--navy-700); padding-top:16px;
+  }
+  .sidebar-logout svg{width:17px; height:17px; stroke:currentColor; flex-shrink:0;}
+  .sidebar-logout:hover{background:var(--navy-800); color:#fff;}
+  .sidebar.collapsed .sidebar-logout{justify-content:center; gap:0; font-size:0; padding:10px 0; padding-top:16px;}
+
   /* ---------- SIDEBAR COLLAPSE/EXPAND ---------- */
   .sidebar-toggle{
     position:absolute; top:22px; right:-13px; width:26px; height:26px; border-radius:8px;
@@ -234,6 +244,31 @@
     #suratTugasPrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
     .st-modal-overlay, .st-modal{position:static; background:none; box-shadow:none; max-width:none; max-height:none; overflow:visible;}
   }
+
+  /* ---------- MODAL FORM GENERIK (mis. Tambah Kendaraan) ---------- */
+  .form-modal-overlay{
+    position:fixed; inset:0; background:rgba(15,27,48,.55); display:none;
+    align-items:flex-start; justify-content:center; z-index:65; padding:32px 16px;
+    overflow-y:auto;
+  }
+  .form-modal-overlay.show{display:flex;}
+  .form-modal{
+    background:#fff; border-radius:var(--radius-lg); padding:0; width:100%; max-width:760px;
+    box-shadow:0 20px 50px rgba(0,0,0,.35); margin:auto;
+  }
+  .form-modal-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:18px 24px; border-bottom:1px solid var(--border); position:sticky; top:0; background:#fff; z-index:2;
+    border-top-left-radius:var(--radius-lg); border-top-right-radius:var(--radius-lg);
+  }
+  .form-modal-head h3{margin:0; font-size:16px;}
+  .form-modal-head p{margin:2px 0 0; font-size:12px; color:var(--text-muted);}
+  .form-modal-close{
+    border:none; background:none; cursor:pointer; color:var(--text-muted); padding:4px; line-height:0; border-radius:6px; flex-shrink:0;
+  }
+  .form-modal-close:hover{background:#f0f1f3; color:var(--text);}
+  .form-modal-close svg{width:18px; height:18px;}
+  .form-modal-body{padding:20px 24px 24px;}
 
   .main{flex:1; min-width:0; display:flex; flex-direction:column;}
   .topbar{
@@ -698,6 +733,10 @@
       </button>
     </nav>
     <div class="sidebar-foot">Data tersimpan lokal di browser ini.</div>
+    <button class="sidebar-logout" id="btnLogout" title="Keluar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Keluar
+    </button>
   </aside>
 
   <!-- MAIN -->
@@ -709,10 +748,6 @@
       </div>
       <div class="user-menu">
         <div class="user-badge" id="userBadge">A</div>
-        <button class="logout-btn" id="btnLogout">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-          Keluar
-        </button>
       </div>
     </div>
 
@@ -996,11 +1031,44 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h2>Data kendaraan</h2>
-              <p>Data master armada, supir, dan rute/area — dipakai sebagai referensi Input DO</p>
+              <h2>Daftar kendaraan</h2>
+              <p>Seluruh armada yang terdaftar di sistem</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnTambahKendaraan">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+              Tambah Kendaraan
+            </button>
+          </div>
+          <div class="panel-body" style="padding:0;">
+            <div id="kendaraanTableWrap"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Monitoring legalitas kendaraan (KIR &amp; Pajak)</h2>
+              <p>Update otomatis setiap hari — jatuh tempo &amp; sisa hari dihitung dari tanggal terakhir yang diisi di form kendaraan</p>
             </div>
           </div>
-          <div class="panel-body">
+          <div class="panel-body" style="padding:0;">
+            <div id="legalitasTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: TAMBAH KENDARAAN -->
+      <div class="form-modal-overlay" id="kendaraanModalOverlay">
+        <div class="form-modal">
+          <div class="form-modal-head">
+            <div>
+              <h3>Tambah kendaraan baru</h3>
+              <p>Data master armada, supir, dan rute/area — dipakai sebagai referensi Input DO</p>
+            </div>
+            <button type="button" class="form-modal-close" id="btnCloseKendaraanModal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="form-modal-body">
             <form id="formKendaraan">
               <div class="grid2">
                 <div class="field">
@@ -1063,32 +1131,11 @@
                   <input type="number" id="kTinggi" min="0" step="1" placeholder="cth. 200">
                 </div>
               </div>
-              <div class="btn-row">
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnBatalKendaraan">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan kendaraan</button>
               </div>
             </form>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Daftar kendaraan</h2>
-              <p>Seluruh armada yang terdaftar di sistem</p>
-            </div>
-          </div>
-          <div class="panel-body" style="padding:0;">
-            <div id="kendaraanTableWrap"></div>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Monitoring legalitas kendaraan (KIR &amp; Pajak)</h2>
-              <p>Update otomatis setiap hari — jatuh tempo &amp; sisa hari dihitung dari tanggal terakhir yang diisi di form kendaraan</p>
-            </div>
-          </div>
-          <div class="panel-body" style="padding:0;">
-            <div id="legalitasTableWrap"></div>
           </div>
         </div>
       </div>
@@ -3408,8 +3455,33 @@ document.getElementById('formKendaraan').addEventListener('submit', function(e){
   renderKendaraan();
   renderLegalitas();
   autoPushKendaraanIfEnabled();
+  closeKendaraanModal();
   showToast('Data kendaraan berhasil disimpan', 'success');
 });
+
+/* ---------- MODAL TAMBAH KENDARAAN ---------- */
+function openKendaraanModal(){
+  const overlay = document.getElementById('kendaraanModalOverlay');
+  if(overlay) overlay.classList.add('show');
+}
+function closeKendaraanModal(){
+  const overlay = document.getElementById('kendaraanModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formKendaraan');
+  if(form) form.reset();
+}
+(function(){
+  const btnOpen = document.getElementById('btnTambahKendaraan');
+  const btnClose = document.getElementById('btnCloseKendaraanModal');
+  const btnCancel = document.getElementById('btnBatalKendaraan');
+  const overlay = document.getElementById('kendaraanModalOverlay');
+  if(btnOpen) btnOpen.addEventListener('click', openKendaraanModal);
+  if(btnClose) btnClose.addEventListener('click', closeKendaraanModal);
+  if(btnCancel) btnCancel.addEventListener('click', closeKendaraanModal);
+  if(overlay) overlay.addEventListener('click', function(e){
+    if(e.target === overlay) closeKendaraanModal();
+  });
+})();
 
 /* ---------- MONITORING LEGALITAS KENDARAAN (KIR & PAJAK) ---------- */
 /* KIR berlaku 6 bulan, Pajak STNK 1 Tahun berlaku 12 bulan, Pajak/ganti STNK 5 Tahun berlaku 5 tahun.
