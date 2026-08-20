@@ -35,6 +35,7 @@
   .sidebar{
     width:240px; background:var(--navy-900); color:#cfd6e6; flex-shrink:0;
     display:flex; flex-direction:column; padding:20px 14px;
+    position:relative; transition:width .2s ease, padding .2s ease;
   }
   .brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px; border-bottom:1px solid var(--navy-700); margin-bottom:14px;}
   .brand-mark{
@@ -49,7 +50,7 @@
   .nav-item{
     display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px;
     color:#aeb6c8; text-decoration:none; font-size:13.5px; font-weight:500; cursor:pointer;
-    border:none; background:none; width:100%; text-align:left;
+    border:none; background:none; width:100%; text-align:left; white-space:nowrap; overflow:hidden;
   }
   .nav-item svg{width:17px; height:17px; stroke:currentColor; flex-shrink:0;}
   .nav-item:hover{background:var(--navy-800); color:#fff;}
@@ -57,6 +58,26 @@
   .nav-item.active svg{stroke:var(--orange-500);}
 
   .sidebar-foot{border-top:1px solid var(--navy-700); padding-top:14px; font-size:11px; color:#697389;}
+
+  /* ---------- SIDEBAR COLLAPSE/EXPAND ---------- */
+  .sidebar-toggle{
+    position:absolute; top:22px; right:-13px; width:26px; height:26px; border-radius:8px;
+    background:var(--navy-700); border:1px solid var(--navy-600); color:#fff; padding:0;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:6;
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+  .sidebar-toggle:hover{background:var(--navy-600);}
+  .sidebar-toggle svg{width:14px; height:14px; stroke:#fff; transition:transform .2s ease;}
+  .sidebar.collapsed{width:76px; padding-left:10px; padding-right:10px;}
+  .sidebar.collapsed .brand{justify-content:center; padding-left:0; padding-right:0;}
+  .sidebar.collapsed .brand-name,
+  .sidebar.collapsed .brand-sub{display:none;}
+  .sidebar.collapsed .nav-item{justify-content:center; gap:0; font-size:0; padding:10px 0;}
+  .sidebar.collapsed .sidebar-foot{display:none;}
+  .sidebar.collapsed .sidebar-toggle svg{transform:rotate(180deg);}
+  @media (max-width:860px){
+    .sidebar-toggle{display:none;}
+  }
 
   /* ---------- LOGIN ---------- */
   .login-screen{
@@ -617,7 +638,10 @@
 <div class="app" id="appRoot" style="display:none;">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebarEl">
+    <button type="button" class="sidebar-toggle" id="btnSidebarToggle" title="Ciutkan/lebarkan sidebar" aria-label="Ciutkan/lebarkan sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
     <div class="brand">
       <div class="brand-mark">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17h1a2 2 0 0 0 4 0h8a2 2 0 0 0 4 0h1v-5l-3-4h-4v9"/><path d="M3 6h9v6H3z"/><circle cx="7" cy="17" r="0"/></svg>
@@ -2505,6 +2529,34 @@ document.querySelectorAll('[data-goto]').forEach(btn => {
   btn.addEventListener('click', () => goTo(btn.dataset.goto));
 });
 document.getElementById('pageDate').textContent = new Date().toLocaleDateString('id-ID',{weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+
+/* ---------- SIDEBAR COLLAPSE/EXPAND (memperlebar ruang konten) ---------- */
+const SIDEBAR_COLLAPSED_KEY = 'ekspedisi_pro_sidebar_collapsed';
+(function initSidebarToggle(){
+  const sidebarEl = document.getElementById('sidebarEl');
+  const btnToggle = document.getElementById('btnSidebarToggle');
+  if(!sidebarEl || !btnToggle) return;
+
+  // Tampilkan judul menu (tooltip) saat hover, dipakai terutama saat sidebar diciutkan
+  document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+    const label = btn.textContent.trim();
+    if(label) btn.setAttribute('title', label);
+  });
+
+  function applyState(collapsed){
+    sidebarEl.classList.toggle('collapsed', collapsed);
+    btnToggle.setAttribute('aria-label', collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar');
+    btnToggle.title = collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar';
+  }
+
+  applyState(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
+
+  btnToggle.addEventListener('click', function(){
+    const collapsed = !sidebarEl.classList.contains('collapsed');
+    applyState(collapsed);
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+  });
+})();
 
 /* ---------- INPUT FORM ---------- */
 document.getElementById('nopol').addEventListener('input', function(){
