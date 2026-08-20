@@ -952,7 +952,6 @@
           <div class="panel-head">
             <div>
               <h2 id="inputDOTitle">Input Surat Tugas</h2>
-              <p id="inputDODesc">Lengkapi data Delivery Order — Surat Tugas Pengiriman driver akan otomatis dibuat setelah disimpan</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1146,7 +1145,6 @@
           <div class="panel-head">
             <div>
               <h2>Input data kendaraan</h2>
-              <p>Tambah kendaraan/armada baru — hasilnya tampil di menu Daftar &gt; Data Kendaraan, bukan di halaman ini</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1237,7 +1235,6 @@
           <div class="panel-head">
             <div>
               <h2>Input legalitas kendaraan</h2>
-              <p>Input/update tanggal dokumen KIR &amp; Pajak kendaraan — hasilnya tampil di menu Daftar &gt; Legalitas Kendaraan, bukan di halaman ini</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1373,7 +1370,6 @@
           <div class="panel-head">
             <div>
               <h2>Input driver</h2>
-              <p>Tambah data driver/supir baru — hasilnya tampil di menu Daftar &gt; Driver, bukan di halaman ini</p>
             </div>
           </div>
           <div class="panel-body">
@@ -3641,7 +3637,6 @@ function editRecordDO(id){
   toggleJenisSections();
 
   document.getElementById('inputDOTitle').textContent = 'Edit DO';
-  document.getElementById('inputDODesc').textContent = `Mengubah data DO ${rec.noTol || ''} — tanggal bisa diganti bebas.`;
   document.getElementById('btnSubmitDOLabel').textContent = 'Update DO';
   document.getElementById('btnCancelEdit').style.display = '';
   document.getElementById('formError').textContent = '';
@@ -3657,7 +3652,6 @@ function cancelEditDO(){
   refreshNoDO();
   toggleJenisSections();
   document.getElementById('inputDOTitle').textContent = 'Input Surat Tugas';
-  document.getElementById('inputDODesc').textContent = 'Lengkapi data Delivery Order — Surat Tugas Pengiriman driver akan otomatis dibuat setelah disimpan';
   document.getElementById('btnSubmitDOLabel').textContent = 'Simpan DO';
   document.getElementById('btnCancelEdit').style.display = 'none';
 }
