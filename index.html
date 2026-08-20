@@ -57,6 +57,29 @@
   .nav-item.active{background:var(--navy-700); color:#fff;}
   .nav-item.active svg{stroke:var(--orange-500);}
 
+  /* ---------- GRUP MENU SIDEBAR (Administrasi / Daftar / Monitoring / Laporan) ---------- */
+  .nav-group{display:flex; flex-direction:column;}
+  .nav-group-head{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px;
+    color:#aeb6c8; font-size:13.5px; font-weight:700; cursor:pointer;
+    border:none; background:none; width:100%; text-align:left; white-space:nowrap; overflow:hidden;
+    text-transform:uppercase; letter-spacing:.03em; font-size:11.5px;
+  }
+  .nav-group-head svg{width:17px; height:17px; stroke:currentColor; flex-shrink:0;}
+  .nav-group-head:hover{background:var(--navy-800); color:#fff;}
+  .nav-group-chevron{margin-left:auto; width:14px !important; height:14px !important; transition:transform .15s ease; flex-shrink:0;}
+  .nav-group.open .nav-group-chevron{transform:rotate(90deg);}
+  .nav-group-items{display:flex; flex-direction:column; gap:2px; max-height:0; overflow:hidden; transition:max-height .18s ease;}
+  .nav-group.open .nav-group-items{max-height:400px;}
+  .nav-item.nav-sub{padding-left:30px; font-size:13px;}
+  .nav-item.nav-sub svg{width:14px; height:14px;}
+  .nav-divider{border-top:1px solid var(--navy-700); margin:8px 4px;}
+  .sidebar.collapsed .nav-group-head .nav-group-label,
+  .sidebar.collapsed .nav-group-chevron{display:none;}
+  .sidebar.collapsed .nav-group-head{justify-content:center; gap:0; padding:10px 0;}
+  .sidebar.collapsed .nav-group-items{max-height:none !important; overflow:visible;}
+  .sidebar.collapsed .nav-item.nav-sub{justify-content:center; gap:0; font-size:0; padding:10px 0; padding-left:0;}
+
   .sidebar-foot{border-top:1px solid var(--navy-700); padding-top:14px; font-size:11px; color:#697389;}
 
   .sidebar-logout{
@@ -694,6 +717,101 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
         Dashboard
       </button>
+
+      <div class="nav-group" data-group="administrasi">
+        <button type="button" class="nav-group-head" data-group-toggle="administrasi">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span class="nav-group-label">Administrasi</span>
+          <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="nav-group-items">
+          <button class="nav-item nav-sub" data-view="suratugas">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h6"/></svg>
+            Input Surat Tugas
+          </button>
+          <button class="nav-item nav-sub" data-view="kendaraan" data-open-modal="kendaraan">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
+            Input Data Kendaraan
+          </button>
+          <button class="nav-item nav-sub" data-view="driver" data-open-modal="driver">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Input Driver
+          </button>
+          <button class="nav-item nav-sub" data-view="legalitas">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            Input Legalitas Kendaraan
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="daftar">
+        <button type="button" class="nav-group-head" data-group-toggle="daftar">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <span class="nav-group-label">Daftar</span>
+          <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="nav-group-items">
+          <button class="nav-item nav-sub" data-view="kendaraan">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
+            Data Kendaraan
+          </button>
+          <button class="nav-item nav-sub" data-view="driver">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Driver
+          </button>
+          <button class="nav-item nav-sub" data-view="legalitas">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            Legalitas Kendaraan
+          </button>
+          <button class="nav-item nav-sub" data-view="borongan">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5-2V6l5 2 6-2 5 2v12l-5-2-6 2z"/><path d="M9 6v14M15 4v14"/></svg>
+            Ongkos Borongan
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="monitoring">
+        <button type="button" class="nav-group-head" data-group-toggle="monitoring">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+          <span class="nav-group-label">Monitoring</span>
+          <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="nav-group-items">
+          <button class="nav-item nav-sub" data-view="service">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 1 5.4-5.4l-3 3-3-1-1-3 3-3z"/></svg>
+            Service Berkala
+          </button>
+          <button class="nav-item nav-sub" data-view="legalitas">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            Legalitas Kendaraan
+          </button>
+          <button class="nav-item nav-sub" data-view="ritase">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
+            Ritase per Nopol (Rekap)
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-group" data-group="laporan">
+        <button type="button" class="nav-group-head" data-group-toggle="laporan">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h6"/></svg>
+          <span class="nav-group-label">Laporan</span>
+          <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="nav-group-items">
+          <button class="nav-item nav-sub" data-view="laporan">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h6"/></svg>
+            Ekspedisi per Bulan
+          </button>
+          <button class="nav-item nav-sub" data-view="biayapengeluaran">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+            Biaya Pengeluaran Ekspedisi
+          </button>
+        </div>
+      </div>
+
+      <div class="nav-divider"></div>
+
       <button class="nav-item" data-view="input">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
         Input DO
@@ -701,10 +819,6 @@
       <button class="nav-item" data-view="rekap">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
         Rekap Data
-      </button>
-      <button class="nav-item" data-view="kendaraan">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
-        Data Kendaraan
       </button>
       <button class="nav-item" data-view="maintenance">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 1 5.4-5.4l-3 3-3-1-1-3 3-3z"/></svg>
@@ -721,14 +835,6 @@
       <button class="nav-item" data-view="hpp">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 10h2M13 10h3M8 14h2M13 14h3M8 18h2M13 18h3"/></svg>
         HPP &amp; Harga Jual
-      </button>
-      <button class="nav-item" data-view="borongan">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5-2V6l5 2 6-2 5 2v12l-5-2-6 2z"/><path d="M9 6v14M15 4v14"/></svg>
-        Ongkos Borongan
-      </button>
-      <button class="nav-item" data-view="laporan">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h6"/></svg>
-        Laporan Pengiriman
       </button>
       <button class="nav-item" data-view="pengaturan">
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -1046,11 +1152,15 @@
             <div id="kendaraanTableWrap"></div>
           </div>
         </div>
+      </div>
+
+      <!-- LEGALITAS KENDARAAN (KIR & PAJAK) — view tersendiri, dipakai oleh menu Administrasi > Input Legalitas Kendaraan, Daftar > Legalitas Kendaraan, dan Monitoring > Legalitas Kendaraan -->
+      <div class="view" data-view="legalitas">
         <div class="panel">
           <div class="panel-head">
             <div>
               <h2>Monitoring legalitas kendaraan (KIR &amp; Pajak)</h2>
-              <p>Update otomatis setiap hari — jatuh tempo &amp; sisa hari dihitung dari tanggal terakhir yang diisi di form kendaraan</p>
+              <p>Update otomatis setiap hari — jatuh tempo &amp; sisa hari dihitung dari tanggal terakhir. Klik salah satu tanggal pada tabel untuk input/update.</p>
             </div>
           </div>
           <div class="panel-body" style="padding:0;">
@@ -1143,6 +1253,152 @@
         </div>
       </div>
 
+      <!-- DRIVER -->
+      <div class="view" data-view="driver">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Daftar driver</h2>
+              <p>Seluruh driver/supir yang terdaftar di sistem</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnTambahDriver">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+              Tambah Driver
+            </button>
+          </div>
+          <div class="panel-body" style="padding:0;">
+            <div id="driverTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: TAMBAH DRIVER -->
+      <div class="form-modal-overlay" id="driverModalOverlay">
+        <div class="form-modal">
+          <div class="form-modal-head">
+            <div>
+              <h3>Tambah driver baru</h3>
+              <p>Data master driver/supir — dipakai sebagai referensi Input DO &amp; Surat Tugas</p>
+            </div>
+            <button type="button" class="form-modal-close" id="btnCloseDriverModal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="form-modal-body">
+            <form id="formDriver">
+              <div class="grid2">
+                <div class="field">
+                  <label for="dNama">Nama driver</label>
+                  <input type="text" id="dNama" placeholder="cth. Budi Santoso" required>
+                </div>
+                <div class="field">
+                  <label for="dHp">No. HP / WhatsApp</label>
+                  <input type="text" id="dHp" placeholder="cth. 081234567890">
+                </div>
+                <div class="field">
+                  <label for="dSim">No. SIM</label>
+                  <input type="text" id="dSim" placeholder="cth. 123456789012">
+                </div>
+                <div class="field">
+                  <label for="dSimExp">Masa berlaku SIM <span class="hint">(opsional)</span></label>
+                  <input type="date" id="dSimExp">
+                </div>
+                <div class="field">
+                  <label for="dNopol">Kendaraan yang biasa dipakai <span class="hint">(opsional)</span></label>
+                  <input type="text" id="dNopol" list="kendaraanList" placeholder="cth. B 1234 XYZ" style="text-transform:uppercase;">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="dAlamat">Alamat <span class="hint">(opsional)</span></label>
+                  <input type="text" id="dAlamat" placeholder="cth. Jl. Raya Cikarang No. 10">
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnBatalDriver">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan driver</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- RITASE PER NOPOL (REKAP) — Monitoring -->
+      <div class="view" data-view="ritase">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Ritase per nopol (rekap)</h2>
+              <p>Rekap ritase &amp; tonase per kendaraan (BK, Roll, OCC) — pilih periode untuk memantau performa tiap armada</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="flex-wrap:wrap;">
+              <div class="field">
+                <label for="ritaseDari">Dari tanggal</label>
+                <input type="date" id="ritaseDari">
+              </div>
+              <div class="field">
+                <label for="ritaseSampai">Sampai tanggal</label>
+                <input type="date" id="ritaseSampai">
+              </div>
+              <button class="btn btn-primary" id="btnRitaseGenerate">Tampilkan</button>
+            </div>
+            <div id="ritaseWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BIAYA PENGELUARAN EKSPEDISI — Laporan -->
+      <div class="view" data-view="biayapengeluaran">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Biaya pengeluaran ekspedisi</h2>
+              <p>Rekap uang jalan driver &amp; biaya perbaikan kendaraan pada periode yang dipilih</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="flex-wrap:wrap;">
+              <div class="field">
+                <label for="bpDari">Dari tanggal</label>
+                <input type="date" id="bpDari">
+              </div>
+              <div class="field">
+                <label for="bpSampai">Sampai tanggal</label>
+                <input type="date" id="bpSampai">
+              </div>
+              <button class="btn btn-primary" id="btnBpGenerate">Tampilkan</button>
+            </div>
+            <div id="bpSummaryWrap"></div>
+            <h3 style="margin:18px 0 10px; font-size:14px;">Rincian biaya perbaikan</h3>
+            <div id="bpPerbaikanWrap"></div>
+            <h3 style="margin:22px 0 10px; font-size:14px;">Rincian uang jalan driver per DO</h3>
+            <div id="bpUangJalanWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT SURAT TUGAS -->
+      <div class="view" data-view="suratugas">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Input surat tugas</h2>
+              <p>Pilih DO yang sudah diinput untuk mencetak Surat Tugas Pengiriman driver</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="flex-wrap:wrap;">
+              <div class="field" style="min-width:320px;">
+                <label for="stPilihDO">Pilih DO</label>
+                <select id="stPilihDO"><option value="">— pilih nomor DO —</option></select>
+              </div>
+              <button class="btn btn-primary" id="btnCetakSuratTugas">Cetak surat tugas</button>
+            </div>
+            <p class="hint" style="margin-top:8px;">Surat tugas dibuat otomatis dari data DO yang dipilih (nopol, sopir, tujuan, dsb). Belum ada DO yang sesuai? Tambahkan dulu lewat menu Input DO.</p>
+          </div>
+        </div>
+      </div>
+
       <!-- MAINTENANCE PERBAIKAN -->
       <div class="view" data-view="maintenance">
         <div class="panel">
@@ -1160,6 +1416,10 @@
             <div id="maintenanceTableWrap"></div>
           </div>
         </div>
+      </div>
+
+      <!-- MONITORING SERVICE BERKALA (KM) — view tersendiri di grup Monitoring -->
+      <div class="view" data-view="service">
         <div class="panel">
           <div class="panel-head">
             <div>
@@ -2159,11 +2419,24 @@ function attachFirebaseListenersInner(){
       kendaraanList = val;
       localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList));
       const v = currentViewName();
-      if(v === 'kendaraan'){ renderKendaraan(); renderLegalitas(); }
-      if(v === 'maintenance') renderServiceMonitoring();
+      if(v === 'kendaraan') renderKendaraan();
+      if(v === 'legalitas') renderLegalitas();
+      if(v === 'service') renderServiceMonitoring();
       if(v === 'dashboard') renderWaLegalBanner();
     }else if(val == null && kendaraanList.length > 0){
       fbPush('kendaraan', kendaraanList);
+    }
+  });
+
+  fbDb.ref('driver').on('value', snap => {
+    const val = snap.val();
+    if(Array.isArray(val)){
+      driverList = val;
+      localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
+      const v = currentViewName();
+      if(v === 'driver') renderDriver();
+    }else if(val == null && driverList.length > 0){
+      fbPush('driver', driverList);
     }
   });
 
@@ -2173,7 +2446,7 @@ function attachFirebaseListenersInner(){
       maintenanceList = val;
       localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList));
       const v = currentViewName();
-      if(v === 'maintenance'){ renderMaintenance(); renderServiceMonitoring(); }
+      if(v === 'maintenance') renderMaintenance();
     }else if(val == null && maintenanceList.length > 0){
       fbPush('maintenance', maintenanceList);
     }
@@ -2208,6 +2481,8 @@ const STORAGE_KEY = 'ekspedisi_pro_records';
 let records = load();
 const KENDARAAN_KEY = 'ekspedisi_pro_kendaraan';
 let kendaraanList = loadKendaraan();
+const DRIVER_KEY = 'ekspedisi_pro_driver';
+let driverList = loadDriver();
 const MAINTENANCE_KEY = 'ekspedisi_pro_maintenance';
 let maintenanceList = loadMaintenance();
 const HPP_KEY = 'ekspedisi_pro_hpp_asumsi';
@@ -2217,6 +2492,8 @@ function load(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); fbPush('records', records); }
 function loadKendaraan(){ try{ return JSON.parse(localStorage.getItem(KENDARAAN_KEY)) || []; }catch(e){ return []; } }
 function saveKendaraan(){ localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList)); fbPush('kendaraan', kendaraanList); }
+function loadDriver(){ try{ return JSON.parse(localStorage.getItem(DRIVER_KEY)) || []; }catch(e){ return []; } }
+function saveDriver(){ localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList)); fbPush('driver', driverList); }
 function loadMaintenance(){ try{ return JSON.parse(localStorage.getItem(MAINTENANCE_KEY)) || []; }catch(e){ return []; } }
 function saveMaintenance(){ localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList)); fbPush('maintenance', maintenanceList); }
 function loadHpp(){ try{ return JSON.parse(localStorage.getItem(HPP_KEY)) || {}; }catch(e){ return {}; } }
@@ -2471,15 +2748,21 @@ function renumberMonth(ym){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input DO', rekap:'Rekap Data', kendaraan:'Data Kendaraan', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan'};
+const titles = {dashboard:'Dashboard', input:'Input DO', rekap:'Rekap Data', kendaraan:'Data Kendaraan', legalitas:'Legalitas Kendaraan', driver:'Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', suratugas:'Input Surat Tugas', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
   document.getElementById('pageTitle').textContent = titles[view];
   if(view === 'dashboard') renderDashboard();
   if(view === 'rekap') renderTable();
-  if(view === 'kendaraan'){ renderKendaraan(); renderLegalitas(); }
-  if(view === 'maintenance'){ renderMaintenance(); renderServiceMonitoring(); }
+  if(view === 'kendaraan') renderKendaraan();
+  if(view === 'legalitas') renderLegalitas();
+  if(view === 'driver') renderDriver();
+  if(view === 'service') renderServiceMonitoring();
+  if(view === 'ritase') initRitaseView();
+  if(view === 'biayapengeluaran') initBiayaPengeluaranView();
+  if(view === 'suratugas') fillSuratTugasDropdown();
+  if(view === 'maintenance') renderMaintenance();
   if(view === 'peringatan') renderPeringatan();
   if(view === 'hpp'){
     fillHppForm(document.getElementById('hppArmada').value);
@@ -2504,13 +2787,49 @@ function goTo(view){
     if(isAdmin) renderAccountList();
   }
 }
+const NAV_MODAL_OPENERS = {
+  kendaraan: () => openKendaraanModal(),
+  driver: () => openDriverModal(),
+};
 document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
-  btn.addEventListener('click', () => goTo(btn.dataset.view));
+  btn.addEventListener('click', () => {
+    goTo(btn.dataset.view);
+    const modalKey = btn.dataset.openModal;
+    if(modalKey && NAV_MODAL_OPENERS[modalKey]){
+      setTimeout(() => NAV_MODAL_OPENERS[modalKey](), 50);
+    }
+  });
 });
 document.querySelectorAll('[data-goto]').forEach(btn => {
   btn.addEventListener('click', () => goTo(btn.dataset.goto));
 });
 document.getElementById('pageDate').textContent = new Date().toLocaleDateString('id-ID',{weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+
+/* ---------- GRUP MENU SIDEBAR (Administrasi / Daftar / Monitoring / Laporan) ---------- */
+const NAV_GROUPS_OPEN_KEY = 'ekspedisi_pro_nav_groups_open';
+(function initNavGroups(){
+  let openGroups = {};
+  try{ openGroups = JSON.parse(localStorage.getItem(NAV_GROUPS_OPEN_KEY)) || {}; }catch(e){ openGroups = {}; }
+
+  const groups = document.querySelectorAll('.nav-group[data-group]');
+  groups.forEach(g => {
+    const key = g.dataset.group;
+    // Buka otomatis grup yang sedang berisi view aktif saat pertama kali render, atau jika tersimpan terbuka
+    const hasActive = !!g.querySelector('.nav-item.active');
+    const shouldOpen = openGroups[key] !== undefined ? openGroups[key] : hasActive;
+    g.classList.toggle('open', !!shouldOpen);
+  });
+
+  document.querySelectorAll('.nav-group-head[data-group-toggle]').forEach(head => {
+    head.addEventListener('click', function(){
+      const group = this.closest('.nav-group');
+      if(!group) return;
+      const isOpen = group.classList.toggle('open');
+      openGroups[this.dataset.groupToggle] = isOpen;
+      localStorage.setItem(NAV_GROUPS_OPEN_KEY, JSON.stringify(openGroups));
+    });
+  });
+})();
 
 /* ---------- SIDEBAR COLLAPSE/EXPAND (memperlebar ruang konten) ---------- */
 const SIDEBAR_COLLAPSED_KEY = 'ekspedisi_pro_sidebar_collapsed';
@@ -3493,6 +3812,76 @@ function closeKendaraanModal(){
   if(btnCancel) btnCancel.addEventListener('click', closeKendaraanModal);
   if(overlay) overlay.addEventListener('click', function(e){
     if(e.target === overlay) closeKendaraanModal();
+  });
+})();
+
+/* ---------- DRIVER ---------- */
+function renderDriver(){
+  const wrap = document.getElementById('driverTableWrap');
+  if(!wrap) return;
+  if(driverList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada driver terdaftar. Klik "Tambah Driver" di atas untuk mulai mencatat.');
+  }else{
+    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nama</th><th>No. HP / WA</th><th>No. SIM</th><th>Masa Berlaku SIM</th><th>Kendaraan Biasa</th><th>Alamat</th><th></th></tr></thead><tbody>${driverList.map(d => `
+      <tr>
+        <td class="sv-left">${esc(d.nama)}</td>
+        <td class="mono">${esc(d.hp || '-')}</td>
+        <td class="mono">${esc(d.sim || '-')}</td>
+        <td>${d.simExp ? fmtDate(d.simExp) : '-'}</td>
+        <td>${d.nopol ? `<span class="plate-cell">${esc(d.nopol)}</span>` : '-'}</td>
+        <td class="sv-left">${esc(d.alamat || '-')}</td>
+        <td>
+          <button class="icon-btn del" data-id="${d.id}" title="Hapus driver ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
+            Hapus
+          </button>
+        </td>
+      </tr>`).join('')}</tbody></table>`;
+    wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+      if(confirm('Hapus driver ini?')){
+        driverList = driverList.filter(x => x.id !== this.dataset.id);
+        saveDriver(); renderDriver();
+        showToast('Data driver berhasil dihapus', 'danger');
+      }
+    }));
+  }
+}
+document.getElementById('formDriver').addEventListener('submit', function(e){
+  e.preventDefault();
+  driverList.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    nama: document.getElementById('dNama').value.trim(),
+    hp: document.getElementById('dHp').value.trim(),
+    sim: document.getElementById('dSim').value.trim(),
+    simExp: document.getElementById('dSimExp').value,
+    nopol: document.getElementById('dNopol').value.trim().toUpperCase(),
+    alamat: document.getElementById('dAlamat').value.trim(),
+  });
+  saveDriver();
+  renderDriver();
+  closeDriverModal();
+  showToast('Data driver berhasil disimpan', 'success');
+});
+function openDriverModal(){
+  const overlay = document.getElementById('driverModalOverlay');
+  if(overlay) overlay.classList.add('show');
+}
+function closeDriverModal(){
+  const overlay = document.getElementById('driverModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formDriver');
+  if(form) form.reset();
+}
+(function(){
+  const btnOpen = document.getElementById('btnTambahDriver');
+  const btnClose = document.getElementById('btnCloseDriverModal');
+  const btnCancel = document.getElementById('btnBatalDriver');
+  const overlay = document.getElementById('driverModalOverlay');
+  if(btnOpen) btnOpen.addEventListener('click', openDriverModal);
+  if(btnClose) btnClose.addEventListener('click', closeDriverModal);
+  if(btnCancel) btnCancel.addEventListener('click', closeDriverModal);
+  if(overlay) overlay.addEventListener('click', function(e){
+    if(e.target === overlay) closeDriverModal();
   });
 })();
 
@@ -4766,6 +5155,121 @@ function buildRekapNopolTable(data){
 document.getElementById('btnGenerate').addEventListener('click', generateLaporan);
 document.getElementById('btnPrint').addEventListener('click', () => window.print());
 
+/* Ambil rentang tanggal dari sepasang input date generik — dipakai bersama oleh Ritase per Nopol & Biaya Pengeluaran */
+function getRangePeriod(fromId, toId){
+  const fromEl = document.getElementById(fromId);
+  const toEl = document.getElementById(toId);
+  if(!fromEl || !toEl) return null;
+  const dari = fromEl.value;
+  const sampai = toEl.value;
+  if(!dari || !sampai) return null;
+  const startDate = dari <= sampai ? dari : sampai;
+  const endDate = dari <= sampai ? sampai : dari;
+  const label = startDate === endDate ? fmtDate(startDate) : `${fmtDate(startDate)} – ${fmtDate(endDate)}`;
+  return { startDate, endDate, label };
+}
+function defaultThisMonthRange(fromId, toId){
+  const fromEl = document.getElementById(fromId);
+  const toEl = document.getElementById(toId);
+  if(!fromEl || !toEl) return;
+  if(fromEl.value && toEl.value) return;
+  const now = new Date();
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  fromEl.value = iso(first);
+  toEl.value = iso(now);
+}
+
+/* ---------- RITASE PER NOPOL (REKAP) — Monitoring ---------- */
+function generateRitase(){
+  const period = getRangePeriod('ritaseDari', 'ritaseSampai');
+  const wrap = document.getElementById('ritaseWrap');
+  if(!wrap) return;
+  if(!period){ wrap.innerHTML = emptyState('Pilih periode terlebih dahulu.'); return; }
+  const data = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate);
+  if(data.length === 0){ wrap.innerHTML = emptyState('Tidak ada data DO pada periode ini.'); return; }
+  wrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>` + buildRekapNopolTable(data);
+}
+function initRitaseView(){
+  defaultThisMonthRange('ritaseDari', 'ritaseSampai');
+  generateRitase();
+}
+document.getElementById('btnRitaseGenerate').addEventListener('click', generateRitase);
+
+/* ---------- BIAYA PENGELUARAN EKSPEDISI — Laporan ---------- */
+function generateBiayaPengeluaran(){
+  const period = getRangePeriod('bpDari', 'bpSampai');
+  const sWrap = document.getElementById('bpSummaryWrap');
+  const pWrap = document.getElementById('bpPerbaikanWrap');
+  const uWrap = document.getElementById('bpUangJalanWrap');
+  if(!sWrap || !pWrap || !uWrap) return;
+  if(!period){ sWrap.innerHTML = ''; pWrap.innerHTML = ''; uWrap.innerHTML = emptyState('Pilih periode terlebih dahulu.'); return; }
+
+  const biayaBulan = maintenanceList.filter(m => m.tanggal && m.tanggal >= period.startDate && m.tanggal <= period.endDate);
+  const doBulan = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate);
+  const totalBiayaPerbaikan = biayaBulan.reduce((s,m) => s + (Number(m.biaya)||0), 0);
+  const totalUangJalan = doBulan.reduce((s,r) => s + (Number(r.uangJalan)||0), 0);
+  const totalKeseluruhan = totalBiayaPerbaikan + totalUangJalan;
+
+  sWrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>
+  <div class="stat-grid" style="margin-bottom:18px;">
+    <div class="stat-card"><div class="num">${rupiah(totalBiayaPerbaikan)}</div><div class="lbl">Biaya perbaikan</div></div>
+    <div class="stat-card"><div class="num">${rupiah(totalUangJalan)}</div><div class="lbl">Uang jalan driver</div></div>
+    <div class="stat-card"><div class="num">${rupiah(totalKeseluruhan)}</div><div class="lbl">Total pengeluaran</div></div>
+  </div>`;
+
+  if(biayaBulan.length === 0){
+    pWrap.innerHTML = emptyState('Tidak ada catatan biaya perbaikan pada periode ini.');
+  }else{
+    const sorted = biayaBulan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+    pWrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th></tr></thead><tbody>${sorted.map(m => `
+      <tr>
+        <td>${fmtDate(m.tanggal)}</td>
+        <td><span class="plate-cell">${esc(m.nopol)}</span></td>
+        <td>${esc(m.jenis)}</td>
+        <td class="mono">${rupiah(m.biaya)}</td>
+        <td>${esc(m.catatan || '-')}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="3" style="text-align:right;">TOTAL</td><td class="mono">${rupiah(totalBiayaPerbaikan)}</td><td></td></tr></tfoot></table>`;
+  }
+
+  const doWithUangJalan = doBulan.filter(r => Number(r.uangJalan) > 0);
+  if(doWithUangJalan.length === 0){
+    uWrap.innerHTML = emptyState('Tidak ada data uang jalan driver pada periode ini.');
+  }else{
+    const sorted2 = doWithUangJalan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+    uWrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>No. DO</th><th>Nopol</th><th>Sopir</th><th>Uang Jalan</th></tr></thead><tbody>${sorted2.map(r => `
+      <tr>
+        <td>${fmtDate(r.tanggal)}</td>
+        <td class="mono">${esc(r.noTol)}</td>
+        <td><span class="plate-cell">${esc(r.nopol)}</span></td>
+        <td>${esc(r.sopir || '-')}</td>
+        <td class="mono">${rupiah(r.uangJalan)}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="4" style="text-align:right;">TOTAL</td><td class="mono">${rupiah(totalUangJalan)}</td></tr></tfoot></table>`;
+  }
+}
+function initBiayaPengeluaranView(){
+  defaultThisMonthRange('bpDari', 'bpSampai');
+  generateBiayaPengeluaran();
+}
+document.getElementById('btnBpGenerate').addEventListener('click', generateBiayaPengeluaran);
+
+/* ---------- INPUT SURAT TUGAS (standalone, tanpa harus lewat Rekap Data) ---------- */
+function fillSuratTugasDropdown(){
+  const sel = document.getElementById('stPilihDO');
+  if(!sel) return;
+  const sorted = records.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+  sel.innerHTML = '<option value="">— pilih nomor DO —</option>' + sorted.map(r =>
+    `<option value="${esc(r.id)}">${esc(r.noTol)} — ${esc(r.nopol)} — ${fmtDate(r.tanggal)}${r.sopir ? ' — ' + esc(r.sopir) : ''}</option>`
+  ).join('');
+}
+document.getElementById('btnCetakSuratTugas').addEventListener('click', function(){
+  const id = document.getElementById('stPilihDO').value;
+  if(!id){ showToast('Pilih DO terlebih dahulu', 'danger'); return; }
+  openSuratTugasModal(id);
+});
+
 /* Ambil & validasi data laporan untuk periode terpilih — dipakai bersama oleh export Excel & PDF */
 function getLaporanRowsForExport(){
   const period = getLaporanPeriodInfo();
@@ -5307,6 +5811,7 @@ function initApp(){
   renderTable();
   renderKendaraan();
   renderLegalitas();
+  renderDriver();
   const acc = currentAccount();
   if(acc){
     document.getElementById('userBadge').textContent = (acc.nama || acc.email).charAt(0).toUpperCase();
