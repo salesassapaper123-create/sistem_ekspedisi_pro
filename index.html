@@ -742,7 +742,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h6"/></svg>
             Input Surat Tugas
           </button>
-          <button class="nav-item nav-sub" data-view="kendaraan" data-open-modal="kendaraan">
+          <button class="nav-item nav-sub" data-view="kendaraan-input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
             Input Data Kendaraan
           </button>
@@ -1140,7 +1140,83 @@
         </div>
       </div>
 
-      <!-- LEGALITAS KENDARAAN (KIR & PAJAK) — view tersendiri, dipakai oleh menu Administrasi > Input Legalitas Kendaraan, Daftar > Legalitas Kendaraan, dan Monitoring > Legalitas Kendaraan -->
+      <!-- INPUT DATA KENDARAAN (form input langsung, tanpa tabel — hasilnya tampil di Daftar > Data Kendaraan) -->
+      <div class="view" data-view="kendaraan-input">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Input data kendaraan</h2>
+              <p>Tambah kendaraan/armada baru — hasilnya tampil di menu Daftar &gt; Data Kendaraan, bukan di halaman ini</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <form id="formKendaraanInput">
+              <div class="grid2">
+                <div class="field">
+                  <label for="kiNopol">Nopol</label>
+                  <input type="text" id="kiNopol" placeholder="cth. B 1234 XYZ" required style="text-transform:uppercase;">
+                </div>
+                <div class="field">
+                  <label for="kiJenisArmada">Jenis armada</label>
+                  <select id="kiJenisArmada">
+                    <option value="tronton">Tronton</option>
+                    <option value="engkel">Engkel</option>
+                    <option value="cdd">CDD</option>
+                    <option value="lainnya">Lainnya</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="kiSupir">Nama supir</label>
+                  <input type="text" id="kiSupir" placeholder="cth. Budi Santoso">
+                </div>
+                <div class="field">
+                  <label for="kiRute">Rute &amp; area</label>
+                  <input type="text" id="kiRute" placeholder="cth. Cikarang - Priok">
+                </div>
+                <div class="field">
+                  <label for="kiKapasitas">Kapasitas muatan (kg)</label>
+                  <input type="number" id="kiKapasitas" min="0" step="1" placeholder="cth. 8000">
+                </div>
+                <div class="field">
+                  <label for="kiMerk">Merk kendaraan <span class="hint">(opsional)</span></label>
+                  <input type="text" id="kiMerk" placeholder="cth. Hino">
+                </div>
+                <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
+                  <label style="margin-bottom:10px;">Data identitas kendaraan <span class="hint">(dokumen legalitas/KIR &amp; pajak diisi lewat menu Input Legalitas Kendaraan)</span></label>
+                </div>
+                <div class="field">
+                  <label for="kiNoMesin">No. Mesin</label>
+                  <input type="text" id="kiNoMesin" placeholder="cth. JB1EA123456" style="text-transform:uppercase;">
+                </div>
+                <div class="field">
+                  <label for="kiNoRangka">No. Rangka</label>
+                  <input type="text" id="kiNoRangka" placeholder="cth. MHFC1JG2K123456" style="text-transform:uppercase;">
+                </div>
+                <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
+                  <label style="margin-bottom:10px;">Spesifikasi bak (P - L - T) <span class="hint">(dalam cm)</span></label>
+                </div>
+                <div class="field">
+                  <label for="kiPanjang">Panjang (P)</label>
+                  <input type="number" id="kiPanjang" min="0" step="1" placeholder="cth. 600">
+                </div>
+                <div class="field">
+                  <label for="kiLebar">Lebar (L)</label>
+                  <input type="number" id="kiLebar" min="0" step="1" placeholder="cth. 220">
+                </div>
+                <div class="field">
+                  <label for="kiTinggi">Tinggi (T)</label>
+                  <input type="number" id="kiTinggi" min="0" step="1" placeholder="cth. 200">
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">Simpan kendaraan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEGALITAS KENDARAAN (KIR & PAJAK) — view tersendiri, dipakai oleh menu Daftar > Legalitas Kendaraan -->
       <div class="view" data-view="legalitas">
         <div class="panel">
           <div class="panel-head">
@@ -2793,7 +2869,7 @@ function renumberMonth(ym){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan'};
+const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -2833,9 +2909,7 @@ function goTo(view){
     if(isAdmin) renderAccountList();
   }
 }
-const NAV_MODAL_OPENERS = {
-  kendaraan: () => openKendaraanModal(),
-};
+const NAV_MODAL_OPENERS = {};
 document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
   btn.addEventListener('click', () => {
     goTo(btn.dataset.view);
@@ -3816,28 +3890,42 @@ function renderKendaraan(){
   const dl = document.getElementById('kendaraanList');
   if(dl) dl.innerHTML = kendaraanList.map(k => `<option value="${esc(k.nopol)}"></option>`).join('');
 }
+function buildKendaraanFromFields(prefix){
+  return {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    nopol: document.getElementById(prefix + 'Nopol').value.trim().toUpperCase(),
+    jenisArmada: document.getElementById(prefix + 'JenisArmada').value,
+    supir: document.getElementById(prefix + 'Supir').value.trim(),
+    rute: document.getElementById(prefix + 'Rute').value.trim(),
+    kapasitas: document.getElementById(prefix + 'Kapasitas').value.trim(),
+    merk: document.getElementById(prefix + 'Merk').value.trim(),
+    noMesin: document.getElementById(prefix + 'NoMesin').value.trim().toUpperCase(),
+    noRangka: document.getElementById(prefix + 'NoRangka').value.trim().toUpperCase(),
+    panjang: document.getElementById(prefix + 'Panjang').value.trim(),
+    lebar: document.getElementById(prefix + 'Lebar').value.trim(),
+    tinggi: document.getElementById(prefix + 'Tinggi').value.trim(),
+  };
+}
 document.getElementById('formKendaraan').addEventListener('submit', function(e){
   e.preventDefault();
-  kendaraanList.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    nopol: document.getElementById('kNopol').value.trim().toUpperCase(),
-    jenisArmada: document.getElementById('kJenisArmada').value,
-    supir: document.getElementById('kSupir').value.trim(),
-    rute: document.getElementById('kRute').value.trim(),
-    kapasitas: document.getElementById('kKapasitas').value.trim(),
-    merk: document.getElementById('kMerk').value.trim(),
-    noMesin: document.getElementById('kNoMesin').value.trim().toUpperCase(),
-    noRangka: document.getElementById('kNoRangka').value.trim().toUpperCase(),
-    panjang: document.getElementById('kPanjang').value.trim(),
-    lebar: document.getElementById('kLebar').value.trim(),
-    tinggi: document.getElementById('kTinggi').value.trim(),
-  });
+  kendaraanList.push(buildKendaraanFromFields('k'));
   saveKendaraan();
   this.reset();
   renderKendaraan();
   renderLegalitas();
   closeKendaraanModal();
   showToast('Data kendaraan berhasil disimpan', 'success');
+});
+
+/* ---------- INPUT DATA KENDARAAN (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Data Kendaraan) ---------- */
+document.getElementById('formKendaraanInput').addEventListener('submit', function(e){
+  e.preventDefault();
+  kendaraanList.push(buildKendaraanFromFields('ki'));
+  saveKendaraan();
+  this.reset();
+  renderKendaraan();
+  renderLegalitas();
+  showToast('Data kendaraan berhasil disimpan, cek menu Daftar > Data Kendaraan', 'success');
 });
 
 /* ---------- MODAL TAMBAH KENDARAAN ---------- */
