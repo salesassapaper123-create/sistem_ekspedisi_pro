@@ -1225,12 +1225,8 @@
               <div class="login-error" id="serviceFormError" style="text-align:left;"></div>
               <div class="btn-row">
                 <button type="submit" class="btn btn-primary">Simpan / update service</button>
-                <button type="button" class="btn btn-secondary" id="btnSyncKmGps">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-                  Tarik KM terbaru dari GPS
-                </button>
-                <span id="svSyncStatus" class="hint" style="align-self:center;"></span>
               </div>
+              <p class="hint" style="margin-top:8px;">KM dari GPS Cartrack update otomatis di sini secara real-time lewat Firebase — tidak perlu tarik manual lagi.</p>
             </form>
             <div id="serviceTableWrap"></div>
           </div>
@@ -1677,40 +1673,25 @@
           <div class="panel-head">
             <div>
               <h2>Setup notifikasi WA otomatis penuh <span class="hint">(tanpa perlu buka aplikasi ini)</span></h2>
-              <p>Google Apps Script + WhatsApp Gateway (Fonnte) mengecek jatuh tempo setiap hari dan kirim WA sendiri, walau sistem ini sedang tidak dibuka</p>
+              <p>Google Apps Script terjadwal baca/tulis langsung ke Firebase (database yang sama dengan aplikasi ini) dan kirim WA lewat Fonnte — tidak lagi lewat Google Sheet perantara</p>
             </div>
           </div>
           <div class="panel-body">
-            <div class="field" style="max-width:520px; margin-bottom:10px;">
-              <label for="waNotifSheetUrl">URL Web App Google Apps Script (Notifikasi) <span class="hint">(beda dari URL sinkron tarif — buat baru, lihat panduan di bawah)</span></label>
-              <input type="text" id="waNotifSheetUrl" placeholder="https://script.google.com/macros/s/xxxxx/exec" value="https://script.google.com/macros/s/AKfycbyrz7fG_gEo2ei0dJiDCnbIpKGJudLixeohnuw9LE6osANFYGI3DZWmwzQziU6_UKQqeQ/exec">
-            </div>
-            <div class="btn-row" style="margin-bottom:4px;">
-              <button type="button" class="btn btn-secondary" id="btnPushKendaraanWa">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>
-                Push data kendaraan ke Google Sheet sekarang
-              </button>
-              <span id="waPushStatus" class="hint" style="align-self:center;"></span>
-            </div>
-            <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin:6px 0 14px;">
-              <input type="checkbox" id="waAutoPush" style="width:16px; height:16px; cursor:pointer;">
-              Push otomatis data legalitas/KM kendaraan ke Google Sheet setiap disimpan/diubah (dipakai untuk integrasi Cartrack)
-            </label>
-            <p class="hint" style="margin:-4px 0 14px;">Data DO, Kendaraan, dan Maintenance sekarang sinkron <b>real-time</b> otomatis lewat Firebase antar semua perangkat — tidak perlu tombol atau centang apa pun lagi untuk itu.</p>
+            <p class="hint" style="margin:-4px 0 14px;">Data DO, Kendaraan (termasuk KIR/Pajak/KM), dan Maintenance sekarang sinkron <b>real-time</b> otomatis lewat Firebase antar semua perangkat — Apps Script di bawah ini pun baca &amp; tulis langsung ke Firebase yang sama, jadi tidak perlu Google Sheet, tidak perlu di-deploy sebagai Web App, dan tidak ada tombol/centang push-pull manual lagi di aplikasi ini.</p>
 
             <div style="border-top:1px solid var(--border); padding-top:14px;">
               <label style="margin-bottom:8px; display:block;">Cara setup (sekali saja)</label>
               <p class="hint" style="line-height:1.7; margin-bottom:8px;">
-                1. Buat Google Sheet baru (boleh sheet baru khusus, terpisah dari sheet tarif).<br>
-                2. Buka Extensions &rarr; Apps Script, hapus isi default, tempel kode di bawah ini.<br>
-                3. Daftar gratis di <b>fonnte.com</b>, hubungkan nomor WA yang akan jadi pengirim, lalu salin <b>Token</b>-nya.<br>
-                4. Di kode di bawah, ganti <span class="mono">FONNTE_TOKEN</span> dengan token Fonnte kamu, dan <span class="mono">WA_TARGET</span> dengan nomor WA tujuan (format 62xxx, bisa lebih dari satu nomor dipisah koma).<br>
-                5. Klik Deploy &rarr; New deployment &rarr; tipe "Web app", akses "Anyone", lalu Deploy. Salin URL-nya (diakhiri /exec) ke kolom di atas.<br>
-                6. Di editor Apps Script, klik ikon jam (Triggers) &rarr; Add Trigger &rarr; pilih function <span class="mono">checkAndNotify</span>, jenis "Time-driven" &rarr; "Day timer" &rarr; pilih jam pengecekan (mis. 07.00–08.00) &rarr; Save.<br>
-                7. Kembali ke sistem ini, klik "Push data kendaraan ke Google Sheet sekarang" (atau centang push otomatis) supaya data KIR/Pajak terbaru selalu ada di Sheet tersebut. Mulai saat itu, Apps Script akan mengecek sendiri setiap hari dan kirim WA otomatis walau sistem ini tidak dibuka.<br>
-                <b>Opsional — tarik KM otomatis dari GPS Cartrack:</b> isi <span class="mono">CARTRACK_USERNAME</span> dan <span class="mono">CARTRACK_PASSWORD</span> di kode (dari akun Cartrack Fleetweb Anda, menu API Settings), lalu tambah trigger kedua untuk function <span class="mono">syncOdometerFromCartrack</span> (mis. tiap 4 jam). Setelah itu buka tab Maintenance Perbaikan &rarr; panel Monitoring Service Berkala &rarr; klik "Tarik KM terbaru dari GPS" agar aplikasi ini ikut update KM-nya.
+                1. Ambil <b>Database Secret</b> Firebase: buka <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a> &rarr; buka project <span class="mono">ekspedisi-jaya</span> &rarr; klik ikon gerigi (Project settings) &rarr; tab <b>Service accounts</b> &rarr; scroll ke bawah sampai bagian <b>Database secrets</b> &rarr; klik "Show" lalu salin secret-nya.<br>
+                2. Buka <a href="https://script.google.com/" target="_blank" rel="noopener">script.google.com</a> &rarr; buat project baru (boleh kosong, tidak perlu terhubung ke Sheet apa pun) &rarr; hapus isi default &rarr; tempel kode di bawah ini.<br>
+                3. Di kode, ganti <span class="mono">FIREBASE_DB_SECRET</span> dengan secret dari langkah 1.<br>
+                4. Daftar gratis di <b>fonnte.com</b>, hubungkan nomor WA yang akan jadi pengirim, lalu salin <b>Token</b>-nya. Ganti <span class="mono">FONNTE_TOKEN</span> dengan token itu, dan <span class="mono">WA_TARGET</span> dengan nomor WA tujuan (format 62xxx, bisa lebih dari satu nomor dipisah koma).<br>
+                5. Klik ikon jam (Triggers) di sisi kiri editor &rarr; Add Trigger &rarr; pilih function <span class="mono">checkAndNotify</span>, jenis "Time-driven" &rarr; "Day timer" &rarr; pilih jam pengecekan (mis. 07.00–08.00) &rarr; Save. Tidak perlu Deploy sebagai Web App — trigger terjadwal saja sudah cukup.<br>
+                <b>Opsional — tarik KM otomatis dari GPS Cartrack:</b> isi <span class="mono">CARTRACK_USERNAME</span> dan <span class="mono">CARTRACK_PASSWORD</span> di kode (dari akun Cartrack Fleetweb Anda, menu API Settings), lalu tambah trigger kedua untuk function <span class="mono">syncOdometerFromCartrack</span> (mis. tiap 4 jam). KM akan otomatis masuk ke Firebase dan langsung terlihat di halaman Maintenance Perbaikan — tidak perlu tarik manual.
               </p>
-              <textarea id="waAppsScriptCode" readonly style="width:100%; min-height:260px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">const SHEET_NAME = 'Kendaraan';
+              <textarea id="waAppsScriptCode" readonly style="width:100%; min-height:260px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">// ================== KONFIGURASI ==================
+const FIREBASE_DB_URL = 'https://ekspedisi-jaya-default-rtdb.asia-southeast1.firebasedatabase.app';
+const FIREBASE_DB_SECRET = 'ISI_DATABASE_SECRET_DARI_FIREBASE_CONSOLE_DI_SINI';
 const FONNTE_TOKEN = 'ISI_TOKEN_FONNTE_DI_SINI';
 const WA_TARGET = '6281234567890'; // nomor WA tujuan notifikasi, format 62xxx. Lebih dari 1 nomor? pisahkan pakai koma, cth. '6281234567890,6281298765432'
 const H_REMINDER = 10; // kirim notif KIR/Pajak mulai H-berapa hari
@@ -1721,84 +1702,111 @@ const CARTRACK_USERNAME = 'ISI_USERNAME_CARTRACK_DI_SINI';
 const CARTRACK_PASSWORD = 'ISI_PASSWORD_API_CARTRACK_DI_SINI';
 const CARTRACK_BASE_URL = 'https://fleetapi-id.cartrack.com/rest'; // ganti 'id' jika region akun Cartrack Anda berbeda
 
-function doPost(e) {
-  var payload = JSON.parse(e.postData.contents);
-
-  if (payload && payload.type === 'records'){
-    writeJsonSheet('DO_Records', payload.items || []);
-  }else if (payload && payload.type === 'maintenance'){
-    writeJsonSheet('Maintenance', payload.items || []);
-  }else{
-    // format lama (khusus data legalitas/service kendaraan) — tetap didukung supaya tidak merusak fitur yang sudah jalan
-    var items = (payload && payload.type === 'kendaraan') ? payload.items : payload;
-    var sheet = getOrCreateSheet();
-    sheet.clearContents();
-    sheet.appendRow(['Nopol','Merk','KIR Terakhir','Pajak1 Terakhir','Pajak5 Terakhir','KM Saat Ini','KM Service Terakhir','Interval Service','Tanggal Service Terakhir']);
-    (items || []).forEach(function(k){
-      sheet.appendRow([k.nopol || '', k.merk || '', k.kirTerakhir || '', k.pajak1Terakhir || '', k.pajak5Terakhir || '', k.kmSaatIni || '', k.kmServiceTerakhir || '', k.serviceInterval || '', k.tglServiceTerakhir || '']);
-    });
-  }
-  return ContentService.createTextOutput(JSON.stringify({ok:true}))
-    .setMimeType(ContentService.MimeType.JSON);
+// ================== HELPER FIREBASE (baca/tulis langsung ke Realtime Database via REST) ==================
+function fbUrl(path){
+  return FIREBASE_DB_URL + path + '.json?auth=' + FIREBASE_DB_SECRET;
 }
-
-// Simpan array data apa pun sebagai JSON per baris (1 baris = 1 record) — dipakai untuk data DO & Maintenance
-// yang jumlah kolomnya banyak/berubah-ubah, supaya tidak perlu didefinisikan manual satu-satu di sini.
-function writeJsonSheet(sheetName, items){
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) sheet = ss.insertSheet(sheetName);
-  sheet.clearContents();
-  sheet.appendRow(['ID', 'JSON']);
-  items.forEach(function(item){
-    sheet.appendRow([item.id || '', JSON.stringify(item)]);
+function fbGet(path){
+  var res = UrlFetchApp.fetch(fbUrl(path), { muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200){
+    Logger.log('GAGAL fbGet ' + path + ' (' + res.getResponseCode() + '): ' + res.getContentText().substring(0, 300));
+    return null;
+  }
+  return JSON.parse(res.getContentText());
+}
+function fbPatch(path, data){
+  var res = UrlFetchApp.fetch(fbUrl(path), {
+    method: 'patch',
+    contentType: 'application/json',
+    payload: JSON.stringify(data),
+    muteHttpExceptions: true
   });
-}
-function readJsonSheet(sheetName){
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return [];
-  var data = sheet.getDataRange().getValues();
-  var out = [];
-  for (var i = 1; i < data.length; i++){
-    if (!data[i][1]) continue;
-    try{ out.push(JSON.parse(data[i][1])); }catch(err){}
+  if (res.getResponseCode() !== 200){
+    Logger.log('GAGAL fbPatch ' + path + ' (' + res.getResponseCode() + '): ' + res.getContentText().substring(0, 300));
   }
-  return out;
+}
+function kendaraanList_(){
+  var data = fbGet('/kendaraan');
+  if (!data) return [];
+  return Array.isArray(data) ? data : Object.keys(data).map(function(k){ return data[k]; });
 }
 
-// Dipanggil oleh aplikasi untuk menarik data terbaru dari Sheet ini.
-// ?type=records -> data DO, ?type=maintenance -> data maintenance, tanpa/​type lain -> data KM kendaraan (perilaku lama, tetap didukung)
-// Mendukung JSONP (parameter ?callback=xxx) supaya tetap bisa diakses walau aplikasi dibuka sebagai file lokal (file://) tanpa kena blokir CORS browser
-function doGet(e) {
-  var type = (e && e.parameter && e.parameter.type) || 'kendaraan';
-  var out;
-  if (type === 'records'){
-    out = readJsonSheet('DO_Records');
-  }else if (type === 'maintenance'){
-    out = readJsonSheet('Maintenance');
-  }else{
-    var sheet = getOrCreateSheet();
-    var data = sheet.getDataRange().getValues();
-    out = [];
-    for (var i = 1; i < data.length; i++){
-      if (!data[i][0]) continue;
-      out.push({ nopol: data[i][0], kmSaatIni: data[i][5] });
+// ================== NOTIFIKASI WA JATUH TEMPO — dijalankan otomatis tiap hari oleh trigger ==================
+function checkAndNotify(){
+  var list = kendaraanList_();
+  var reminders = [];
+
+  list.forEach(function(k){
+    if (!k || !k.nopol) return;
+    var nopol = k.nopol;
+
+    if (k.kirTerakhir){
+      var sisaKir = daysUntil(addMonths(new Date(k.kirTerakhir), 6));
+      if (sisaKir <= H_REMINDER) reminders.push(nopol + ' - Uji KIR: ' + statusText(sisaKir));
     }
-  }
-  var json = JSON.stringify(out);
-  if (e && e.parameter && e.parameter.callback){
-    return ContentService.createTextOutput(e.parameter.callback + '(' + json + ');')
-      .setMimeType(ContentService.MimeType.JAVASCRIPT);
-  }
-  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+    if (k.pajak1Terakhir){
+      var sisaP1 = daysUntil(addMonths(new Date(k.pajak1Terakhir), 12));
+      if (sisaP1 <= H_REMINDER) reminders.push(nopol + ' - Pajak STNK 1 Tahun: ' + statusText(sisaP1));
+    }
+    if (k.pajak5Terakhir){
+      var sisaP5 = daysUntil(addMonths(new Date(k.pajak5Terakhir), 60));
+      if (sisaP5 <= H_REMINDER) reminders.push(nopol + ' - Pajak/ganti STNK 5 Tahun: ' + statusText(sisaP5));
+    }
+    if (k.kmSaatIni !== '' && k.kmSaatIni != null && k.kmServiceTerakhir !== '' && k.kmServiceTerakhir != null){
+      var iv = Number(k.serviceInterval) || 10000;
+      var kmNext = Number(k.kmServiceTerakhir) + iv;
+      var sisaKm = kmNext - Number(k.kmSaatIni);
+      if (sisaKm <= KM_REMINDER) reminders.push(nopol + ' - Service Berkala: ' + kmStatusText(sisaKm) + ' menuju KM ' + kmNext);
+    }
+  });
+
+  if (reminders.length === 0) return;
+
+  var msg = 'Pengingat Kendaraan (Legalitas & Service)\n'
+    + Utilities.formatDate(new Date(), 'GMT+7', 'dd MMMM yyyy') + '\n\n'
+    + reminders.map(function(r){ return '- ' + r; }).join('\n')
+    + '\n\nMohon segera dijadwalkan perpanjangan/pembayaran/service.';
+
+  sendWhatsApp(msg);
 }
 
-// Dijalankan otomatis oleh trigger (mis. tiap 4-6 jam) — narik KM terbaru dari Cartrack lalu tulis ke kolom "KM Saat Ini"
+function sendWhatsApp(message){
+  var url = 'https://api.fonnte.com/send';
+  var options = {
+    method: 'post',
+    headers: { Authorization: FONNTE_TOKEN },
+    payload: { target: WA_TARGET, message: message },
+    muteHttpExceptions: true
+  };
+  UrlFetchApp.fetch(url, options);
+}
+
+function addMonths(dateObj, months){
+  var d = new Date(dateObj);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
+function daysUntil(dateObj){
+  var today = new Date(); today.setHours(0,0,0,0);
+  var target = new Date(dateObj); target.setHours(0,0,0,0);
+  return Math.round((target - today) / 86400000);
+}
+
+function statusText(sisa){
+  return sisa < 0 ? ('TERLAMBAT ' + Math.abs(sisa) + ' hari') : ('H-' + sisa + ' hari');
+}
+
+function kmStatusText(sisaKm){
+  return sisaKm <= 0 ? ('LEWAT ' + Math.abs(sisaKm) + ' km') : ('sisa ' + sisaKm + ' km');
+}
+
+// ================== TARIK KM DARI GPS CARTRACK — tulis LANGSUNG ke Firebase (path /kendaraan) ==================
+// Dijalankan otomatis oleh trigger (mis. tiap 4-6 jam). Begitu Firebase berubah, aplikasi ikut update real-time
+// (tidak perlu tarik manual lagi di aplikasi).
 function syncOdometerFromCartrack(){
   try{
-    var sheet = getOrCreateSheet();
-    var data = sheet.getDataRange().getValues();
+    var list = kendaraanList_();
     var authHeader = 'Basic ' + Utilities.base64Encode(CARTRACK_USERNAME + ':' + CARTRACK_PASSWORD);
 
     var response = UrlFetchApp.fetch(CARTRACK_BASE_URL + '/vehicles/status', {
@@ -1841,99 +1849,21 @@ function syncOdometerFromCartrack(){
       if (plate) kmMap[plate] = odometerKm;
     });
 
+    var patchPayload = {};
     var updatedCount = 0;
-    for (var i = 1; i < data.length; i++){
-      var nopol = (data[i][0] || '').toString().toUpperCase().replace(/\s+/g,'');
-      if (!nopol) continue;
-      if (kmMap[nopol] !== undefined){
-        sheet.getRange(i + 1, 6).setValue(kmMap[nopol]); // kolom F = KM Saat Ini
+    list.forEach(function(k, idx){
+      var nopolNorm = ((k && k.nopol) || '').toString().toUpperCase().replace(/\s+/g,'');
+      if (nopolNorm && kmMap[nopolNorm] !== undefined){
+        patchPayload[idx + '/kmSaatIni'] = kmMap[nopolNorm];
         updatedCount++;
       }
-    }
-    Logger.log('SELESAI: ' + updatedCount + ' kendaraan berhasil diupdate KM-nya.');
+    });
+
+    if (updatedCount > 0) fbPatch('/kendaraan', patchPayload);
+    Logger.log('SELESAI: ' + updatedCount + ' kendaraan berhasil diupdate KM-nya langsung di Firebase.');
   }catch(err){
     Logger.log('ERROR TAK TERDUGA: ' + err.message + ' | ' + err.stack);
   }
-}
-
-function getOrCreateSheet(){
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) sheet = ss.insertSheet(SHEET_NAME);
-  return sheet;
-}
-
-function addMonths(dateObj, months){
-  var d = new Date(dateObj);
-  d.setMonth(d.getMonth() + months);
-  return d;
-}
-
-function daysUntil(dateObj){
-  var today = new Date(); today.setHours(0,0,0,0);
-  var target = new Date(dateObj); target.setHours(0,0,0,0);
-  return Math.round((target - today) / 86400000);
-}
-
-function statusText(sisa){
-  return sisa < 0 ? ('TERLAMBAT ' + Math.abs(sisa) + ' hari') : ('H-' + sisa + ' hari');
-}
-
-function kmStatusText(sisaKm){
-  return sisaKm <= 0 ? ('LEWAT ' + Math.abs(sisaKm) + ' km') : ('sisa ' + sisaKm + ' km');
-}
-
-// Function ini yang dijalankan otomatis tiap hari oleh trigger (lihat langkah 6 di panduan)
-function checkAndNotify(){
-  var sheet = getOrCreateSheet();
-  var data = sheet.getDataRange().getValues();
-  var reminders = [];
-
-  for (var i = 1; i < data.length; i++){
-    var nopol = data[i][0];
-    if (!nopol) continue;
-    var kir = data[i][2], pajak1 = data[i][3], pajak5 = data[i][4];
-    var kmSaatIni = data[i][5], kmTerakhir = data[i][6], interval = data[i][7];
-
-    if (kir){
-      var sisaKir = daysUntil(addMonths(new Date(kir), 6));
-      if (sisaKir <= H_REMINDER) reminders.push(nopol + ' - Uji KIR: ' + statusText(sisaKir));
-    }
-    if (pajak1){
-      var sisaP1 = daysUntil(addMonths(new Date(pajak1), 12));
-      if (sisaP1 <= H_REMINDER) reminders.push(nopol + ' - Pajak STNK 1 Tahun: ' + statusText(sisaP1));
-    }
-    if (pajak5){
-      var sisaP5 = daysUntil(addMonths(new Date(pajak5), 60));
-      if (sisaP5 <= H_REMINDER) reminders.push(nopol + ' - Pajak/ganti STNK 5 Tahun: ' + statusText(sisaP5));
-    }
-    if (kmSaatIni !== '' && kmTerakhir !== ''){
-      var iv = interval || 10000;
-      var kmNext = Number(kmTerakhir) + Number(iv);
-      var sisaKm = kmNext - Number(kmSaatIni);
-      if (sisaKm <= KM_REMINDER) reminders.push(nopol + ' - Service Berkala: ' + kmStatusText(sisaKm) + ' menuju KM ' + kmNext);
-    }
-  }
-
-  if (reminders.length === 0) return;
-
-  var msg = 'Pengingat Kendaraan (Legalitas & Service)\n'
-    + Utilities.formatDate(new Date(), 'GMT+7', 'dd MMMM yyyy') + '\n\n'
-    + reminders.map(function(r){ return '- ' + r; }).join('\n')
-    + '\n\nMohon segera dijadwalkan perpanjangan/pembayaran/service.';
-
-  sendWhatsApp(msg);
-}
-
-function sendWhatsApp(message){
-  var url = 'https://api.fonnte.com/send';
-  var options = {
-    method: 'post',
-    headers: { Authorization: FONNTE_TOKEN },
-    payload: { target: WA_TARGET, message: message },
-    muteHttpExceptions: true
-  };
-  UrlFetchApp.fetch(url, options);
 }</textarea>
               <button type="button" class="btn btn-secondary" id="btnCopyWaScript" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin kode</button>
             </div>
@@ -2516,7 +2446,7 @@ function goTo(view){
   if(view === 'dashboard') renderDashboard();
   if(view === 'rekap') renderTable();
   if(view === 'kendaraan'){ renderKendaraan(); renderLegalitas(); }
-  if(view === 'maintenance'){ renderMaintenance(); renderServiceMonitoring(); syncKmFromSheet(true); }
+  if(view === 'maintenance'){ renderMaintenance(); renderServiceMonitoring(); }
   if(view === 'peringatan') renderPeringatan();
   if(view === 'hpp'){
     fillHppForm(document.getElementById('hppArmada').value);
@@ -3476,7 +3406,7 @@ function renderKendaraan(){
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus kendaraan ini?')){
         kendaraanList = kendaraanList.filter(x => x.id !== this.dataset.id);
-        saveKendaraan(); renderKendaraan(); renderLegalitas(); autoPushKendaraanIfEnabled();
+        saveKendaraan(); renderKendaraan(); renderLegalitas();
         showToast('Data kendaraan berhasil dihapus', 'danger');
       }
     }));
@@ -3505,7 +3435,6 @@ document.getElementById('formKendaraan').addEventListener('submit', function(e){
   this.reset();
   renderKendaraan();
   renderLegalitas();
-  autoPushKendaraanIfEnabled();
   closeKendaraanModal();
   showToast('Data kendaraan berhasil disimpan', 'success');
 });
@@ -3675,7 +3604,6 @@ document.getElementById('formService').addEventListener('submit', function(e){
   k.tglServiceTerakhir = document.getElementById('svTanggalTerakhir').value || '';
   saveKendaraan();
   renderServiceMonitoring();
-  autoPushKendaraanIfEnabled();
   this.reset();
   document.getElementById('svInterval').value = 10000;
   showToast('Data service berkala berhasil disimpan', 'success');
@@ -3764,7 +3692,6 @@ document.getElementById('legalModalSave').addEventListener('click', function(){
     saveKendaraan();
     renderLegalitas();
     renderKendaraan();
-    autoPushKendaraanIfEnabled();
     showToast('Tanggal dokumen berhasil diperbarui, jatuh tempo berikutnya otomatis terhitung ulang', 'success');
   }
   closeLegalModal();
@@ -3862,115 +3789,10 @@ document.getElementById('waAutoBanner').addEventListener('change', function(){
   renderWaLegalBanner();
 });
 
-/* ---------- SINKRON PENUH KE GOOGLE SHEET (semua data: Kendaraan/KIR/Pajak/Service, DO, Maintenance) ---------- */
-const WA_SHEET_URL_KEY = 'ekspedisi_wa_sheet_url';
-const WA_AUTOPUSH_KEY = 'ekspedisi_wa_autopush';
-
-function getSyncUrl(){
-  return (document.getElementById('waNotifSheetUrl').value || localStorage.getItem(WA_SHEET_URL_KEY) || '').trim();
-}
-
-async function pushKendaraanToSheet(silent){
-  const statusEl = document.getElementById('waPushStatus');
-  const url = document.getElementById('waNotifSheetUrl').value.trim();
-  if(!url){
-    if(!silent && statusEl){ statusEl.textContent = 'Isi URL Web App Google Apps Script terlebih dahulu.'; statusEl.style.color = '#c0392b'; }
-    return;
-  }
-  localStorage.setItem(WA_SHEET_URL_KEY, url);
-  const items = kendaraanList.map(k => ({
-    nopol: k.nopol || '', merk: k.merk || '',
-    kirTerakhir: k.kirTerakhir || '', pajak1Terakhir: k.pajak1Terakhir || '', pajak5Terakhir: k.pajak5Terakhir || '',
-    kmSaatIni: k.kmSaatIni || '', kmServiceTerakhir: k.kmServiceTerakhir || '', serviceInterval: k.serviceInterval || '', tglServiceTerakhir: k.tglServiceTerakhir || '',
-  }));
-  try{
-    if(statusEl && !silent){ statusEl.textContent = 'Mengirim data...'; statusEl.style.color = 'var(--text-muted)'; }
-    await fetch(url, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ type: 'kendaraan', items }),
-    });
-    if(statusEl){ statusEl.textContent = `Data ${items.length} kendaraan berhasil dikirim ke Google Sheet.`; statusEl.style.color = 'var(--green-600)'; }
-  }catch(err){
-    if(statusEl){ statusEl.textContent = 'Gagal mengirim: ' + err.message; statusEl.style.color = '#c0392b'; }
-  }
-}
-document.getElementById('btnPushKendaraanWa').addEventListener('click', () => pushKendaraanToSheet(false));
-
-/* Data DO & Maintenance sekarang sinkron real-time lewat Firebase (lihat attachFirebaseListeners() & fbPush() di atas) —
-   Google Sheets/Apps Script di bagian ini dipakai KHUSUS untuk data legalitas/KM kendaraan (termasuk integrasi Cartrack). */
-
-
-/* Tarik KM terbaru dari Google Sheet (yang sudah diisi otomatis dari Cartrack via Apps Script) lalu update ke aplikasi ini */
-/* JSONP: cara memanggil Google Apps Script yang tetap jalan meski aplikasi ini dibuka sebagai file lokal (file://),
-   karena browser sering memblokir fetch() biasa ke domain lain dari file lokal (CORS). JSONP memuat data lewat tag <script>
-   yang tidak kena aturan CORS itu. */
-function jsonpFetch(url, timeoutMs){
-  return new Promise((resolve, reject) => {
-    const callbackName = 'jsonp_cb_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
-    const script = document.createElement('script');
-    let done = false;
-    const timer = setTimeout(() => {
-      if(!done){ done = true; cleanup(); reject(new Error('Waktu tunggu habis menghubungi Google Apps Script.')); }
-    }, timeoutMs || 15000);
-    function cleanup(){
-      delete window[callbackName];
-      if(script.parentNode) script.parentNode.removeChild(script);
-      clearTimeout(timer);
-    }
-    window[callbackName] = function(data){
-      if(done) return;
-      done = true;
-      cleanup();
-      resolve(data);
-    };
-    script.onerror = function(){
-      if(done) return;
-      done = true;
-      cleanup();
-      reject(new Error('Gagal memuat data — cek lagi URL Web App Apps Script-nya.'));
-    };
-    const sep = url.indexOf('?') >= 0 ? '&' : '?';
-    script.src = url + sep + 'callback=' + encodeURIComponent(callbackName);
-    document.head.appendChild(script);
-  });
-}
-
-async function syncKmFromSheet(silent){
-  const statusEl = document.getElementById('svSyncStatus');
-  const url = (document.getElementById('waNotifSheetUrl').value || localStorage.getItem(WA_SHEET_URL_KEY) || '').trim();
-  if(!url){
-    if(!silent && statusEl){ statusEl.textContent = 'URL Web App Google Apps Script belum diatur — isi dulu di tab Pengaturan.'; statusEl.style.color = '#c0392b'; }
-    return;
-  }
-  localStorage.setItem(WA_SHEET_URL_KEY, url);
-  try{
-    if(statusEl && !silent){ statusEl.textContent = 'Menarik data KM terbaru dari GPS...'; statusEl.style.color = 'var(--text-muted)'; }
-    const data = await jsonpFetch(url);
-    let updated = 0;
-    data.forEach(item => {
-      const nopolNorm = (item.nopol || '').toString().trim().toUpperCase();
-      if(!nopolNorm || item.kmSaatIni === '' || item.kmSaatIni == null) return;
-      const k = kendaraanList.find(x => (x.nopol || '').trim().toUpperCase() === nopolNorm);
-      if(k){ k.kmSaatIni = item.kmSaatIni; updated++; }
-    });
-    saveKendaraan();
-    renderServiceMonitoring();
-    if(statusEl){
-      statusEl.textContent = updated > 0
-        ? `${updated} kendaraan otomatis terupdate KM-nya dari Google Sheet (GPS).`
-        : (silent ? '' : 'Tidak ada KM baru yang cocok — pastikan Nopol di aplikasi sama persis dengan di Cartrack, dan trigger syncOdometerFromCartrack sudah pernah jalan.');
-      statusEl.style.color = updated > 0 ? 'var(--green-600)' : 'var(--amber-600)';
-    }
-  }catch(err){
-    if(!silent && statusEl){ statusEl.textContent = 'Gagal menarik data: ' + err.message; statusEl.style.color = '#c0392b'; }
-  }
-}
-document.getElementById('btnSyncKmGps').addEventListener('click', () => syncKmFromSheet(false));
-
-document.getElementById('waAutoPush').addEventListener('change', function(){
-  localStorage.setItem(WA_AUTOPUSH_KEY, this.checked ? '1' : '0');
-});
+/* Notifikasi WA jatuh tempo & tarik KM dari GPS Cartrack sekarang sepenuhnya dijalankan lewat Google Apps Script terjadwal
+   yang baca/tulis LANGSUNG ke Firebase Realtime Database (lihat kode di kolom "Setup notifikasi WA otomatis penuh" di
+   Pengaturan) — aplikasi ini tidak perlu lagi push/pull apa pun secara manual, karena data kendaraan (termasuk KM) sudah
+   sinkron real-time lewat fbPush('kendaraan', ...) & fbDb.ref('kendaraan').on('value', ...) di atas. */
 document.getElementById('btnCopyWaScript').addEventListener('click', function(){
   const ta = document.getElementById('waAppsScriptCode');
   ta.select();
@@ -3983,24 +3805,10 @@ document.getElementById('btnCopyWaScript').addEventListener('click', function(){
     showToast('Kode Apps Script disalin', 'success');
   }
 });
-/* Jika push otomatis diaktifkan, kirim data kendaraan terbaru ke Sheet setiap kali disimpan/diubah */
-function autoPushKendaraanIfEnabled(){
-  if(localStorage.getItem(WA_AUTOPUSH_KEY) === '1' && document.getElementById('waNotifSheetUrl').value.trim()){
-    pushKendaraanToSheet(true);
-  }
-}
 (function initWaSettings(){
   const savedNomor = localStorage.getItem(WA_NOMOR_KEY);
   if(savedNomor) document.getElementById('waNomorAdmin').value = savedNomor;
   document.getElementById('waAutoBanner').checked = localStorage.getItem(WA_AUTOBANNER_KEY) === '1';
-  const savedSheetUrl = localStorage.getItem(WA_SHEET_URL_KEY);
-  if(savedSheetUrl) document.getElementById('waNotifSheetUrl').value = savedSheetUrl;
-  else localStorage.setItem(WA_SHEET_URL_KEY, document.getElementById('waNotifSheetUrl').value.trim());
-  // Default aktif otomatis di setiap perangkat yang membuka file ini, supaya sinkron semua data tidak perlu di-setup manual satu-satu
-  const autoPushSaved = localStorage.getItem(WA_AUTOPUSH_KEY);
-  const autoPushOn = autoPushSaved === null ? true : autoPushSaved === '1';
-  document.getElementById('waAutoPush').checked = autoPushOn;
-  if(autoPushSaved === null) localStorage.setItem(WA_AUTOPUSH_KEY, autoPushOn ? '1' : '0');
 })();
 
 /* ---------- MAINTENANCE PERBAIKAN ---------- */
@@ -5420,7 +5228,6 @@ function initApp(){
     document.getElementById('userBadge').textContent = (acc.nama || acc.email).charAt(0).toUpperCase();
   }
   attachFirebaseListeners();
-  if(localStorage.getItem(WA_AUTOPUSH_KEY) === '1') syncKmFromSheet(true);
 }
 function showApp(){
   document.getElementById('loginScreen').style.display = 'none';
