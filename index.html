@@ -2333,10 +2333,21 @@ try{
   console.warn('Firebase gagal diinisialisasi, sistem tetap jalan pakai penyimpanan lokal saja:', err);
 }
 
+/* Menyimpan jumlah penulisan (write) yang sedang berjalan per path (mis. 'kendaraan', 'driver', dst).
+   PENTING untuk mencegah bug "data terhapus muncul lagi": tanpa penanda ini, saat kita menghapus data,
+   render lokal sudah benar (baris hilang), TAPI listener fbDb.ref(path).on('value', ...) di bawah bisa saja
+   menerima snapshot LAMA dari server (mis. karena penulisan .set() kita belum sempat sampai/dikonfirmasi
+   server, atau ada event 'value' yang tertunda) dan langsung menimpa balik kendaraanList (dan localStorage)
+   dengan data lama yang masih berisi item yang baru saja dihapus -> makanya datanya "muncul lagi".
+   Selama ada penulisan yang belum selesai untuk sebuah path, listener 'value' path tsb diabaikan dulu. */
+const fbPendingWrites = {};
 function fbPush(path, value){
-  if(!fbDb) return;
-  fbAuthReadyPromise.then(() => {
-    try{ fbDb.ref(path).set(value); }catch(err){ /* diam-diam gagal, data tetap aman di localStorage */ }
+  if(!fbDb) return Promise.resolve();
+  fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
+  return fbAuthReadyPromise.then(() => {
+    return Promise.resolve(fbDb.ref(path).set(value)).catch(err => { /* diam-diam gagal, data tetap aman di localStorage */ });
+  }).catch(() => {}).finally(() => {
+    fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
   });
 }
 
@@ -2348,6 +2359,7 @@ function attachFirebaseAccountsListener(){
   fbAccountsListenerAttached = true;
   fbAuthReadyPromise.then(() => {
     fbDb.ref('accounts').on('value', snap => {
+      if(fbPendingWrites['accounts']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
       const val = snap.val();
       if(Array.isArray(val) && val.length > 0){
         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(val));
@@ -2377,6 +2389,7 @@ function attachFirebaseListenersInner(){
   }
 
   fbDb.ref('records').on('value', snap => {
+    if(fbPendingWrites['records']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(Array.isArray(val)){
       records = val;
@@ -2392,6 +2405,7 @@ function attachFirebaseListenersInner(){
   });
 
   fbDb.ref('kendaraan').on('value', snap => {
+    if(fbPendingWrites['kendaraan']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(Array.isArray(val)){
       kendaraanList = val;
@@ -2408,6 +2422,7 @@ function attachFirebaseListenersInner(){
   });
 
   fbDb.ref('driver').on('value', snap => {
+    if(fbPendingWrites['driver']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(Array.isArray(val)){
       driverList = val;
@@ -2420,6 +2435,7 @@ function attachFirebaseListenersInner(){
   });
 
   fbDb.ref('maintenance').on('value', snap => {
+    if(fbPendingWrites['maintenance']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(Array.isArray(val)){
       maintenanceList = val;
@@ -2433,6 +2449,7 @@ function attachFirebaseListenersInner(){
   });
 
   fbDb.ref('tarif').on('value', snap => {
+    if(fbPendingWrites['tarif']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(val && Array.isArray(val.items)){
       tarifData = val;
@@ -2445,6 +2462,7 @@ function attachFirebaseListenersInner(){
   });
 
   fbDb.ref('borongan').on('value', snap => {
+    if(fbPendingWrites['borongan']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(val && (Array.isArray(val.table1) || Array.isArray(val.table2))){
       boronganData = { table1: Array.isArray(val.table1) ? val.table1 : [], table2: Array.isArray(val.table2) ? val.table2 : [] };
