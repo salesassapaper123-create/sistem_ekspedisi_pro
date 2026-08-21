@@ -2450,6 +2450,20 @@ function fbRemoveFromList(path, matchesItemToRemove, id){
   fbWriteQueue[path] = thisWrite;
   return thisWrite;
 }
+/* PENTING: mengirim satu penulisan (hapus/tambah/ubah) ke server Firebase makan waktu (login diam-diam +
+   antrian + jaringan) — biasanya < 1 detik, tapi tidak instan. Kalau pengguna me-refresh/menutup halaman
+   SEBELUM proses itu selesai, halaman yang baru dimuat akan mengambil data lama dari server (yang belum
+   ter-update) -> data yang baru saja dihapus/diubah kelihatan "muncul lagi" atau "balik seperti semula",
+   padahal sebenarnya cuma soal timing, bukan gagal. Peringatan bawaan browser ini menahan pengguna sejenak
+   kalau masih ada penulisan yang berjalan, supaya prosesnya sempat selesai dulu. */
+window.addEventListener('beforeunload', function(e){
+  const adaPenulisanBerjalan = Object.keys(fbPendingWrites).some(path => fbPendingWrites[path] > 0);
+  if(adaPenulisanBerjalan){
+    e.preventDefault();
+    e.returnValue = '';
+    return '';
+  }
+});
 let fbAccountsListenerAttached = false;
 function attachFirebaseAccountsListener(){
   if(!fbDb || fbAccountsListenerAttached) return;
