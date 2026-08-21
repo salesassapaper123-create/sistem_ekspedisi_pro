@@ -1160,7 +1160,7 @@
                   </select>
                 </div>
                 <div class="field">
-                  <label for="kiSupir">Nama supir</label>
+                  <label for="kiSupir">A/N</label>
                   <input type="text" id="kiSupir" placeholder="cth. Budi Santoso">
                 </div>
                 <div class="field">
@@ -3682,10 +3682,11 @@ window.addEventListener('afterprint', function(){ document.title = ORIGINAL_DOC_
 /* ---------- DATA KENDARAAN ---------- */
 function renderKendaraan(){
   const wrap = document.getElementById('kendaraanTableWrap');
+  const admin = isAdminUser();
   if(kendaraanList.length === 0){
     wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan lewat menu Administrasi &gt; Input Data Kendaraan.');
   }else{
-    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nopol</th><th>Jenis Armada</th><th>Supir</th><th>Rute &amp; Area</th><th>Kapasitas Muatan</th><th>No. Mesin</th><th>No. Rangka</th><th>Bak (P-L-T)</th><th></th></tr></thead><tbody>${kendaraanList.map(k => `
+    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nopol</th><th>Jenis Armada</th><th>A/N</th><th>Rute &amp; Area</th><th>Kapasitas Muatan</th><th>No. Mesin</th><th>No. Rangka</th><th>Bak (P-L-T)</th><th></th></tr></thead><tbody>${kendaraanList.map(k => `
       <tr>
         <td><span class="plate-cell">${esc(k.nopol)}</span></td>
         <td>${esc(armadaLabel(k.jenisArmada))}</td>
@@ -3696,19 +3697,21 @@ function renderKendaraan(){
         <td class="mono">${esc(k.noRangka || '-')}</td>
         <td class="mono">${(k.panjang || k.lebar || k.tinggi) ? `${esc(k.panjang||'-')} x ${esc(k.lebar||'-')} x ${esc(k.tinggi||'-')} cm` : '-'}</td>
         <td>
-          <button class="icon-btn del" data-id="${k.id}" title="Hapus kendaraan ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
+          ${admin ? `<button class="icon-btn del" data-id="${k.id}" title="Hapus kendaraan ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
             Hapus
-          </button>
+          </button>` : ''}
         </td>
       </tr>`).join('')}</tbody></table>`;
-    wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
-      if(confirm('Hapus kendaraan ini?')){
-        kendaraanList = kendaraanList.filter(x => x.id !== this.dataset.id);
-        saveKendaraan(); renderKendaraan(); renderLegalitas();
-        showToast('Data kendaraan berhasil dihapus', 'danger');
-      }
-    }));
+    if(admin){
+      wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+        if(confirm('Hapus kendaraan ini?')){
+          kendaraanList = kendaraanList.filter(x => x.id !== this.dataset.id);
+          saveKendaraan(); renderKendaraan(); renderLegalitas();
+          showToast('Data kendaraan berhasil dihapus', 'danger');
+        }
+      }));
+    }
   }
   const dl = document.getElementById('kendaraanList');
   if(dl) dl.innerHTML = kendaraanList.map(k => `<option value="${esc(k.nopol)}"></option>`).join('');
@@ -3744,6 +3747,7 @@ document.getElementById('formKendaraanInput').addEventListener('submit', functio
 function renderDriver(){
   const wrap = document.getElementById('driverTableWrap');
   if(!wrap) return;
+  const admin = isAdminUser();
   if(driverList.length === 0){
     wrap.innerHTML = emptyState('Belum ada driver terdaftar. Tambahkan lewat menu Administrasi &gt; Input Driver.');
   }else{
@@ -3756,19 +3760,21 @@ function renderDriver(){
         <td>${d.nopol ? `<span class="plate-cell">${esc(d.nopol)}</span>` : '-'}</td>
         <td class="sv-left">${esc(d.alamat || '-')}</td>
         <td>
-          <button class="icon-btn del" data-id="${d.id}" title="Hapus driver ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
+          ${admin ? `<button class="icon-btn del" data-id="${d.id}" title="Hapus driver ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
             Hapus
-          </button>
+          </button>` : ''}
         </td>
       </tr>`).join('')}</tbody></table>`;
-    wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
-      if(confirm('Hapus driver ini?')){
-        driverList = driverList.filter(x => x.id !== this.dataset.id);
-        saveDriver(); renderDriver();
-        showToast('Data driver berhasil dihapus', 'danger');
-      }
-    }));
+    if(admin){
+      wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+        if(confirm('Hapus driver ini?')){
+          driverList = driverList.filter(x => x.id !== this.dataset.id);
+          saveDriver(); renderDriver();
+          showToast('Data driver berhasil dihapus', 'danger');
+        }
+      }));
+    }
   }
 }
 /* ---------- INPUT DRIVER (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Driver) ---------- */
@@ -3868,6 +3874,8 @@ function serviceBadge(k){
 function renderServiceMonitoring(){
   const wrap = document.getElementById('serviceTableWrap');
   if(!wrap) return;
+  const btnTambahService = document.getElementById('btnTambahService');
+  if(btnTambahService) btnTambahService.style.display = isAdminUser() ? '' : 'none';
   const list = kendaraanList.filter(hasServiceData);
   if(list.length === 0){
     wrap.innerHTML = emptyState('Belum ada kendaraan dengan data service berkala. Klik "Update KM / Service" di atas untuk mulai memonitor.');
@@ -3900,8 +3908,9 @@ function renderServiceMonitoring(){
       <td>${row.tanggalIdeal ? fmtDate(row.tanggalIdeal.toISOString().slice(0,10)) : '-'}</td>
     </tr>`;
   }).join('')}</tbody></table>
-  <p class="hint" style="margin-top:8px;">Klik baris mana pun untuk update KM/tanggal-nya. Warna Nopol: <span style="color:#57bb63; font-weight:700;">Hijau</span> = aman (&gt;2000 km lagi), <span style="color:#b9740a; font-weight:700;">Kuning</span> = mendekati (&le;2000 km), <span style="color:#e6534a; font-weight:700;">Merah</span> = sudah lewat jadwal.</p>`;
+  <p class="hint" style="margin-top:8px;">${isAdminUser() ? 'Klik baris mana pun untuk update KM/tanggal-nya.' : 'Update KM/tanggal manual hanya bisa dilakukan admin.'} Warna Nopol: <span style="color:#57bb63; font-weight:700;">Hijau</span> = aman (&gt;2000 km lagi), <span style="color:#b9740a; font-weight:700;">Kuning</span> = mendekati (&le;2000 km), <span style="color:#e6534a; font-weight:700;">Merah</span> = sudah lewat jadwal.</p>`;
 
+  if(!isAdminUser()) return;
   wrap.querySelectorAll('.sv-row').forEach(tr => tr.addEventListener('click', function(){
     const k = kendaraanList.find(x => x.id === this.dataset.id);
     if(!k) return;
@@ -3969,6 +3978,16 @@ function renderLegalitas(){
     wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan lewat menu Administrasi &gt; Input Data Kendaraan.');
     return;
   }
+  const admin = isAdminUser();
+  const legalCell = (k, field, label, title) => {
+    const val = k[field];
+    if(admin){
+      return `<button class="tonase-cell-btn legal-edit" data-id="${k.id}" data-field="${field}" data-label="${esc(label)}" title="${esc(title)}">
+          ${val ? `<span class="mono">${fmtDate(val)}</span>` : `<span class="tonase-empty">+ Isi tanggal</span>`}
+        </button>`;
+    }
+    return val ? `<span class="mono">${fmtDate(val)}</span>` : `<span style="color:var(--text-faint);">Belum diisi</span>`;
+  };
   wrap.innerHTML = `<table class="sv-table"><thead><tr>
     <th>No</th><th>Nopol</th><th>Merk</th>
     <th>KIR Terakhir</th><th>KIR Selanjutnya</th><th>Status KIR</th>
@@ -3980,33 +3999,23 @@ function renderLegalitas(){
       <td>${i + 1}</td>
       <td><span class="plate-cell">${esc(k.nopol)}</span></td>
       <td class="sv-left">${esc(k.merk || '-')}</td>
-      <td>
-        <button class="tonase-cell-btn legal-edit" data-id="${k.id}" data-field="kirTerakhir" data-label="Uji KIR" title="Klik untuk update tanggal KIR terbaru">
-          ${k.kirTerakhir ? `<span class="mono">${fmtDate(k.kirTerakhir)}</span>` : `<span class="tonase-empty">+ Isi tanggal</span>`}
-        </button>
-      </td>
+      <td>${legalCell(k, 'kirTerakhir', 'Uji KIR', 'Klik untuk update tanggal KIR terbaru')}</td>
       <td>${row.kirNext ? fmtDate(row.kirNext.toISOString().slice(0,10)) : '-'}</td>
       <td>${legalitasBadge(row.kirSisa)}</td>
-      <td>
-        <button class="tonase-cell-btn legal-edit" data-id="${k.id}" data-field="pajak1Terakhir" data-label="Pajak STNK 1 Tahun" title="Klik untuk update tanggal bayar pajak terbaru">
-          ${k.pajak1Terakhir ? `<span class="mono">${fmtDate(k.pajak1Terakhir)}</span>` : `<span class="tonase-empty">+ Isi tanggal</span>`}
-        </button>
-      </td>
+      <td>${legalCell(k, 'pajak1Terakhir', 'Pajak STNK 1 Tahun', 'Klik untuk update tanggal bayar pajak terbaru')}</td>
       <td>${row.pajak1Next ? fmtDate(row.pajak1Next.toISOString().slice(0,10)) : '-'}</td>
       <td>${legalitasBadge(row.pajak1Sisa)}</td>
-      <td>
-        <button class="tonase-cell-btn legal-edit" data-id="${k.id}" data-field="pajak5Terakhir" data-label="Pajak/ganti STNK 5 Tahun" title="Klik untuk update tanggal terbaru">
-          ${k.pajak5Terakhir ? `<span class="mono">${fmtDate(k.pajak5Terakhir)}</span>` : `<span class="tonase-empty">+ Isi tanggal</span>`}
-        </button>
-      </td>
+      <td>${legalCell(k, 'pajak5Terakhir', 'Pajak/ganti STNK 5 Tahun', 'Klik untuk update tanggal terbaru')}</td>
       <td>${row.pajak5Next ? fmtDate(row.pajak5Next.toISOString().slice(0,10)) : '-'}</td>
       <td>${legalitasBadge(row.pajak5Sisa)}</td>
     </tr>`;
   }).join('')}</tbody></table>`;
 
-  wrap.querySelectorAll('.legal-edit').forEach(btn => btn.addEventListener('click', function(){
-    openLegalModal(this.dataset.id, this.dataset.field, this.dataset.label);
-  }));
+  if(admin){
+    wrap.querySelectorAll('.legal-edit').forEach(btn => btn.addEventListener('click', function(){
+      openLegalModal(this.dataset.id, this.dataset.field, this.dataset.label);
+    }));
+  }
 }
 
 let legalModalTargetId = null;
@@ -4207,6 +4216,7 @@ function renderMaintenance(){
   const wrap = document.getElementById('maintenanceTableWrap');
   const list = maintenanceList.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
   if(list.length === 0){ wrap.innerHTML = emptyState('Belum ada catatan perbaikan. Klik "Tambah Perbaikan" di atas untuk mulai mencatat.'); return; }
+  const admin = isAdminUser();
   wrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th><th>Status</th><th></th></tr></thead><tbody>${list.map(m => `
     <tr>
       <td>${fmtDate(m.tanggal)}</td>
@@ -4216,25 +4226,27 @@ function renderMaintenance(){
       <td>${esc(m.catatan || '-')}</td>
       <td>${statusBadge(m.status)}</td>
       <td class="row-actions">
-        <button class="icon-btn toggle" data-id="${m.id}" title="Ubah status">
+        ${admin ? `<button class="icon-btn toggle" data-id="${m.id}" title="Ubah status">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
         </button>
         <button class="icon-btn del" data-id="${m.id}" title="Hapus">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-        </button>
+        </button>` : ''}
       </td>
     </tr>`).join('')}</tbody></table>`;
-  wrap.querySelectorAll('.toggle').forEach(btn => btn.addEventListener('click', function(){
-    const m = maintenanceList.find(x => x.id === this.dataset.id);
-    if(m){ m.status = m.status === 'selesai' ? 'proses' : 'selesai'; saveMaintenance(); renderMaintenance(); }
-  }));
-  wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
-    if(confirm('Hapus catatan perbaikan ini?')){
-      maintenanceList = maintenanceList.filter(x => x.id !== this.dataset.id);
-      saveMaintenance(); renderMaintenance();
-      showToast('Catatan perbaikan berhasil dihapus', 'danger');
-    }
-  }));
+  if(admin){
+    wrap.querySelectorAll('.toggle').forEach(btn => btn.addEventListener('click', function(){
+      const m = maintenanceList.find(x => x.id === this.dataset.id);
+      if(m){ m.status = m.status === 'selesai' ? 'proses' : 'selesai'; saveMaintenance(); renderMaintenance(); }
+    }));
+    wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+      if(confirm('Hapus catatan perbaikan ini?')){
+        maintenanceList = maintenanceList.filter(x => x.id !== this.dataset.id);
+        saveMaintenance(); renderMaintenance();
+        showToast('Catatan perbaikan berhasil dihapus', 'danger');
+      }
+    }));
+  }
 }
 document.getElementById('formMaintenance').addEventListener('submit', function(e){
   e.preventDefault();
@@ -4838,7 +4850,7 @@ function renderTable(){
   const wrap = document.getElementById('tableWrap');
   if(list.length === 0){ wrap.innerHTML = emptyState('Tidak ada data yang cocok.'); return; }
 
-
+  const admin = isAdminUser();
   wrap.innerHTML = `<table class="do-table"><thead><tr>
     <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-kota">Kota</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
     <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-pendapatan">Pendapatan (Rp)</th><th class="do-th-status">Status</th><th class="do-th-aksi"></th>
@@ -4855,29 +4867,35 @@ function renderTable(){
       <td class="do-td-rute">${tujuanList(r)}</td>
       <td class="do-td-bk">
         ${recKirimBK(r)
-          ? `<button class="tonase-cell-btn tonase-edit" data-id="${r.id}" data-field="tonase1" title="${r.tonase1 ? 'Ubah tonase BK' : 'Isi tonase BK'}">
+          ? (admin
+            ? `<button class="tonase-cell-btn tonase-edit" data-id="${r.id}" data-field="tonase1" title="${r.tonase1 ? 'Ubah tonase BK' : 'Isi tonase BK'}">
                ${r.tonase1
                  ? `<span class="mono">${esc(r.tonase1)} kg</span>`
                  : `<span class="tonase-empty">+ Isi BK</span>`}
              </button>`
+            : (r.tonase1 ? `<span class="mono">${esc(r.tonase1)} kg</span>` : `<span style="color:var(--text-faint);">Belum diisi</span>`))
           : `<span style="color:var(--text-faint);">-</span>`}
       </td>
       <td class="do-td-roll">
         ${recKirimRoll(r)
-          ? `<button class="tonase-cell-btn tonase-edit" data-id="${r.id}" data-field="tonase2" title="${r.tonase2 ? 'Ubah tonase Roll Assa' : 'Isi tonase Roll Assa'}">
+          ? (admin
+            ? `<button class="tonase-cell-btn tonase-edit" data-id="${r.id}" data-field="tonase2" title="${r.tonase2 ? 'Ubah tonase Roll Assa' : 'Isi tonase Roll Assa'}">
                ${r.tonase2
                  ? `<span class="mono">${esc(r.tonase2)} kg</span>`
                  : `<span class="tonase-empty">+ Isi Roll</span>`}
              </button>`
+            : (r.tonase2 ? `<span class="mono">${esc(r.tonase2)} kg</span>` : `<span style="color:var(--text-faint);">Belum diisi</span>`))
           : `<span style="color:var(--text-faint);">-</span>`}
       </td>
       <td class="do-td-occ">
         ${recKirimOCC(r)
-          ? `<button class="tonase-cell-btn tonase-edit" data-id="${r.id}" data-field="tonase3" title="${r.tonase3 ? 'Ubah tonase OCC' : 'Isi tonase OCC'}">
+          ? (admin
+            ? `<button class="tonase-cell-btn tonase-edit" data-id="${r.id}" data-field="tonase3" title="${r.tonase3 ? 'Ubah tonase OCC' : 'Isi tonase OCC'}">
                ${r.tonase3
                  ? `<span class="mono">${esc(r.tonase3)} kg</span>`
                  : `<span class="tonase-empty">+ Isi OCC</span>`}
              </button>`
+            : (r.tonase3 ? `<span class="mono">${esc(r.tonase3)} kg</span>` : `<span style="color:var(--text-faint);">Belum diisi</span>`))
           : `<span style="color:var(--text-faint);">-</span>`}
       </td>
       <td class="do-td-pendapatan mono">${r.status === 'selesai'
@@ -4885,18 +4903,18 @@ function renderTable(){
           : `<span style="color:var(--text-faint);" title="Dihitung otomatis dari Database Tarif saat DO ditandai Selesai">-</span>`}</td>
       <td class="do-td-status">${statusBadge(r.status)}</td>
       <td class="do-td-aksi row-actions">
-        <button class="icon-btn edit" data-id="${r.id}" title="Edit DO (termasuk tanggal)">
+        ${admin ? `<button class="icon-btn edit" data-id="${r.id}" title="Edit DO (termasuk tanggal)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
         </button>
         <button class="icon-btn toggle" data-id="${r.id}" title="Maju ke status berikutnya (${esc((STATUS_META[nextStatus(r.status)] || {}).label || '')})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-        </button>
+        </button>` : ''}
         <button class="icon-btn surat" data-id="${r.id}" title="Cetak surat tugas">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         </button>
-        <button class="icon-btn del" data-id="${r.id}" title="Hapus">
+        ${admin ? `<button class="icon-btn del" data-id="${r.id}" title="Hapus">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-        </button>
+        </button>` : ''}
       </td>
     </tr>`).join('')}
     <tr class="do-total-row">
@@ -4914,41 +4932,43 @@ function renderTable(){
     </tr>
     </tbody></table>`;
 
-  wrap.querySelectorAll('.tonase-edit').forEach(btn => btn.addEventListener('click', function(){
-    openTonaseModal(this.dataset.id, 'edit', this.dataset.field);
-  }));
   wrap.querySelectorAll('.surat').forEach(btn => btn.addEventListener('click', function(){
     openSuratTugasModal(this.dataset.id);
   }));
-  wrap.querySelectorAll('.toggle').forEach(btn => btn.addEventListener('click', function(){
-    const r = records.find(x => x.id === this.dataset.id);
-    if(!r) return;
-    const target = nextStatus(r.status);
-    if(target === 'selesai'){
-      const needsTonase1 = recKirimBK(r) && !(r.tonase1 && r.tonase1 > 0);
-      const needsTonase2 = recKirimRoll(r) && !(r.tonase2 && r.tonase2 > 0);
-      const needsTonase3 = recKirimOCC(r) && !(r.tonase3 && r.tonase3 > 0);
-      if(needsTonase1 || needsTonase2 || needsTonase3){
-        openTonaseModal(r.id, 'complete');
-        return;
+  if(admin){
+    wrap.querySelectorAll('.tonase-edit').forEach(btn => btn.addEventListener('click', function(){
+      openTonaseModal(this.dataset.id, 'edit', this.dataset.field);
+    }));
+    wrap.querySelectorAll('.toggle').forEach(btn => btn.addEventListener('click', function(){
+      const r = records.find(x => x.id === this.dataset.id);
+      if(!r) return;
+      const target = nextStatus(r.status);
+      if(target === 'selesai'){
+        const needsTonase1 = recKirimBK(r) && !(r.tonase1 && r.tonase1 > 0);
+        const needsTonase2 = recKirimRoll(r) && !(r.tonase2 && r.tonase2 > 0);
+        const needsTonase3 = recKirimOCC(r) && !(r.tonase3 && r.tonase3 > 0);
+        if(needsTonase1 || needsTonase2 || needsTonase3){
+          openTonaseModal(r.id, 'complete');
+          return;
+        }
+        r.status = 'selesai';
+        r.pendapatan = calcPendapatan(r.jenisArmada, r.kota, r.tonase1, r.tonase2, r.tonase3);
+      }else{
+        r.status = target;
       }
-      r.status = 'selesai';
-      r.pendapatan = calcPendapatan(r.jenisArmada, r.kota, r.tonase1, r.tonase2, r.tonase3);
-    }else{
-      r.status = target;
-    }
-    save(); renderTable(); renderDashboard();
-  }));
-  wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
-    if(confirm('Hapus data DO ini?')){
-      records = records.filter(x => x.id !== this.dataset.id);
-      save(); renderTable();
-      showToast('Data DO berhasil dihapus', 'danger');
-    }
-  }));
-  wrap.querySelectorAll('.edit').forEach(btn => btn.addEventListener('click', function(){
-    editRecordDO(this.dataset.id);
-  }));
+      save(); renderTable(); renderDashboard();
+    }));
+    wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+      if(confirm('Hapus data DO ini?')){
+        records = records.filter(x => x.id !== this.dataset.id);
+        save(); renderTable();
+        showToast('Data DO berhasil dihapus', 'danger');
+      }
+    }));
+    wrap.querySelectorAll('.edit').forEach(btn => btn.addEventListener('click', function(){
+      editRecordDO(this.dataset.id);
+    }));
+  }
 }
 ['searchBox','filterTanggal','filterBulan','filterStatus'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderTable);
