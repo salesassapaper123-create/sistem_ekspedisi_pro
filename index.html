@@ -2394,6 +2394,20 @@ function fbPush(path, value){
    menampilkan lagi item yang sudah kita hapus. */
 const fbDeletedTombstones = {}; // { path: Map(id -> kadaluarsaMs) }
 const FB_TOMBSTONE_TTL_MS = 20000;
+/* PENTING: Firebase Realtime Database tidak benar-benar menyimpan array JS — kalau key-nya sampai
+   tidak berurutan/ada celah (mis. gara-gara operasi tulis lain di masa lalu), snap.val() ATAU nilai
+   di dalam .transaction() bisa balik sebagai OBJECT ({"0":..,"2":..}) bukan Array. Kalau ini terjadi
+   dan kode kita cuma cek Array.isArray(), transaksi hapus akan diam-diam TIDAK melakukan apa-apa
+   (data di server tidak pernah benar-benar terhapus, tapi juga tidak ada error) — persis gejala
+   "hapus kelihatan berhasil tapi muncul lagi setelah refresh". fbToArray() menormalkan kedua bentuk. */
+function fbToArray(val){
+  if(val === null || val === undefined) return null;
+  if(Array.isArray(val)) return val;
+  if(typeof val === 'object'){
+    return Object.keys(val).sort((a,b) => Number(a) - Number(b)).map(k => val[k]);
+  }
+  return null;
+}
 function fbMarkDeleted(path, id){
   if(id === undefined || id === null || id === '') return;
   if(!fbDeletedTombstones[path]) fbDeletedTombstones[path] = new Map();
@@ -2415,8 +2429,17 @@ function fbRemoveFromList(path, matchesItemToRemove, id){
   const prevInQueue = fbWriteQueue[path] || Promise.resolve();
   const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
     return fbDb.ref(path).transaction(currentData => {
-      if(!Array.isArray(currentData)) return currentData;
-      return currentData.filter(item => !matchesItemToRemove(item));
+      const arr = fbToArray(currentData);
+      if(arr === null) return currentData; // path kosong / bentuk tak dikenal -> jangan diubah
+      return arr.filter(item => !matchesItemToRemove(item));
+    }).then(result => {
+      if(result && result.committed === false){
+        // Transaksi "berhasil" secara teknis tapi TIDAK mengubah apa pun di server (mis. bentuk data
+        // tak terduga, atau konflik retry berulang) -> beri tahu pengguna, jangan diam-diam dianggap sukses.
+        console.warn(`Transaksi hapus di Firebase tidak ter-commit (path: ${path}) — data mungkin belum benar-benar terhapus di server.`);
+        showToast('Terhapus di perangkat ini, tapi belum tersinkron ke server. Coba refresh untuk memastikan.', 'info');
+      }
+      return result;
     }).catch(err => {
       console.warn(`Gagal transaksi hapus di Firebase (path: ${path}):`, err);
       showToast('Terhapus di perangkat ini, tapi gagal sinkron ke server — cek koneksi internet.', 'info');
@@ -2435,8 +2458,9 @@ function attachFirebaseAccountsListener(){
     fbDb.ref('accounts').on('value', snap => {
       if(fbPendingWrites['accounts']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
       const val = snap.val();
-      if(Array.isArray(val) && val.length > 0){
-        const filtered = fbFilterTombstoned('accounts', val, item => normEmail(item && item.email));
+      const arr = fbToArray(val);
+      if(arr && arr.length > 0){
+        const filtered = fbFilterTombstoned('accounts', arr, item => normEmail(item && item.email));
         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(filtered));
         if(document.getElementById('accountListWrap') && document.querySelector('.view.active[data-view="pengaturan"]')){
           renderAccountList();
@@ -2466,8 +2490,9 @@ function attachFirebaseListenersInner(){
   fbDb.ref('records').on('value', snap => {
     if(fbPendingWrites['records']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
-    if(Array.isArray(val)){
-      records = fbFilterTombstoned('records', val);
+    const arr = fbToArray(val);
+    if(arr){
+      records = fbFilterTombstoned('records', arr);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
       const v = currentViewName();
       if(v === 'rekap') renderTable();
@@ -2482,8 +2507,9 @@ function attachFirebaseListenersInner(){
   fbDb.ref('kendaraan').on('value', snap => {
     if(fbPendingWrites['kendaraan']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
-    if(Array.isArray(val)){
-      kendaraanList = fbFilterTombstoned('kendaraan', val);
+    const arr = fbToArray(val);
+    if(arr){
+      kendaraanList = fbFilterTombstoned('kendaraan', arr);
       if(ensureIds(kendaraanList, 'kd')) fbPush('kendaraan', kendaraanList);
       localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList));
       const v = currentViewName();
@@ -2500,8 +2526,9 @@ function attachFirebaseListenersInner(){
   fbDb.ref('driver').on('value', snap => {
     if(fbPendingWrites['driver']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
-    if(Array.isArray(val)){
-      driverList = fbFilterTombstoned('driver', val);
+    const arr = fbToArray(val);
+    if(arr){
+      driverList = fbFilterTombstoned('driver', arr);
       if(ensureIds(driverList, 'dr')) fbPush('driver', driverList);
       localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
       const v = currentViewName();
@@ -2514,8 +2541,9 @@ function attachFirebaseListenersInner(){
   fbDb.ref('maintenance').on('value', snap => {
     if(fbPendingWrites['maintenance']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
-    if(Array.isArray(val)){
-      maintenanceList = fbFilterTombstoned('maintenance', val);
+    const arr = fbToArray(val);
+    if(arr){
+      maintenanceList = fbFilterTombstoned('maintenance', arr);
       localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList));
       const v = currentViewName();
       if(v === 'maintenance') renderMaintenance();
