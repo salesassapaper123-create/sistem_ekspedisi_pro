@@ -2520,12 +2520,12 @@ function renderTarifTable(){
     wrap.innerHTML = '<p class="hint">Belum ada data tarif. Tambahkan lewat form di atas.</p>';
     return;
   }
-  let html = '<table><thead><tr><th>Jenis armada</th><th>Kota</th><th>Harga per kg (Rp)</th><th></th></tr></thead><tbody>';
+  let html = '<table class="sv-table"><thead><tr><th>Jenis armada</th><th>Kota</th><th>Harga per kg (Rp)</th><th></th></tr></thead><tbody>';
   items.forEach((t, idx) => {
     html += `<tr>
-      <td>${esc((t.armada || '-').toUpperCase())}</td>
-      <td>${esc(t.kota || '-')}</td>
-      <td class="mono">Rp ${Number(t.hargaPerKg || 0).toLocaleString('id-ID')}</td>
+      <td class="sv-left">${esc((t.armada || '-').toUpperCase())}</td>
+      <td class="sv-left">${esc(t.kota || '-')}</td>
+      <td class="mono sv-num">Rp ${Number(t.hargaPerKg || 0).toLocaleString('id-ID')}</td>
       <td class="row-actions">
         <button type="button" class="icon-btn edit tarif-edit" data-idx="${idx}" title="Edit tarif">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
@@ -4217,13 +4217,13 @@ function renderMaintenance(){
   const list = maintenanceList.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
   if(list.length === 0){ wrap.innerHTML = emptyState('Belum ada catatan perbaikan. Klik "Tambah Perbaikan" di atas untuk mulai mencatat.'); return; }
   const admin = isAdminUser();
-  wrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th><th>Status</th><th></th></tr></thead><tbody>${list.map(m => `
+  wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th><th>Status</th><th></th></tr></thead><tbody>${list.map(m => `
     <tr>
       <td>${fmtDate(m.tanggal)}</td>
       <td><span class="plate-cell">${esc(m.nopol)}</span></td>
-      <td>${esc(m.jenis)}</td>
-      <td class="mono">${rupiah(m.biaya)}</td>
-      <td>${esc(m.catatan || '-')}</td>
+      <td class="sv-left">${esc(m.jenis)}</td>
+      <td class="mono sv-num">${rupiah(m.biaya)}</td>
+      <td class="sv-left">${esc(m.catatan || '-')}</td>
       <td>${statusBadge(m.status)}</td>
       <td class="row-actions">
         ${admin ? `<button class="icon-btn toggle" data-id="${m.id}" title="Ubah status">
@@ -4422,13 +4422,13 @@ function generateMargin(){
   }).filter(row => row.pendapatanArmada > 0 || row.uangJalanArmada > 0 || row.biayaArmada > 0);
 
   if(rows.length > 0){
-    html += `<table><thead><tr><th>Armada</th><th>Pendapatan</th><th>Uang jalan driver</th><th>Biaya perbaikan</th><th>Laba</th></tr></thead><tbody>
+    html += `<table class="sv-table"><thead><tr><th>Armada</th><th>Pendapatan</th><th>Uang jalan driver</th><th>Biaya perbaikan</th><th>Laba</th></tr></thead><tbody>
       ${rows.map(row => `<tr>
-        <td>${armadaLabel(row.key)}</td>
-        <td class="mono">${rupiah(row.pendapatanArmada)}</td>
-        <td class="mono">${rupiah(row.uangJalanArmada)}</td>
-        <td class="mono">${rupiah(row.biayaArmada)}</td>
-        <td class="mono">${rupiah(row.laba)}</td>
+        <td class="sv-left">${armadaLabel(row.key)}</td>
+        <td class="mono sv-num">${rupiah(row.pendapatanArmada)}</td>
+        <td class="mono sv-num">${rupiah(row.uangJalanArmada)}</td>
+        <td class="mono sv-num">${rupiah(row.biayaArmada)}</td>
+        <td class="mono sv-num" style="font-weight:700;">${rupiah(row.laba)}</td>
       </tr>`).join('')}
     </tbody></table>`;
   }
@@ -4525,24 +4525,24 @@ function renderHppResult(){
     wrap.innerHTML = emptyState('Belum ada asumsi biaya yang disimpan. Isi &amp; simpan form di atas dulu.');
     return;
   }
-  wrap.innerHTML = `<table><thead><tr>
+  wrap.innerHTML = `<table class="sv-table"><thead><tr>
       <th>Armada</th><th>Jarak/rit</th><th>BBM/rit</th><th>Biaya variabel/rit</th><th>Alokasi biaya tetap/rit</th>
       <th>HPP/rit</th><th>HPP/km</th><th>HPP/ton</th><th>Harga jual/rit</th><th>Harga jual/km</th><th>Harga jual/ton</th>
     </tr></thead><tbody>
       ${armadaKeys.map(key => {
         const h = hitungHpp(key);
         return `<tr>
-          <td>${armadaLabel(key)}</td>
-          <td class="mono">${h.jarak > 0 ? h.jarak.toLocaleString('id-ID') + ' km' : '-'}</td>
-          <td class="mono">${rupiah(h.biayaBbm)}</td>
-          <td class="mono">${rupiah(h.biayaVariabel)}</td>
-          <td class="mono">${rupiah(h.alokasiTetap)}</td>
-          <td class="mono" style="font-weight:600;">${rupiah(h.hppPerRit)}</td>
-          <td class="mono">${h.jarak > 0 ? rupiah(h.hppPerKm) : '-'}</td>
-          <td class="mono">${h.kapasitas > 0 ? rupiah(h.hppPerTon) : '-'}</td>
-          <td class="mono" style="font-weight:600; color:var(--green-600);">${rupiah(h.hargaJualRit)}</td>
-          <td class="mono" style="color:var(--green-600);">${h.jarak > 0 ? rupiah(h.hargaJualKm) : '-'}</td>
-          <td class="mono" style="color:var(--green-600);">${h.kapasitas > 0 ? rupiah(h.hargaJualTon) : '-'}</td>
+          <td class="sv-left">${armadaLabel(key)}</td>
+          <td class="mono sv-num">${h.jarak > 0 ? h.jarak.toLocaleString('id-ID') + ' km' : '-'}</td>
+          <td class="mono sv-num">${rupiah(h.biayaBbm)}</td>
+          <td class="mono sv-num">${rupiah(h.biayaVariabel)}</td>
+          <td class="mono sv-num">${rupiah(h.alokasiTetap)}</td>
+          <td class="mono sv-num" style="font-weight:700;">${rupiah(h.hppPerRit)}</td>
+          <td class="mono sv-num">${h.jarak > 0 ? rupiah(h.hppPerKm) : '-'}</td>
+          <td class="mono sv-num">${h.kapasitas > 0 ? rupiah(h.hppPerTon) : '-'}</td>
+          <td class="mono sv-num" style="font-weight:700; color:var(--green-600);">${rupiah(h.hargaJualRit)}</td>
+          <td class="mono sv-num" style="color:var(--green-600);">${h.jarak > 0 ? rupiah(h.hargaJualKm) : '-'}</td>
+          <td class="mono sv-num" style="color:var(--green-600);">${h.kapasitas > 0 ? rupiah(h.hargaJualTon) : '-'}</td>
         </tr>`;
       }).join('')}
     </tbody></table>
@@ -4571,13 +4571,13 @@ function generateHppMargin(){
     totalHpp += hppEstimasi;
     return `<tr>
       <td>${fmtDate(r.tanggal)}</td>
-      <td class="mono">${esc(r.nopol || '-')}</td>
-      <td>${armadaLabel(key)}</td>
-      <td class="mono">${h.jarak > 0 ? h.jarak.toLocaleString('id-ID') + ' km' : '-'}</td>
-      <td class="mono">${rupiah(pendapatan)}</td>
-      <td class="mono">${rupiah(hppEstimasi)}</td>
-      <td class="mono" style="color:${warna};">${rupiah(marginRp)}</td>
-      <td class="mono" style="color:${warna};">${marginPct.toFixed(1)}%</td>
+      <td><span class="plate-cell">${esc(r.nopol || '-')}</span></td>
+      <td class="sv-left">${armadaLabel(key)}</td>
+      <td class="mono sv-num">${h.jarak > 0 ? h.jarak.toLocaleString('id-ID') + ' km' : '-'}</td>
+      <td class="mono sv-num">${rupiah(pendapatan)}</td>
+      <td class="mono sv-num">${rupiah(hppEstimasi)}</td>
+      <td class="mono sv-num" style="color:${warna}; font-weight:700;">${rupiah(marginRp)}</td>
+      <td class="mono sv-num" style="color:${warna}; font-weight:700;">${marginPct.toFixed(1)}%</td>
     </tr>`;
   }).join('');
 
@@ -4591,7 +4591,7 @@ function generateHppMargin(){
       <div class="stat-card"><div class="num" style="color:${warnaTotal};">${rupiah(totalMarginRp)}</div><div class="lbl">Margin riil</div></div>
       <div class="stat-card"><div class="num" style="color:${warnaTotal};">${totalMarginPct.toFixed(1)}%</div><div class="lbl">Margin riil (%)</div></div>
     </div>
-    <table><thead><tr>
+    <table class="sv-table"><thead><tr>
       <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Jarak</th><th>Pendapatan</th><th>HPP estimasi</th><th>Margin (Rp)</th><th>Margin (%)</th>
     </tr></thead><tbody>${rowsHtml}</tbody></table>
     <p style="font-size:11.5px; color:var(--text-faint); margin-top:10px;">
@@ -5041,29 +5041,29 @@ function generateLaporan(){
   const totalT3 = data.reduce((s,r) => s + (Number(r.tonase3)||0), 0);
   const totalPendapatan = data.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
 
-  lWrap.innerHTML = `<table><thead><tr>
+  lWrap.innerHTML = `<table class="sv-table"><thead><tr>
     <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Kota</th><th>Sopir</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Tonase BK</th><th>Tonase Roll Assa</th><th>Tonase OCC</th><th>Pendapatan (Rp)</th><th>Status</th>
   </tr></thead><tbody>${data.map(r => `
     <tr>
       <td>${fmtDate(r.tanggal)}</td>
       <td><span class="plate-cell">${esc(r.nopol)}</span></td>
-      <td>${esc(armadaLabel(r.jenisArmada))}</td>
-      <td>${esc(r.kota || '-')}</td>
-      <td>${esc(r.sopir || '-')}</td>
+      <td class="sv-left">${esc(armadaLabel(r.jenisArmada))}</td>
+      <td class="sv-left">${esc(r.kota || '-')}</td>
+      <td class="sv-left">${esc(r.sopir || '-')}</td>
       <td>${jenisBadge(r)}</td>
-      <td>${tujuanList(r)}</td>
-      <td class="mono">${r.tonase1 ? esc(r.tonase1) + ' kg' : '-'}</td>
-      <td class="mono">${r.tonase2 ? esc(r.tonase2) + ' kg' : '-'}</td>
-      <td class="mono">${r.tonase3 ? esc(r.tonase3) + ' kg' : '-'}</td>
-      <td class="mono">${r.status === 'selesai' ? rupiah(Number(r.pendapatan)||0) : '-'}</td>
+      <td class="sv-left">${tujuanList(r)}</td>
+      <td class="mono sv-num">${r.tonase1 ? esc(r.tonase1) + ' kg' : '-'}</td>
+      <td class="mono sv-num">${r.tonase2 ? esc(r.tonase2) + ' kg' : '-'}</td>
+      <td class="mono sv-num">${r.tonase3 ? esc(r.tonase3) + ' kg' : '-'}</td>
+      <td class="mono sv-num">${r.status === 'selesai' ? rupiah(Number(r.pendapatan)||0) : '-'}</td>
       <td>${statusBadge(r.status)}</td>
     </tr>`).join('')}</tbody>
     <tfoot><tr style="font-weight:700; background:#fafbfc;">
-      <td colspan="7" style="text-align:right;">TOTAL</td>
-      <td class="mono">${totalT1.toLocaleString('id-ID')} kg</td>
-      <td class="mono">${totalT2.toLocaleString('id-ID')} kg</td>
-      <td class="mono">${totalT3.toLocaleString('id-ID')} kg</td>
-      <td class="mono">${rupiah(totalPendapatan)}</td>
+      <td colspan="7" class="sv-left">TOTAL</td>
+      <td class="mono sv-num">${totalT1.toLocaleString('id-ID')} kg</td>
+      <td class="mono sv-num">${totalT2.toLocaleString('id-ID')} kg</td>
+      <td class="mono sv-num">${totalT3.toLocaleString('id-ID')} kg</td>
+      <td class="mono sv-num">${rupiah(totalPendapatan)}</td>
       <td></td>
     </tr></tfoot></table>`;
 }
@@ -5218,15 +5218,15 @@ function generateBiayaPengeluaran(){
     pWrap.innerHTML = emptyState('Tidak ada catatan biaya perbaikan pada periode ini.');
   }else{
     const sorted = biayaBulan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
-    pWrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th></tr></thead><tbody>${sorted.map(m => `
+    pWrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th></tr></thead><tbody>${sorted.map(m => `
       <tr>
         <td>${fmtDate(m.tanggal)}</td>
         <td><span class="plate-cell">${esc(m.nopol)}</span></td>
-        <td>${esc(m.jenis)}</td>
-        <td class="mono">${rupiah(m.biaya)}</td>
-        <td>${esc(m.catatan || '-')}</td>
+        <td class="sv-left">${esc(m.jenis)}</td>
+        <td class="mono sv-num">${rupiah(m.biaya)}</td>
+        <td class="sv-left">${esc(m.catatan || '-')}</td>
       </tr>`).join('')}</tbody>
-      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="3" style="text-align:right;">TOTAL</td><td class="mono">${rupiah(totalBiayaPerbaikan)}</td><td></td></tr></tfoot></table>`;
+      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="3" class="sv-left">TOTAL</td><td class="mono sv-num">${rupiah(totalBiayaPerbaikan)}</td><td></td></tr></tfoot></table>`;
   }
 
   const doWithUangJalan = doBulan.filter(r => Number(r.uangJalan) > 0 || Number(r.biayaLain) > 0);
@@ -5234,15 +5234,15 @@ function generateBiayaPengeluaran(){
     uWrap.innerHTML = emptyState('Tidak ada data uang jalan driver / biaya lain-lain pada periode ini.');
   }else{
     const sorted2 = doWithUangJalan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
-    uWrap.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Nopol</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya lain-lain</th></tr></thead><tbody>${sorted2.map(r => `
+    uWrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya lain-lain</th></tr></thead><tbody>${sorted2.map(r => `
       <tr>
         <td>${fmtDate(r.tanggal)}</td>
         <td><span class="plate-cell">${esc(r.nopol)}</span></td>
-        <td>${esc(r.sopir || '-')}</td>
-        <td class="mono">${rupiah(Number(r.uangJalan) || 0)}</td>
-        <td class="mono">${rupiah(Number(r.biayaLain) || 0)}</td>
+        <td class="sv-left">${esc(r.sopir || '-')}</td>
+        <td class="mono sv-num">${rupiah(Number(r.uangJalan) || 0)}</td>
+        <td class="mono sv-num">${rupiah(Number(r.biayaLain) || 0)}</td>
       </tr>`).join('')}</tbody>
-      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="3" style="text-align:right;">TOTAL</td><td class="mono">${rupiah(totalUangJalan)}</td><td class="mono">${rupiah(totalBiayaLain)}</td></tr></tfoot></table>`;
+      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="3" class="sv-left">TOTAL</td><td class="mono sv-num">${rupiah(totalUangJalan)}</td><td class="mono sv-num">${rupiah(totalBiayaLain)}</td></tr></tfoot></table>`;
   }
 }
 function initBiayaPengeluaranView(){
