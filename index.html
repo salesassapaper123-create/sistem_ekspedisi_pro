@@ -5091,9 +5091,10 @@ function computeRekapNopol(data){
 
 /* Rekap ritase & tonase per Nopol, dipecah per jenis pengiriman (BK / Roll / OCC) —
    mengikuti format "Rekap per Nopol" yang biasa dipakai untuk laporan supir borongan */
-function buildRekapNopolTable(data){
+function buildRekapNopolTable(data, opts){
   const rows = computeRekapNopol(data);
   if(rows.length === 0) return '';
+  const allowDelete = !!(opts && opts.allowDelete);
 
   const sum = (field) => rows.reduce((s,g) => s + g[field], 0);
 
@@ -5102,7 +5103,7 @@ function buildRekapNopolTable(data){
     <th>Ritase BK</th><th>Tonase BK (Kg)</th>
     <th>Ritase Roll</th><th>Tonase Roll (Kg)</th>
     <th>Ritase OCC</th><th>Tonase OCC (Kg)</th>
-    <th>Total Ritase</th><th>Total Tonase (Kg)</th><th>Total Pendapatan (Rp)</th>
+    <th>Total Ritase</th><th>Total Tonase (Kg)</th><th>Total Pendapatan (Rp)</th>${allowDelete ? '<th>Hapus</th>' : ''}
   </tr></thead><tbody>${rows.map(g => `
     <tr>
       <td><span class="plate-cell">${esc(g.nopol)}</span></td>
@@ -5116,6 +5117,9 @@ function buildRekapNopolTable(data){
       <td class="mono sv-num" style="font-weight:700;">${g.totalRitase}</td>
       <td class="mono sv-num" style="font-weight:700;">${g.totalTonase.toLocaleString('id-ID')}</td>
       <td class="mono sv-num">${rupiah(g.totalPendapatan)}</td>
+      ${allowDelete ? `<td class="sv-num"><button type="button" class="icon-btn del rekap-nopol-del" data-nopol="${esc(g.nopol)}" title="Hapus semua DO nopol ini di periode ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/></svg>
+      </button></td>` : ''}
     </tr>`).join('')}</tbody>
     <tfoot><tr style="font-weight:700; background:#fafbfc;">
       <td colspan="2" class="sv-left">TOTAL KESELURUHAN</td>
@@ -5127,7 +5131,7 @@ function buildRekapNopolTable(data){
       <td class="mono sv-num">${sum('tonOCC').toLocaleString('id-ID')}</td>
       <td class="mono sv-num">${sum('totalRitase')}</td>
       <td class="mono sv-num">${sum('totalTonase').toLocaleString('id-ID')}</td>
-      <td class="mono sv-num">${rupiah(sum('totalPendapatan'))}</td>
+      <td class="mono sv-num">${rupiah(sum('totalPendapatan'))}</td>${allowDelete ? '<td></td>' : ''}
     </tr></tfoot></table>`;
 }
 document.getElementById('btnGenerate').addEventListener('click', generateLaporan);
@@ -5166,7 +5170,19 @@ function generateRitase(){
   if(!period){ wrap.innerHTML = emptyState('Pilih periode terlebih dahulu.'); return; }
   const data = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate);
   if(data.length === 0){ wrap.innerHTML = emptyState('Tidak ada data DO pada periode ini.'); return; }
-  wrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>` + buildRekapNopolTable(data);
+  const admin = isAdminUser();
+  wrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>` + buildRekapNopolTable(data, { allowDelete: admin });
+  if(admin){
+    wrap.querySelectorAll('.rekap-nopol-del').forEach(btn => btn.addEventListener('click', function(){
+      const nopol = this.dataset.nopol;
+      if(confirm(`Hapus SEMUA data DO nopol ${nopol} pada periode ${period.label}? Tindakan ini tidak bisa dibatalkan.`)){
+        records = records.filter(r => !(r.nopol === nopol && r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate));
+        save();
+        generateRitase();
+        showToast(`Semua data DO nopol ${nopol} pada periode ini berhasil dihapus`, 'danger');
+      }
+    }));
+  }
 }
 function initRitaseView(){
   defaultThisMonthRange('ritaseDari', 'ritaseSampai');
