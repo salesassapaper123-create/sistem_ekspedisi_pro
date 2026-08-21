@@ -2464,6 +2464,26 @@ window.addEventListener('beforeunload', function(e){
     return '';
   }
 });
+/* PENTING (penyebab lain data "balik lagi" walau sudah benar-benar terhapus di server):
+   Setiap listener fbDb.ref(path).on('value', ...) di bawah punya jalur "kalau server kosong (null) tapi
+   perangkat ini masih punya data lokal -> unggah data lokal itu ke server" — ini dimaksudkan HANYA untuk
+   sekali di awal (mengisi database yang masih benar-benar kosong dengan data lokal yang sudah ada duluan).
+   Masalahnya: begitu SEMUA data di sebuah path benar-benar dihapus (jadi kosong), server juga mengirim
+   snapshot null — kalau tab/perangkat LAIN yang masih terbuka (atau tab yang sama tapi variabel lokalnya
+   belum sempat ter-update) menerima snapshot null itu sementara variabel lokalnya (mis. kendaraanList)
+   MASIH berisi data lama, jalur "unggah data lokal" di atas akan otomatis menulis ulang data lama itu ke
+   server -> data yang baru saja dihapus "muncul lagi" walau penghapusannya sendiri sudah 100% berhasil.
+   Perbaikannya: jalur unggah-otomatis itu HANYA boleh jalan kalau perangkat ini belum PERNAH sama sekali
+   menerima snapshot valid dari path tsb sebelumnya (ditandai di localStorage, jadi berlaku lintas
+   refresh/tab). Begitu satu snapshot (apa pun isinya, termasuk kosong) pernah diterima, penanda ini
+   permanen mencegah unggah-otomatis lagi -> snapshot kosong yang datang setelahnya SELALU dianggap
+   "memang sudah dihapus", bukan "belum pernah disinkron". */
+function fbHasSyncedBefore(path){
+  try{ return localStorage.getItem('ekspedisi_pro_fb_synced_' + path) === '1'; }catch(e){ return false; }
+}
+function fbMarkSynced(path){
+  try{ localStorage.setItem('ekspedisi_pro_fb_synced_' + path, '1'); }catch(e){}
+}
 let fbAccountsListenerAttached = false;
 function attachFirebaseAccountsListener(){
   if(!fbDb || fbAccountsListenerAttached) return;
@@ -2473,13 +2493,15 @@ function attachFirebaseAccountsListener(){
       if(fbPendingWrites['accounts']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
       const val = snap.val();
       const arr = fbToArray(val);
+      const sudahPernahSinkron = fbHasSyncedBefore('accounts');
+      fbMarkSynced('accounts');
       if(arr && arr.length > 0){
         const filtered = fbFilterTombstoned('accounts', arr, item => normEmail(item && item.email));
         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(filtered));
         if(document.getElementById('accountListWrap') && document.querySelector('.view.active[data-view="pengaturan"]')){
           renderAccountList();
         }
-      }else if(val == null){
+      }else if(val == null && !sudahPernahSinkron){
         const local = loadAccounts();
         if(local.length > 0) fbPush('accounts', local); // Firebase masih kosong -> unggah data lokal sebagai data awal
       }
@@ -2505,6 +2527,8 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['records']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     const arr = fbToArray(val);
+    const sudahPernahSinkron = fbHasSyncedBefore('records');
+    fbMarkSynced('records');
     if(arr){
       records = fbFilterTombstoned('records', arr);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
@@ -2513,7 +2537,7 @@ function attachFirebaseListenersInner(){
       if(v === 'dashboard') renderDashboard();
       if(v === 'peringatan') renderPeringatan();
       updatePeringatanBadge();
-    }else if(val == null && records.length > 0){
+    }else if(val == null && records.length > 0 && !sudahPernahSinkron){
       fbPush('records', records); // Firebase masih kosong (pertama kali pakai) -> unggah data lokal sebagai data awal
     }
   });
@@ -2522,6 +2546,8 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['kendaraan']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     const arr = fbToArray(val);
+    const sudahPernahSinkron = fbHasSyncedBefore('kendaraan');
+    fbMarkSynced('kendaraan');
     if(arr){
       kendaraanList = fbFilterTombstoned('kendaraan', arr);
       if(ensureIds(kendaraanList, 'kd')) fbPush('kendaraan', kendaraanList);
@@ -2532,7 +2558,7 @@ function attachFirebaseListenersInner(){
       if(v === 'service') renderServiceMonitoring();
       if(v === 'dashboard') renderWaLegalBanner();
       updatePeringatanBadge();
-    }else if(val == null && kendaraanList.length > 0){
+    }else if(val == null && kendaraanList.length > 0 && !sudahPernahSinkron){
       fbPush('kendaraan', kendaraanList);
     }
   });
@@ -2541,13 +2567,15 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['driver']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     const arr = fbToArray(val);
+    const sudahPernahSinkron = fbHasSyncedBefore('driver');
+    fbMarkSynced('driver');
     if(arr){
       driverList = fbFilterTombstoned('driver', arr);
       if(ensureIds(driverList, 'dr')) fbPush('driver', driverList);
       localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
       const v = currentViewName();
       if(v === 'driver') renderDriver();
-    }else if(val == null && driverList.length > 0){
+    }else if(val == null && driverList.length > 0 && !sudahPernahSinkron){
       fbPush('driver', driverList);
     }
   });
@@ -2556,13 +2584,15 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['maintenance']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     const arr = fbToArray(val);
+    const sudahPernahSinkron = fbHasSyncedBefore('maintenance');
+    fbMarkSynced('maintenance');
     if(arr){
       maintenanceList = fbFilterTombstoned('maintenance', arr);
       localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList));
       const v = currentViewName();
       if(v === 'maintenance') renderMaintenance();
       updatePeringatanBadge();
-    }else if(val == null && maintenanceList.length > 0){
+    }else if(val == null && maintenanceList.length > 0 && !sudahPernahSinkron){
       fbPush('maintenance', maintenanceList);
     }
   });
