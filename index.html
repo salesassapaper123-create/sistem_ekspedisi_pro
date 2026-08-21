@@ -2339,16 +2339,33 @@ try{
    menerima snapshot LAMA dari server (mis. karena penulisan .set() kita belum sempat sampai/dikonfirmasi
    server, atau ada event 'value' yang tertunda) dan langsung menimpa balik kendaraanList (dan localStorage)
    dengan data lama yang masih berisi item yang baru saja dihapus -> makanya datanya "muncul lagi".
-   Selama ada penulisan yang belum selesai untuk sebuah path, listener 'value' path tsb diabaikan dulu. */
+   Selama ada penulisan yang belum selesai untuk sebuah path, listener 'value' path tsb diabaikan dulu.
+
+   CATATAN TAMBAHAN (penyebab data masih muncul lagi meski sudah ada penanda di atas):
+   Sebelumnya setiap panggilan fbPush() langsung menembak fbDb.ref(path).set(value) secara PARALEL/independen.
+   Kalau user menghapus data dua kali berturut-turut dengan cepat (atau hapus lalu langsung tambah/ubah data lain
+   di path yang sama), ada 2 penulisan .set() yang jalan bersamaan ke path yang sama. Urutan keduanya SAMPAI ke
+   server Firebase tidak dijamin sama dengan urutan diklik — kalau penulisan yang lebih lama (masih berisi data
+   yang baru saja dihapus) kebetulan sampai ke server BELAKANGAN, server akan menyimpan versi lama itu. Begitu
+   listener 'value' menyala lagi (refresh halaman / buka tab & perangkat lain), data yang sudah dihapus itu
+   "muncul lagi". Perbaikannya: setiap penulisan ke path yang sama diantre (fbWriteQueue) supaya BENAR-BENAR
+   berurutan — penulisan berikutnya baru dikirim setelah penulisan sebelumnya untuk path itu selesai, jadi data
+   terbaru selalu yang terakhir & menang di server. */
 const fbPendingWrites = {};
+const fbWriteQueue = {};
 function fbPush(path, value){
   if(!fbDb) return Promise.resolve();
   fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
-  return fbAuthReadyPromise.then(() => {
-    return Promise.resolve(fbDb.ref(path).set(value)).catch(err => { /* diam-diam gagal, data tetap aman di localStorage */ });
+  const prevInQueue = fbWriteQueue[path] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+    return Promise.resolve(fbDb.ref(path).set(value)).catch(err => {
+      console.warn(`Gagal sinkron ke Firebase (path: ${path}), data tetap aman di localStorage perangkat ini:`, err);
+    });
   }).catch(() => {}).finally(() => {
     fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
   });
+  fbWriteQueue[path] = thisWrite;
+  return thisWrite;
 }
 
 /* Akun (login) disinkronkan sejak halaman dibuka (sebelum login pun), supaya pendaftaran akun baru dari perangkat mana pun
