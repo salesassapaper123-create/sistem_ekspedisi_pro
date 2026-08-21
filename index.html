@@ -2380,7 +2380,36 @@ function fbPush(path, value){
    Firebase otomatis mengulang transaksi itu kalau ternyata ada perubahan lain di tengah jalan. Dengan
    begini, hasil akhirnya selalu konsisten dengan data server yang paling baru, tidak mungkin lagi
    ketimpa balik oleh data lama. */
-function fbRemoveFromList(path, matchesItemToRemove){
+/* PERBAIKAN LANJUTAN — "tombstone" guard untuk bug "data yang sudah dihapus muncul lagi":
+   Semua perbaikan di atas (fbPendingWrites, fbWriteQueue, transaction atomik) menutup celah race saat
+   PENULISAN kita sendiri yang saling menyusul. Tapi masih ada 1 celah terakhir yang bisa membuat item
+   yang baru dihapus "muncul lagi": kalau transaksi hapus ke Firebase GAGAL secara diam-diam (mis. rules
+   Firebase menolak/PERMISSION_DENIED, atau koneksi terputus tepat saat transaksi jalan), maka di server
+   item itu SEBENARNYA TIDAK PERNAH benar-benar terhapus. Begitu listener 'value' menyala lagi (refresh
+   halaman, ganti tab, atau snapshot berikutnya datang) server akan mengirim ulang data LAMA yang masih
+   berisi item itu, dan itu langsung menimpa data lokal yang tadinya sudah benar (kosong).
+   Untuk menutup celah ini: begitu sebuah id ditandai "baru saja dihapus dari perangkat ini", listener
+   'value' path terkait akan MEMBUANG id tsb dari snapshot apa pun yang diterima selama beberapa detik ke
+   depan — jadi walaupun servernya masih mengirim data lama, tampilan di perangkat ini tidak akan pernah
+   menampilkan lagi item yang sudah kita hapus. */
+const fbDeletedTombstones = {}; // { path: Map(id -> kadaluarsaMs) }
+const FB_TOMBSTONE_TTL_MS = 20000;
+function fbMarkDeleted(path, id){
+  if(id === undefined || id === null || id === '') return;
+  if(!fbDeletedTombstones[path]) fbDeletedTombstones[path] = new Map();
+  fbDeletedTombstones[path].set(String(id), Date.now() + FB_TOMBSTONE_TTL_MS);
+}
+function fbFilterTombstoned(path, list, keyFn){
+  const tomb = fbDeletedTombstones[path];
+  if(!tomb || tomb.size === 0 || !Array.isArray(list)) return list;
+  const now = Date.now();
+  tomb.forEach((exp, id) => { if(exp < now) tomb.delete(id); });
+  if(tomb.size === 0) return list;
+  const getKey = keyFn || (item => item && item.id);
+  return list.filter(item => !(item && tomb.has(String(getKey(item)))));
+}
+function fbRemoveFromList(path, matchesItemToRemove, id){
+  fbMarkDeleted(path, id); // tandai SEKARANG juga (sinkron), sebelum ada kesempatan listener 'value' menimpa balik
   if(!fbDb) return Promise.resolve(false);
   fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
   const prevInQueue = fbWriteQueue[path] || Promise.resolve();
@@ -2390,6 +2419,7 @@ function fbRemoveFromList(path, matchesItemToRemove){
       return currentData.filter(item => !matchesItemToRemove(item));
     }).catch(err => {
       console.warn(`Gagal transaksi hapus di Firebase (path: ${path}):`, err);
+      showToast('Terhapus di perangkat ini, tapi gagal sinkron ke server — cek koneksi internet.', 'info');
     });
   }).catch(() => {}).finally(() => {
     fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
@@ -2406,7 +2436,8 @@ function attachFirebaseAccountsListener(){
       if(fbPendingWrites['accounts']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
       const val = snap.val();
       if(Array.isArray(val) && val.length > 0){
-        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(val));
+        const filtered = fbFilterTombstoned('accounts', val, item => normEmail(item && item.email));
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(filtered));
         if(document.getElementById('accountListWrap') && document.querySelector('.view.active[data-view="pengaturan"]')){
           renderAccountList();
         }
@@ -2436,7 +2467,7 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['records']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(Array.isArray(val)){
-      records = val;
+      records = fbFilterTombstoned('records', val);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
       const v = currentViewName();
       if(v === 'rekap') renderTable();
@@ -2452,7 +2483,7 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['kendaraan']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(Array.isArray(val)){
-      kendaraanList = val;
+      kendaraanList = fbFilterTombstoned('kendaraan', val);
       if(ensureIds(kendaraanList, 'kd')) fbPush('kendaraan', kendaraanList);
       localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList));
       const v = currentViewName();
@@ -2470,7 +2501,7 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['driver']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(Array.isArray(val)){
-      driverList = val;
+      driverList = fbFilterTombstoned('driver', val);
       if(ensureIds(driverList, 'dr')) fbPush('driver', driverList);
       localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
       const v = currentViewName();
@@ -2484,7 +2515,7 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['maintenance']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
     if(Array.isArray(val)){
-      maintenanceList = val;
+      maintenanceList = fbFilterTombstoned('maintenance', val);
       localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList));
       const v = currentViewName();
       if(v === 'maintenance') renderMaintenance();
@@ -3797,7 +3828,7 @@ function renderKendaraan(){
             return;
           }
           localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList));
-          fbRemoveFromList('kendaraan', item => String(item.id) === String(targetId));
+          fbRemoveFromList('kendaraan', item => String(item.id) === String(targetId), targetId);
           renderKendaraan(); renderLegalitas();
           showToast('Data kendaraan berhasil dihapus', 'danger');
         }
@@ -3868,7 +3899,7 @@ function renderDriver(){
             return;
           }
           localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
-          fbRemoveFromList('driver', item => String(item.id) === String(targetId));
+          fbRemoveFromList('driver', item => String(item.id) === String(targetId), targetId);
           renderDriver();
           showToast('Data driver berhasil dihapus', 'danger');
         }
@@ -4340,8 +4371,11 @@ function renderMaintenance(){
     }));
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus catatan perbaikan ini?')){
-        maintenanceList = maintenanceList.filter(x => x.id !== this.dataset.id);
-        saveMaintenance(); renderMaintenance();
+        const targetId = this.dataset.id;
+        maintenanceList = maintenanceList.filter(x => x.id !== targetId);
+        localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList));
+        fbRemoveFromList('maintenance', item => item.id === targetId, targetId);
+        renderMaintenance();
         showToast('Catatan perbaikan berhasil dihapus', 'danger');
       }
     }));
@@ -5059,8 +5093,11 @@ function renderTable(){
     }));
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus data DO ini?')){
-        records = records.filter(x => x.id !== this.dataset.id);
-        save(); renderTable();
+        const targetId = this.dataset.id;
+        records = records.filter(x => x.id !== targetId);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        fbRemoveFromList('records', item => item.id === targetId, targetId);
+        renderTable();
         showToast('Data DO berhasil dihapus', 'danger');
       }
     }));
@@ -6054,9 +6091,11 @@ function renderAccountList(){
     }
   }));
   wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
-    if(confirm(`Hapus akun ${this.dataset.email}?`)){
-      let list = loadAccounts().filter(a => normEmail(a.email) !== normEmail(this.dataset.email));
-      saveAccounts(list);
+    const targetEmail = this.dataset.email;
+    if(confirm(`Hapus akun ${targetEmail}?`)){
+      let list = loadAccounts().filter(a => normEmail(a.email) !== normEmail(targetEmail));
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+      fbRemoveFromList('accounts', item => normEmail(item && item.email) === normEmail(targetEmail), normEmail(targetEmail));
       renderAccountList();
       showToast('Akun berhasil dihapus', 'danger');
     }
