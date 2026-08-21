@@ -5760,6 +5760,37 @@ function togglePw(inputId, btn){
 
 const DEFAULT_ACCOUNT = {email:'admin@ekspedisipro.id', password:'admin123', nama:'Admin', role:'admin'};
 
+/* ---------- Hash password (SHA-256 + salt per akun) ----------
+   Password TIDAK lagi disimpan plain text. Field lama `password` (plain text) otomatis
+   dimigrasikan ke `passwordHash`+`passwordSalt` saat akun tsb berhasil login berikutnya. */
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function randomSaltHex(len){
+  const bytes = crypto.getRandomValues(new Uint8Array(len || 16));
+  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function hashPasswordWithSalt(password, salt){
+  return sha256Hex(salt + ':' + password);
+}
+/* Set/ganti password akun -> selalu tersimpan sebagai hash, hapus field password plain text lama kalau ada */
+async function setAccountPassword(acc, newPassword){
+  const salt = randomSaltHex();
+  acc.passwordSalt = salt;
+  acc.passwordHash = await hashPasswordWithSalt(newPassword, salt);
+  delete acc.password;
+}
+/* Cek password akun: pakai hash kalau sudah dimigrasi, fallback ke plain text lama kalau belum */
+async function verifyPassword(inputPass, acc){
+  if(acc && acc.passwordHash && acc.passwordSalt){
+    const h = await hashPasswordWithSalt(inputPass, acc.passwordSalt);
+    return h === acc.passwordHash;
+  }
+  return !!acc && inputPass === acc.password;
+}
+
 function loadAccounts(){
   let list;
   try{ list = JSON.parse(localStorage.getItem(ACCOUNTS_KEY)); }catch(e){ list = null; }
@@ -5832,15 +5863,22 @@ function setAuthTab(tab){
 document.getElementById('tabLogin').addEventListener('click', () => setAuthTab('login'));
 document.getElementById('tabRegister').addEventListener('click', () => setAuthTab('register'));
 
-document.getElementById('loginForm').addEventListener('submit', function(e){
+document.getElementById('loginForm').addEventListener('submit', async function(e){
   e.preventDefault();
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
   const acc = findAccount(email);
-  if(acc && pass === acc.password){
+  const ok = await verifyPassword(pass, acc);
+  if(ok){
     if(acc.approved === false){
       document.getElementById('loginError').textContent = 'Akun kamu masih menunggu persetujuan admin. Hubungi admin untuk mengaktifkan akun ini.';
       return;
+    }
+    if(acc.password){
+      /* Migrasi otomatis: akun ini masih pakai password plain text lama -> hash sekarang, transparan buat user */
+      const list = loadAccounts();
+      const target = list.find(a => normEmail(a.email) === normEmail(acc.email));
+      if(target){ await setAccountPassword(target, pass); saveAccounts(list); }
     }
     sessionStorage.setItem(SESSION_KEY, normEmail(acc.email));
     showApp();
@@ -5849,7 +5887,7 @@ document.getElementById('loginForm').addEventListener('submit', function(e){
   }
 });
 
-document.getElementById('registerForm').addEventListener('submit', function(e){
+document.getElementById('registerForm').addEventListener('submit', async function(e){
   e.preventDefault();
   const errEl = document.getElementById('registerError');
   errEl.textContent = '';
@@ -5870,7 +5908,9 @@ document.getElementById('registerForm').addEventListener('submit', function(e){
     errEl.textContent = 'Email ini sudah terdaftar. Silakan masuk.'; return;
   }
 
-  accounts.push({email: email.trim(), password: pass, nama: nama, role: 'user', approved: false});
+  const newAcc = {email: email.trim(), nama: nama, role: 'user', approved: false};
+  await setAccountPassword(newAcc, pass);
+  accounts.push(newAcc);
   saveAccounts(accounts);
   this.reset();
   errEl.style.color = 'var(--green-600)';
@@ -5934,7 +5974,7 @@ document.getElementById('btnCancelAddAccount').addEventListener('click', functio
   document.getElementById('formAddAccount').reset();
   document.getElementById('btnShowAddAccount').style.display = '';
 });
-document.getElementById('formAddAccount').addEventListener('submit', function(e){
+document.getElementById('formAddAccount').addEventListener('submit', async function(e){
   e.preventDefault();
   const errEl = document.getElementById('addAccountError');
   errEl.textContent = '';
@@ -5948,7 +5988,9 @@ document.getElementById('formAddAccount').addEventListener('submit', function(e)
   if(accounts.length >= MAX_ACCOUNTS){ errEl.textContent = `Kuota maksimal ${MAX_ACCOUNTS} akun sudah tercapai.`; return; }
   if(accounts.some(a => normEmail(a.email) === normEmail(email))){ errEl.textContent = 'Email ini sudah terdaftar.'; return; }
 
-  accounts.push({email: email.trim(), password: pass, nama: nama, role: role, approved: true});
+  const newAcc = {email: email.trim(), nama: nama, role: role, approved: true};
+  await setAccountPassword(newAcc, pass);
+  accounts.push(newAcc);
   saveAccounts(accounts);
   this.reset();
   this.style.display = 'none';
@@ -5957,7 +5999,7 @@ document.getElementById('formAddAccount').addEventListener('submit', function(e)
   showToast('Akun berhasil ditambahkan', 'success');
 });
 
-document.getElementById('formPassword').addEventListener('submit', function(e){
+document.getElementById('formPassword').addEventListener('submit', async function(e){
   e.preventDefault();
   const acc = currentAccount();
   const errEl = document.getElementById('passError');
@@ -5971,17 +6013,21 @@ document.getElementById('formPassword').addEventListener('submit', function(e){
   const newPass = document.getElementById('newPass').value;
   const confirmPass = document.getElementById('confirmPass').value;
 
-  if(oldPass !== acc.password){ errEl.textContent = 'Password saat ini tidak sesuai.'; return; }
+  const oldPassOk = await verifyPassword(oldPass, acc);
+  if(!oldPassOk){ errEl.textContent = 'Password saat ini tidak sesuai.'; return; }
   if(!isValidEmail(inputEmail)){ errEl.textContent = 'Format email tidak valid.'; return; }
   const accounts = loadAccounts();
+  const target = accounts.find(a => normEmail(a.email) === normEmail(acc.email));
+  if(!target){ errEl.textContent = 'Akun tidak ditemukan, silakan masuk kembali.'; return; }
   if(normEmail(inputEmail) !== normEmail(acc.email) && accounts.some(a => normEmail(a.email) === normEmail(inputEmail))){
     errEl.textContent = 'Email tersebut sudah dipakai akun lain.'; return;
   }
   if(newPass && newPass !== confirmPass){ errEl.textContent = 'Konfirmasi password baru tidak cocok.'; return; }
 
-  acc.nama = inputNama;
-  acc.email = inputEmail;
-  if(newPass) acc.password = newPass;
+  target.nama = inputNama;
+  target.email = inputEmail;
+  if(newPass){ await setAccountPassword(target, newPass); }
+  else if(target.password){ await setAccountPassword(target, oldPass); } /* migrasi otomatis kalau masih plain text lama */
   saveAccounts(accounts);
   sessionStorage.setItem(SESSION_KEY, normEmail(inputEmail));
   document.getElementById('userBadge').textContent = (inputNama || inputEmail).charAt(0).toUpperCase();
