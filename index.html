@@ -2368,8 +2368,35 @@ function fbPush(path, value){
   return thisWrite;
 }
 
-/* Akun (login) disinkronkan sejak halaman dibuka (sebelum login pun), supaya pendaftaran akun baru dari perangkat mana pun
-   langsung terlihat oleh admin di perangkat lain untuk disetujui, dan status disetujui/ditolak langsung berlaku di semua perangkat. */
+/* PENTING — perbaikan lanjutan untuk bug "data yang sudah dihapus muncul lagi":
+   fbPush() di atas (dan antreannya) sudah menutup celah race saat KITA sendiri melakukan beberapa
+   penulisan berturut-turut. TAPI untuk operasi HAPUS masih ada 1 celah race lagi: antara saat kita
+   membaca kendaraanList/driverList di memori (yang bisa saja sedikit ketinggalan dari server, mis.
+   listener 'value' belum sempat menyalakan data terbaru) dan saat kita menulis .set() dengan hasil
+   filter dari data yang (mungkin) sudah usang itu. Kalau itu terjadi, kita menimpa server dengan versi
+   yang ketinggalan zaman -> data yang sebenarnya sudah terhapus di server bisa muncul lagi.
+   Untuk operasi HAPUS, dipakai fbDb.ref(path).transaction(...) yang ATOMIK: Firebase sendiri yang
+   membaca nilai TERBARU di server saat itu juga, kita hanya kasih fungsi "hilangkan item ini", dan
+   Firebase otomatis mengulang transaksi itu kalau ternyata ada perubahan lain di tengah jalan. Dengan
+   begini, hasil akhirnya selalu konsisten dengan data server yang paling baru, tidak mungkin lagi
+   ketimpa balik oleh data lama. */
+function fbRemoveFromList(path, matchesItemToRemove){
+  if(!fbDb) return Promise.resolve(false);
+  fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
+  const prevInQueue = fbWriteQueue[path] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+    return fbDb.ref(path).transaction(currentData => {
+      if(!Array.isArray(currentData)) return currentData;
+      return currentData.filter(item => !matchesItemToRemove(item));
+    }).catch(err => {
+      console.warn(`Gagal transaksi hapus di Firebase (path: ${path}):`, err);
+    });
+  }).catch(() => {}).finally(() => {
+    fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
+  });
+  fbWriteQueue[path] = thisWrite;
+  return thisWrite;
+}
 let fbAccountsListenerAttached = false;
 function attachFirebaseAccountsListener(){
   if(!fbDb || fbAccountsListenerAttached) return;
@@ -3769,7 +3796,9 @@ function renderKendaraan(){
             showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
             return;
           }
-          saveKendaraan(); renderKendaraan(); renderLegalitas();
+          localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList));
+          fbRemoveFromList('kendaraan', item => String(item.id) === String(targetId));
+          renderKendaraan(); renderLegalitas();
           showToast('Data kendaraan berhasil dihapus', 'danger');
         }
       }));
@@ -3838,7 +3867,9 @@ function renderDriver(){
             showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
             return;
           }
-          saveDriver(); renderDriver();
+          localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
+          fbRemoveFromList('driver', item => String(item.id) === String(targetId));
+          renderDriver();
           showToast('Data driver berhasil dihapus', 'danger');
         }
       }));
