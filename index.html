@@ -2600,12 +2600,14 @@ function attachFirebaseListenersInner(){
   fbDb.ref('tarif').on('value', snap => {
     if(fbPendingWrites['tarif']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
+    const sudahPernahSinkron = fbHasSyncedBefore('tarif');
+    fbMarkSynced('tarif');
     if(val && Array.isArray(val.items)){
       tarifData = val;
       localStorage.setItem(TARIF_KEY, JSON.stringify(tarifData));
       const v = currentViewName();
       if(v === 'hpp'){ renderTarifTable(); updateTarifInfoLine(); updateKotaDatalists(); }
-    }else if(val == null && tarifData.items && tarifData.items.length > 0){
+    }else if(val == null && tarifData.items && tarifData.items.length > 0 && !sudahPernahSinkron){
       fbPush('tarif', tarifData);
     }
   });
@@ -2613,12 +2615,14 @@ function attachFirebaseListenersInner(){
   fbDb.ref('borongan').on('value', snap => {
     if(fbPendingWrites['borongan']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
+    const sudahPernahSinkron = fbHasSyncedBefore('borongan');
+    fbMarkSynced('borongan');
     if(val && (Array.isArray(val.table1) || Array.isArray(val.table2))){
       boronganData = { table1: Array.isArray(val.table1) ? val.table1 : [], table2: Array.isArray(val.table2) ? val.table2 : [] };
       localStorage.setItem(BORONGAN_KEY, JSON.stringify(boronganData));
       const v = currentViewName();
       if(v === 'borongan') renderBoronganTables();
-    }else if(val == null && ((boronganData.table1 || []).length > 0 || (boronganData.table2 || []).length > 0)){
+    }else if(val == null && ((boronganData.table1 || []).length > 0 || (boronganData.table2 || []).length > 0) && !sudahPernahSinkron){
       fbPush('borongan', boronganData);
     }
   });
