@@ -2426,6 +2426,7 @@ function attachFirebaseListenersInner(){
     const val = snap.val();
     if(Array.isArray(val)){
       kendaraanList = val;
+      if(ensureIds(kendaraanList, 'kd')) fbPush('kendaraan', kendaraanList);
       localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList));
       const v = currentViewName();
       if(v === 'kendaraan') renderKendaraan();
@@ -2443,6 +2444,7 @@ function attachFirebaseListenersInner(){
     const val = snap.val();
     if(Array.isArray(val)){
       driverList = val;
+      if(ensureIds(driverList, 'dr')) fbPush('driver', driverList);
       localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
       const v = currentViewName();
       if(v === 'driver') renderDriver();
@@ -2503,11 +2505,30 @@ let maintenanceList = loadMaintenance();
 const HPP_KEY = 'ekspedisi_pro_hpp_asumsi';
 let hppAsumsi = loadHpp();
 
+/* PENTING — perbaikan bug "tombol Hapus tidak berfungsi, data masih muncul lagi":
+   Beberapa data (mis. kendaraan/driver yang diinput manual lewat Firebase Console, atau berasal dari
+   data lama) bisa saja tidak punya field `id`, atau id-nya undefined. Tombol Hapus mencocokkan id
+   record dengan id yang disimpan di tombol (`data-id`) — kalau id-nya undefined/kosong, pencocokan
+   itu TIDAK PERNAH ketemu, jadi tidak ada yang benar-benar terhapus meskipun notifikasi "berhasil
+   dihapus" tetap muncul (notifikasi itu tidak mengecek apakah datanya benar-benar berkurang).
+   Fungsi ini menambal id yang hilang/kosong setiap kali data dimuat (dari localStorage maupun dari
+   Firebase), supaya semua record selalu punya id yang unik dan valid sehingga tombol Hapus bisa
+   mencocokkannya dengan benar. */
+function ensureIds(list, prefix){
+  let changed = false;
+  (list || []).forEach(item => {
+    if(item && (item.id === undefined || item.id === null || item.id === '')){
+      item.id = (prefix || 'x') + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+      changed = true;
+    }
+  });
+  return changed;
+}
 function load(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ return []; } }
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); fbPush('records', records); }
-function loadKendaraan(){ try{ return JSON.parse(localStorage.getItem(KENDARAAN_KEY)) || []; }catch(e){ return []; } }
+function loadKendaraan(){ try{ const l = JSON.parse(localStorage.getItem(KENDARAAN_KEY)) || []; ensureIds(l, 'kd'); return l; }catch(e){ return []; } }
 function saveKendaraan(){ localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList)); fbPush('kendaraan', kendaraanList); }
-function loadDriver(){ try{ return JSON.parse(localStorage.getItem(DRIVER_KEY)) || []; }catch(e){ return []; } }
+function loadDriver(){ try{ const l = JSON.parse(localStorage.getItem(DRIVER_KEY)) || []; ensureIds(l, 'dr'); return l; }catch(e){ return []; } }
 function saveDriver(){ localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList)); fbPush('driver', driverList); }
 function loadMaintenance(){ try{ return JSON.parse(localStorage.getItem(MAINTENANCE_KEY)) || []; }catch(e){ return []; } }
 function saveMaintenance(){ localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList)); fbPush('maintenance', maintenanceList); }
@@ -3741,7 +3762,13 @@ function renderKendaraan(){
     if(admin){
       wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
         if(confirm('Hapus kendaraan ini?')){
-          kendaraanList = kendaraanList.filter(x => x.id !== this.dataset.id);
+          const before = kendaraanList.length;
+          const targetId = this.dataset.id;
+          kendaraanList = kendaraanList.filter(x => String(x.id) !== String(targetId));
+          if(kendaraanList.length === before){
+            showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+            return;
+          }
           saveKendaraan(); renderKendaraan(); renderLegalitas();
           showToast('Data kendaraan berhasil dihapus', 'danger');
         }
@@ -3804,7 +3831,13 @@ function renderDriver(){
     if(admin){
       wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
         if(confirm('Hapus driver ini?')){
-          driverList = driverList.filter(x => x.id !== this.dataset.id);
+          const before = driverList.length;
+          const targetId = this.dataset.id;
+          driverList = driverList.filter(x => String(x.id) !== String(targetId));
+          if(driverList.length === before){
+            showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+            return;
+          }
           saveDriver(); renderDriver();
           showToast('Data driver berhasil dihapus', 'danger');
         }
