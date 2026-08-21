@@ -2531,6 +2531,7 @@ function attachFirebaseListenersInner(){
     fbMarkSynced('records');
     if(arr){
       records = fbFilterTombstoned('records', arr);
+      if(ensureIds(records, 'do')) fbPush('records', records); // tambal id yang kosong (mis. data diinput manual lewat Firebase Console), supaya tombol Hapus bisa mencocokkannya
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
       const v = currentViewName();
       if(v === 'rekap') renderTable();
@@ -2588,6 +2589,7 @@ function attachFirebaseListenersInner(){
     fbMarkSynced('maintenance');
     if(arr){
       maintenanceList = fbFilterTombstoned('maintenance', arr);
+      if(ensureIds(maintenanceList, 'mt')) fbPush('maintenance', maintenanceList);
       localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList));
       const v = currentViewName();
       if(v === 'maintenance') renderMaintenance();
@@ -2658,13 +2660,13 @@ function ensureIds(list, prefix){
   });
   return changed;
 }
-function load(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }catch(e){ return []; } }
+function load(){ try{ const l = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; ensureIds(l, 'do'); return l; }catch(e){ return []; } }
 function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); fbPush('records', records); }
 function loadKendaraan(){ try{ const l = JSON.parse(localStorage.getItem(KENDARAAN_KEY)) || []; ensureIds(l, 'kd'); return l; }catch(e){ return []; } }
 function saveKendaraan(){ localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList)); fbPush('kendaraan', kendaraanList); }
 function loadDriver(){ try{ const l = JSON.parse(localStorage.getItem(DRIVER_KEY)) || []; ensureIds(l, 'dr'); return l; }catch(e){ return []; } }
 function saveDriver(){ localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList)); fbPush('driver', driverList); }
-function loadMaintenance(){ try{ return JSON.parse(localStorage.getItem(MAINTENANCE_KEY)) || []; }catch(e){ return []; } }
+function loadMaintenance(){ try{ const l = JSON.parse(localStorage.getItem(MAINTENANCE_KEY)) || []; ensureIds(l, 'mt'); return l; }catch(e){ return []; } }
 function saveMaintenance(){ localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList)); fbPush('maintenance', maintenanceList); }
 function loadHpp(){ try{ return JSON.parse(localStorage.getItem(HPP_KEY)) || {}; }catch(e){ return {}; } }
 function saveHpp(){ localStorage.setItem(HPP_KEY, JSON.stringify(hppAsumsi)); }
@@ -2909,7 +2911,7 @@ function goTo(view){
   if(view === 'ritase') initRitaseView();
   if(view === 'biayapengeluaran') initBiayaPengeluaranView();
   if(view === 'maintenance') renderMaintenance();
-  if(view === 'peringatan') renderPeringatan();
+  if(view === 'peringatan'){ renderPeringatan(); markPeringatanSeenNow(); }
   if(view === 'hpp'){
     fillHppForm(document.getElementById('hppArmada').value);
     renderHppResult();
@@ -4447,10 +4449,15 @@ function renderMaintenance(){
     }));
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus catatan perbaikan ini?')){
+        const before = maintenanceList.length;
         const targetId = this.dataset.id;
-        maintenanceList = maintenanceList.filter(x => x.id !== targetId);
+        maintenanceList = maintenanceList.filter(x => String(x.id) !== String(targetId));
+        if(maintenanceList.length === before){
+          showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+          return;
+        }
         localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList));
-        fbRemoveFromList('maintenance', item => item.id === targetId, targetId);
+        fbRemoveFromList('maintenance', item => String(item.id) === String(targetId), targetId);
         renderMaintenance();
         showToast('Catatan perbaikan berhasil dihapus', 'danger');
       }
@@ -4505,6 +4512,7 @@ function computePeringatanItems(){
 
   maintenanceList.filter(m => m.status !== 'selesai').forEach(m => {
     items.push({
+      key: `mt:${m.id}`,
       type:'warn',
       title:`Perbaikan ${esc(m.nopol)} belum selesai`,
       desc:`${esc(m.jenis)} — ${fmtDate(m.tanggal)} — ${rupiah(m.biaya)}`,
@@ -4513,6 +4521,7 @@ function computePeringatanItems(){
   records.filter(r => r.status !== 'selesai').forEach(r => {
     const label = (STATUS_META[normalizeStatus(r.status)] || STATUS_META.dijadwalkan).label;
     items.push({
+      key: `do:${r.id}`,
       type:'info',
       title:`DO ${esc(r.nopol)} (${fmtDate(r.tanggal)}) berstatus ${esc(label)}`,
       desc:`${esc(r.nopol)} — ${fmtDate(r.tanggal)} — ${esc(r.tujuanMuat)} &rarr; ${esc(r.tujuanBongkar)}`,
@@ -4531,12 +4540,14 @@ function computePeringatanItems(){
       if(!doc.filled || doc.sisa === null) return;
       if(doc.sisa < 0){
         items.push({
+          key: `leg:${k.id}:${doc.label}:telat`,
           type:'warn',
           title:`${doc.label} ${esc(k.nopol)} sudah terlambat ${Math.abs(doc.sisa)} hari`,
           desc:`Jatuh tempo seharusnya ${fmtDate(doc.next.toISOString().slice(0,10))} — segera urus dokumen ini.`,
         });
       }else if(doc.sisa <= 30){
         items.push({
+          key: `leg:${k.id}:${doc.label}:${doc.next.toISOString().slice(0,10)}`,
           type:'warn',
           title:`${doc.label} ${esc(k.nopol)} jatuh tempo H-${doc.sisa} hari`,
           desc:`Jatuh tempo pada ${fmtDate(doc.next.toISOString().slice(0,10))} — segera jadwalkan perpanjangan.`,
@@ -4547,12 +4558,14 @@ function computePeringatanItems(){
       const srow = serviceRow(k);
       if(srow.kmSisa <= 0){
         items.push({
+          key: `svc:${k.id}:lewat`,
           type:'warn',
           title:`Service berkala ${esc(k.nopol)} sudah lewat ${Math.abs(srow.kmSisa).toLocaleString('id-ID')} km`,
           desc:`Target service pada KM ${srow.kmNext.toLocaleString('id-ID')} — segera jadwalkan service.`,
         });
       }else if(srow.kmSisa <= 2000){
         items.push({
+          key: `svc:${k.id}:${srow.kmNext}`,
           type:'warn',
           title:`Service berkala ${esc(k.nopol)} tinggal ${srow.kmSisa.toLocaleString('id-ID')} km lagi`,
           desc:`Target service pada KM ${srow.kmNext.toLocaleString('id-ID')} — mulai siapkan jadwal bengkel.`,
@@ -4581,10 +4594,31 @@ function renderPeringatan(){
     </div>`).join('');
 }
 
+/* Angka di lonceng notifikasi HANYA menghitung peringatan yang BELUM PERNAH dibuka/dilihat sebelumnya
+   (bukan total semua peringatan yang masih berlaku). Begitu halaman "Pusat Peringatan" dibuka, semua
+   peringatan yang sedang tampil ditandai "sudah dilihat" (disimpan permanen di localStorage, jadi tetap
+   berlaku walau di-refresh) -> angkanya hilang. Kalau nanti muncul peringatan yang BENAR-BENAR baru
+   (mis. kendaraan lain yang baru masuk masa jatuh tempo), item itu belum ada di daftar "sudah dilihat",
+   jadi angkanya akan muncul lagi — tapi peringatan lama yang belum selesai TIDAK akan terus-menerus
+   membuat angkanya muncul ulang setiap hari. */
+const PERINGATAN_SEEN_KEY = 'ekspedisi_pro_peringatan_seen';
+function loadPeringatanSeen(){
+  try{ return new Set(JSON.parse(localStorage.getItem(PERINGATAN_SEEN_KEY)) || []); }catch(e){ return new Set(); }
+}
+function savePeringatanSeen(set){
+  try{ localStorage.setItem(PERINGATAN_SEEN_KEY, JSON.stringify(Array.from(set))); }catch(e){}
+}
+function markPeringatanSeenNow(){
+  const items = computePeringatanItems();
+  savePeringatanSeen(new Set(items.map(it => it.key).filter(Boolean)));
+  updatePeringatanBadge();
+}
 function updatePeringatanBadge(){
   const badge = document.getElementById('peringatanBadge');
   if(!badge) return;
-  const count = computePeringatanItems().length;
+  const items = computePeringatanItems();
+  const seen = loadPeringatanSeen();
+  const count = items.filter(it => !it.key || !seen.has(it.key)).length;
   if(count > 0){
     badge.textContent = count > 99 ? '99+' : String(count);
     badge.style.display = 'flex';
@@ -5169,10 +5203,15 @@ function renderTable(){
     }));
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus data DO ini?')){
+        const before = records.length;
         const targetId = this.dataset.id;
-        records = records.filter(x => x.id !== targetId);
+        records = records.filter(x => String(x.id) !== String(targetId));
+        if(records.length === before){
+          showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+          return;
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-        fbRemoveFromList('records', item => item.id === targetId, targetId);
+        fbRemoveFromList('records', item => String(item.id) === String(targetId), targetId);
         renderTable();
         showToast('Data DO berhasil dihapus', 'danger');
       }
