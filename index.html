@@ -1316,7 +1316,7 @@
           <div class="panel-head">
             <div>
               <h2>Monitoring Sisa PO</h2>
-              <p>Pantau tonase PO yang sudah terkirim (dari DO yang tersimpan) dan sisa tonase yang masih tersedia per PO. Hanya PO yang masih memiliki sisa yang tampil — PO yang sudah habis otomatis tidak muncul di sini (lihat tanda "PO Habis" di menu Konfirmasi PO).</p>
+              <p>Pantau tonase PO yang sudah terkirim (dari DO yang tersimpan) dan sisa tonase yang masih tersedia per PO. Hanya PO yang sudah <strong>dikonfirmasi (ACC)</strong> dan masih memiliki sisa yang tampil di sini — PO yang belum dikonfirmasi tidak akan ter-update di menu ini, dan PO yang sudah habis otomatis tidak muncul (lihat tanda "PO Habis" di menu Konfirmasi PO).</p>
             </div>
           </div>
           <div class="panel-body">
@@ -4902,7 +4902,7 @@ function renderPO(){
     wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
     return;
   }
-  const sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
   /* Total tonase masuk = jumlah semua tonase PO yang tercatat di daftar ini (semua status) */
   const totalTonaseMasuk = sorted.reduce((sum,p) => sum + (Number(p.tonase)||0), 0);
   wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
@@ -4997,13 +4997,14 @@ function renderPOMonitoring(){
     wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
     return;
   }
-  /* Hanya PO yang sisanya masih > 0 yang tampil di monitoring — PO yang sudah habis (sisa <= 0)
-     otomatis tidak ikut muncul di sini (tandanya sudah ada di menu Konfirmasi PO). */
+  /* Hanya PO yang statusnya sudah "Dikonfirmasi (ACC)" DAN sisanya masih > 0 yang tampil di monitoring.
+     PO yang belum dikonfirmasi (masih menunggu/ditolak) tidak akan ikut muncul/ke-update di sini, dan
+     PO yang sudah habis (sisa <= 0) otomatis tidak ikut muncul (tandanya sudah ada di menu Konfirmasi PO). */
   const sorted = poList
-    .filter(p => computePOSisa(p) > 0)
-    .slice().sort((a,b) => (a.createdAt < b.createdAt ? 1 : -1));
+    .filter(p => p.status === 'dikonfirmasi' && computePOSisa(p) > 0)
+    .slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
   if(sorted.length === 0){
-    wrap.innerHTML = emptyState('Semua PO sudah habis (tonase sudah terpakai penuh) — tidak ada sisa PO yang perlu dipantau.');
+    wrap.innerHTML = emptyState('Belum ada PO yang dikonfirmasi dengan sisa tersedia — PO yang belum di-ACC atau sudah habis tidak ditampilkan di sini.');
     return;
   }
   let totalTonasePO = 0, totalTerkirim = 0, totalSisa = 0;
