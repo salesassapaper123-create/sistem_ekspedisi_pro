@@ -2185,6 +2185,37 @@ function kendaraanList_(){
   if (!data) return [];
   return Array.isArray(data) ? data : Object.keys(data).map(function(k){ return data[k]; });
 }
+function recordsList_(){
+  var data = fbGet('/records');
+  if (!data) return [];
+  return Array.isArray(data) ? data : Object.keys(data).map(function(k){ return data[k]; });
+}
+/* Total tonase satu DO (gabungan BK+Roll+OCC) — sama persis dengan recTotalTonase() di aplikasi */
+function recTotalTonase_(r){
+  return (Number(r.tonase1)||0) + (Number(r.tonase2)||0) + (Number(r.tonase3)||0);
+}
+/* Tonase PO yang sudah terpakai — dihitung dari DO yang poId-nya cocok, sama persis dengan computePOTerpakai() di aplikasi */
+function poTerpakai_(po, records){
+  var sum = 0;
+  records.forEach(function(r){
+    if (r && r.poId && String(r.poId) === String(po.id)) sum += recTotalTonase_(r);
+  });
+  return sum;
+}
+/* Total SISA PO gabungan seluruh PO yang sudah Dikonfirmasi (ACC) & sisanya masih > 0 —
+   sama persis dengan angka "TOTAL SISA PO" di menu Monitoring Sisa PO. PO yang belum di-ACC
+   TIDAK ikut dihitung (aturan bisnis: DO baru bisa dikaitkan setelah PO di-ACC). */
+function totalSisaPoDikonfirmasi_(){
+  var list = poList_();
+  var records = recordsList_();
+  var total = 0;
+  list.forEach(function(p){
+    if (!p || p.status !== 'dikonfirmasi') return;
+    var sisa = (Number(p.tonase)||0) - poTerpakai_(p, records);
+    if (sisa > 0) total += sisa;
+  });
+  return total;
+}
 
 // ================== NOTIFIKASI WA JATUH TEMPO — dijalankan otomatis tiap hari oleh trigger ==================
 function checkAndNotify(){
@@ -2234,6 +2265,12 @@ function checkAndNotifyPoBaru(){
   var belumNotif = list.filter(function(p){ return p && !p.notifWaSent; });
   if (belumNotif.length === 0) return;
 
+  /* "Sisa PO" di notif ini adalah TOTAL SISA gabungan seluruh PO yang sudah Dikonfirmasi (ACC) —
+     sama seperti angka "TOTAL SISA PO" di menu Monitoring Sisa PO — BUKAN sisa PO baru ini sendiri
+     (PO baru yang belum di-ACC belum ikut menyumbang ke total ini). Dihitung sekali di luar loop
+     karena nilainya sama untuk semua PO baru yang dinotifikasi di run yang sama. */
+  var totalSisaPo = totalSisaPoDikonfirmasi_();
+
   belumNotif.forEach(function(p){
     var msg = 'PO Baru Masuk\n\n'
       + 'No. CO: ' + (p.noCO || '-') + '\n'
@@ -2242,7 +2279,7 @@ function checkAndNotifyPoBaru(){
       + 'Sales: ' + (p.sales || '-') + '\n'
       + 'GSM / UK: ' + (p.gsm || '-') + ' / ' + (p.ukuran || '-') + '\n'
       + 'Tonase: ' + (((Number(p.tonase)||0) / 1000).toLocaleString('id-ID')) + ' ton\n'
-      + 'Sisa PO: ' + (((Number(p.tonase)||0) / 1000).toLocaleString('id-ID')) + ' ton\n'
+      + 'Sisa PO: ' + (totalSisaPo / 1000).toLocaleString('id-ID') + ' ton\n'
       + 'Harga: Rp ' + (Number(p.harga)||0).toLocaleString('id-ID') + '\n\n'
       + 'Mohon segera dicek & dikonfirmasi di menu Konfirmasi PO.';
     sendWhatsApp(msg);
