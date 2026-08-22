@@ -1316,7 +1316,7 @@
           <div class="panel-head">
             <div>
               <h2>Monitoring Sisa PO</h2>
-              <p>Pantau tonase PO yang sudah terkirim (dari DO yang tersimpan) dan sisa tonase yang masih tersedia per PO.</p>
+              <p>Pantau tonase PO yang sudah terkirim (dari DO yang tersimpan) dan sisa tonase yang masih tersedia per PO. Hanya PO yang masih memiliki sisa yang tampil — PO yang sudah habis otomatis tidak muncul di sini (lihat tanda "PO Habis" di menu Konfirmasi PO).</p>
             </div>
           </div>
           <div class="panel-body">
@@ -4903,9 +4903,14 @@ function renderPO(){
     return;
   }
   const sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? 1 : -1));
+  /* Total tonase masuk = jumlah semua tonase PO yang tercatat di daftar ini (semua status) */
+  const totalTonaseMasuk = sorted.reduce((sum,p) => sum + (Number(p.tonase)||0), 0);
   wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
       <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase</th><th>Harga</th><th>Foto PO</th><th>Status</th><th></th>
-    </tr></thead><tbody>${sorted.map(p => `
+    </tr></thead><tbody>${sorted.map(p => {
+      const sisaPO = computePOSisa(p);
+      const poHabis = p.status === 'dikonfirmasi' && p.tonase && sisaPO <= 0;
+      return `
       <tr>
         <td class="mono">${esc(p.noCO || '-')}</td>
         <td>${fmtDate(p.tanggalCO)}</td>
@@ -4917,7 +4922,7 @@ function renderPO(){
         <td class="sv-num">${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
         <td>${p.fotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
-        <td>${poStatusBadge(p.status || 'menunggu')}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
+        <td>${poStatusBadge(p.status || 'menunggu')}${poHabis ? `<div style="margin-top:4px;"><span class="badge badge-done"><span class="badge-dot"></span>PO Habis</span></div>` : ''}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
         <td class="row-actions">
           ${(bisaKonfirmasi && (p.status || 'menunggu') === 'menunggu') ? `
             <button type="button" class="icon-btn po-acc" data-id="${p.id}" title="Konfirmasi (ACC)" style="color:var(--green-600);">
@@ -4930,7 +4935,12 @@ function renderPO(){
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>` : ''}
         </td>
-      </tr>`).join('')}</tbody></table></div>`;
+      </tr>`;
+    }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
+      <td colspan="7" class="sv-left">TOTAL TONASE MASUK</td>
+      <td class="sv-num">${totalTonaseMasuk.toLocaleString('id-ID')} kg</td>
+      <td colspan="4"></td>
+    </tr></tfoot></table></div>`;
 
   wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', function(){
     const item = poList.find(x => String(x.id) === String(this.dataset.id));
@@ -4987,12 +4997,24 @@ function renderPOMonitoring(){
     wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
     return;
   }
-  const sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? 1 : -1));
+  /* Hanya PO yang sisanya masih > 0 yang tampil di monitoring — PO yang sudah habis (sisa <= 0)
+     otomatis tidak ikut muncul di sini (tandanya sudah ada di menu Konfirmasi PO). */
+  const sorted = poList
+    .filter(p => computePOSisa(p) > 0)
+    .slice().sort((a,b) => (a.createdAt < b.createdAt ? 1 : -1));
+  if(sorted.length === 0){
+    wrap.innerHTML = emptyState('Semua PO sudah habis (tonase sudah terpakai penuh) — tidak ada sisa PO yang perlu dipantau.');
+    return;
+  }
+  let totalTonasePO = 0, totalTerkirim = 0, totalSisa = 0;
   wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
       <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa PO</th><th>Harga</th>
     </tr></thead><tbody>${sorted.map(p => {
       const terkirim = computePOTerpakai(p);
       const sisa = computePOSisa(p);
+      totalTonasePO += Number(p.tonase)||0;
+      totalTerkirim += terkirim;
+      totalSisa += sisa;
       return `
       <tr>
         <td class="mono">${esc(p.noCO || '-')}</td>
@@ -5007,7 +5029,13 @@ function renderPOMonitoring(){
         <td class="sv-num" style="${sisa < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? sisa.toLocaleString('id-ID') + ' kg' : '-'}</td>
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
       </tr>`;
-    }).join('')}</tbody></table></div>`;
+    }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
+      <td colspan="7" class="sv-left">TOTAL SISA PO</td>
+      <td class="sv-num">${totalTonasePO.toLocaleString('id-ID')} kg</td>
+      <td class="sv-num">${totalTerkirim.toLocaleString('id-ID')} kg</td>
+      <td class="sv-num">${totalSisa.toLocaleString('id-ID')} kg</td>
+      <td></td>
+    </tr></tfoot></table></div>`;
 }
 
 /* ---------- MODAL: LIHAT FOTO PO ---------- */
