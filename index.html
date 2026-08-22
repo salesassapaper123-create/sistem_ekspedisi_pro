@@ -807,6 +807,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
             Ritase per Nopol (Rekap)
           </button>
+          <button class="nav-item nav-sub" data-view="po-monitoring">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            Monitoring Sisa PO
+          </button>
         </div>
       </div>
 
@@ -1302,6 +1306,21 @@
           </div>
           <div class="panel-body">
             <div id="poTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONITORING SISA PO -->
+      <div class="view" data-view="po-monitoring">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Monitoring Sisa PO</h2>
+              <p>Pantau tonase PO yang sudah terkirim (dari DO yang tersimpan) dan sisa tonase yang masih tersedia per PO.</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="poMonitoringTableWrap"></div>
           </div>
         </div>
       </div>
@@ -2684,7 +2703,7 @@ function attachFirebaseListenersInner(){
       if(v === 'rekap') renderTable();
       if(v === 'dashboard') renderDashboard();
       if(v === 'peringatan') renderPeringatan();
-      if(v === 'po') renderPO(); // tonase PO terpakai/sisa dihitung dari data DO, jadi ikut refresh saat DO berubah
+      if(v === 'po-monitoring') renderPOMonitoring(); // tonase terkirim/sisa dihitung dari data DO, jadi ikut refresh saat DO berubah
       if(v === 'input') updateDoNoCOHint();
       updatePeringatanBadge();
     }else if(val == null){
@@ -2699,7 +2718,7 @@ function attachFirebaseListenersInner(){
         if(v === 'rekap') renderTable();
         if(v === 'dashboard') renderDashboard();
         if(v === 'peringatan') renderPeringatan();
-        if(v === 'po') renderPO();
+        if(v === 'po-monitoring') renderPOMonitoring();
         if(v === 'input') updateDoNoCOHint();
         updatePeringatanBadge();
       }
@@ -2846,6 +2865,7 @@ function attachFirebaseListenersInner(){
       localStorage.setItem(PO_KEY, JSON.stringify(poList));
       const v = currentViewName();
       if(v === 'po') renderPO();
+      if(v === 'po-monitoring') renderPOMonitoring();
       if(v === 'input') populateDoNoCODropdown();
       updatePoBadge();
       updatePeringatanBadge();
@@ -2857,6 +2877,7 @@ function attachFirebaseListenersInner(){
         localStorage.setItem(PO_KEY, JSON.stringify(poList));
         const v = currentViewName();
         if(v === 'po') renderPO();
+        if(v === 'po-monitoring') renderPOMonitoring();
         if(v === 'input') populateDoNoCODropdown();
         updatePoBadge();
         updatePeringatanBadge();
@@ -3134,7 +3155,7 @@ function emptyState(msg){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO'};
+const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -3158,6 +3179,7 @@ function goTo(view){
   }
   if(view === 'borongan') renderBoronganTables();
   if(view === 'po') renderPO();
+  if(view === 'po-monitoring') renderPOMonitoring();
   if(view === 'pengaturan'){
     const acc = currentAccount();
     if(acc){
@@ -4882,11 +4904,8 @@ function renderPO(){
   }
   const sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? 1 : -1));
   wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
-      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terpakai (DO Tersimpan)</th><th>Sisa PO</th><th>Harga</th><th>Foto PO</th><th>Status</th><th></th>
-    </tr></thead><tbody>${sorted.map(p => {
-      const terpakai = computePOTerpakai(p);
-      const sisa = computePOSisa(p);
-      return `
+      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase</th><th>Harga</th><th>Foto PO</th><th>Status</th><th></th>
+    </tr></thead><tbody>${sorted.map(p => `
       <tr>
         <td class="mono">${esc(p.noCO || '-')}</td>
         <td>${fmtDate(p.tanggalCO)}</td>
@@ -4896,8 +4915,6 @@ function renderPO(){
         <td>${esc(p.gsm || '-')}</td>
         <td>${esc(p.ukuran || '-')}</td>
         <td class="sv-num">${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
-        <td class="sv-num">${terpakai > 0 ? terpakai.toLocaleString('id-ID') + ' kg' : '-'}</td>
-        <td class="sv-num" style="${sisa < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? sisa.toLocaleString('id-ID') + ' kg' : '-'}</td>
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
         <td>${p.fotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
         <td>${poStatusBadge(p.status || 'menunggu')}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
@@ -4913,8 +4930,7 @@ function renderPO(){
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>` : ''}
         </td>
-      </tr>`;
-    }).join('')}</tbody></table></div>`;
+      </tr>`).join('')}</tbody></table></div>`;
 
   wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', function(){
     const item = poList.find(x => String(x.id) === String(this.dataset.id));
@@ -4959,6 +4975,39 @@ function renderPO(){
       }
     }));
   }
+}
+
+/* Monitoring Sisa PO — hanya untuk memantau tonase PO yang sudah terkirim (dihitung dari DO yang
+   tersimpan, terlepas dari status pengirimannya) dan sisa tonase yang masih tersedia. Tidak ada foto,
+   status konfirmasi, maupun tombol aksi ACC/Tolak/Hapus di sini — itu semua ada di menu Konfirmasi PO. */
+function renderPOMonitoring(){
+  const wrap = document.getElementById('poMonitoringTableWrap');
+  if(!wrap) return;
+  if(poList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
+    return;
+  }
+  const sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? 1 : -1));
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
+      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa PO</th><th>Harga</th>
+    </tr></thead><tbody>${sorted.map(p => {
+      const terkirim = computePOTerpakai(p);
+      const sisa = computePOSisa(p);
+      return `
+      <tr>
+        <td class="mono">${esc(p.noCO || '-')}</td>
+        <td>${fmtDate(p.tanggalCO)}</td>
+        <td class="mono">${esc(p.noPO || '-')}</td>
+        <td class="sv-left">${esc(p.namaCustomer || '-')}</td>
+        <td class="sv-left">${esc(p.sales || '-')}</td>
+        <td>${esc(p.gsm || '-')}</td>
+        <td>${esc(p.ukuran || '-')}</td>
+        <td class="sv-num">${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num">${terkirim > 0 ? terkirim.toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num" style="${sisa < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? sisa.toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
 }
 
 /* ---------- MODAL: LIHAT FOTO PO ---------- */
