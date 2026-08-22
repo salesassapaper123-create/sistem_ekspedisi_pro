@@ -2072,8 +2072,8 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h2>Notifikasi WhatsApp jatuh tempo KIR, Pajak &amp; Service</h2>
-              <p>Kirim pengingat WA otomatis untuk KIR/Pajak yang jatuh tempo dalam H-10 hari, atau Service Berkala yang tinggal 1000 km lagi</p>
+              <h2>Notifikasi WhatsApp jatuh tempo KIR, Pajak, Service &amp; PO Baru</h2>
+              <p>Kirim pengingat WA otomatis untuk KIR/Pajak yang jatuh tempo dalam H-10 hari, Service Berkala yang tinggal 1000 km lagi, dan setiap ada PO baru yang diinput</p>
             </div>
           </div>
           <div class="panel-body">
@@ -2116,6 +2116,7 @@
                 3. Di kode, ganti <span class="mono">FIREBASE_DB_SECRET</span> dengan secret dari langkah 1.<br>
                 4. Daftar gratis di <b>fonnte.com</b>, hubungkan nomor WA yang akan jadi pengirim, lalu salin <b>Token</b>-nya. Ganti <span class="mono">FONNTE_TOKEN</span> dengan token itu, dan <span class="mono">WA_TARGET</span> dengan nomor WA tujuan (format 62xxx, bisa lebih dari satu nomor dipisah koma).<br>
                 5. Klik ikon jam (Triggers) di sisi kiri editor &rarr; Add Trigger &rarr; pilih function <span class="mono">checkAndNotify</span>, jenis "Time-driven" &rarr; "Day timer" &rarr; pilih jam pengecekan (mis. 07.00–08.00) &rarr; Save. Tidak perlu Deploy sebagai Web App — trigger terjadwal saja sudah cukup.<br>
+                6. <b>Untuk notifikasi PO baru:</b> tambah trigger kedua &rarr; Add Trigger &rarr; pilih function <span class="mono">checkAndNotifyPoBaru</span>, jenis "Time-driven" &rarr; "Minutes timer" &rarr; pilih "Every 5 minutes" (atau "Every minute" kalau mau paling cepat) &rarr; Save. Setiap ada PO baru yang diinput di menu "Input SO &amp; Upload PO", WA notifikasi otomatis terkirim dalam beberapa menit — tidak perlu buka aplikasi ini.<br>
                 <b>Opsional — tarik KM otomatis dari GPS Cartrack:</b> isi <span class="mono">CARTRACK_USERNAME</span> dan <span class="mono">CARTRACK_PASSWORD</span> di kode (dari akun Cartrack Fleetweb Anda, menu API Settings), lalu tambah trigger kedua untuk function <span class="mono">syncOdometerFromCartrack</span> (mis. tiap 4 jam). KM akan otomatis masuk ke Firebase dan langsung terlihat di halaman Maintenance Perbaikan — tidak perlu tarik manual.
               </p>
               <textarea id="waAppsScriptCode" readonly style="width:100%; min-height:260px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">// ================== KONFIGURASI ==================
@@ -2153,6 +2154,23 @@ function fbPatch(path, data){
   if (res.getResponseCode() !== 200){
     Logger.log('GAGAL fbPatch ' + path + ' (' + res.getResponseCode() + '): ' + res.getContentText().substring(0, 300));
   }
+}
+// fbSet menimpa SELURUH isi path (dipakai untuk simpan balik array /po setelah menandai notifWaSent)
+function fbSet(path, data){
+  var res = UrlFetchApp.fetch(fbUrl(path), {
+    method: 'put',
+    contentType: 'application/json',
+    payload: JSON.stringify(data),
+    muteHttpExceptions: true
+  });
+  if (res.getResponseCode() !== 200){
+    Logger.log('GAGAL fbSet ' + path + ' (' + res.getResponseCode() + '): ' + res.getContentText().substring(0, 300));
+  }
+}
+function poList_(){
+  var data = fbGet('/po');
+  if (!data) return [];
+  return Array.isArray(data) ? data : Object.keys(data).map(function(k){ return data[k]; });
 }
 function kendaraanList_(){
   var data = fbGet('/kendaraan');
@@ -2197,6 +2215,32 @@ function checkAndNotify(){
     + '\n\nMohon segera dijadwalkan perpanjangan/pembayaran/service.';
 
   sendWhatsApp(msg);
+}
+
+// ================== NOTIFIKASI WA PO BARU — dijalankan tiap beberapa menit oleh trigger kedua ==================
+// Cek PO yang baru diinput (notifWaSent belum true), kirim WA per PO, lalu tandai notifWaSent supaya
+// tidak terkirim dobel di run berikutnya. Berlaku untuk SEMUA PO baru (belum tentu sudah di-ACC) —
+// tujuannya memberi tahu begitu ada PO masuk yang perlu ditinjau/dikonfirmasi.
+function checkAndNotifyPoBaru(){
+  var list = poList_();
+  var belumNotif = list.filter(function(p){ return p && !p.notifWaSent; });
+  if (belumNotif.length === 0) return;
+
+  belumNotif.forEach(function(p){
+    var msg = 'PO Baru Masuk\n\n'
+      + 'No. CO: ' + (p.noCO || '-') + '\n'
+      + 'No. PO: ' + (p.noPO || '-') + '\n'
+      + 'Customer: ' + (p.namaCustomer || '-') + '\n'
+      + 'Sales: ' + (p.sales || '-') + '\n'
+      + 'GSM / UK: ' + (p.gsm || '-') + ' / ' + (p.ukuran || '-') + '\n'
+      + 'Tonase: ' + (((Number(p.tonase)||0) / 1000).toLocaleString('id-ID')) + ' ton\n'
+      + 'Harga: Rp ' + (Number(p.harga)||0).toLocaleString('id-ID') + '\n\n'
+      + 'Mohon segera dicek & dikonfirmasi di menu Konfirmasi PO.';
+    sendWhatsApp(msg);
+    p.notifWaSent = true;
+  });
+
+  fbSet('/po', list);
 }
 
 function sendWhatsApp(message){
@@ -4990,6 +5034,10 @@ function renderPO(){
 /* Monitoring Sisa PO — hanya untuk memantau tonase PO yang sudah terkirim (dihitung dari DO yang
    tersimpan, terlepas dari status pengirimannya) dan sisa tonase yang masih tersedia. Tidak ada foto,
    status konfirmasi, maupun tombol aksi ACC/Tolak/Hapus di sini — itu semua ada di menu Konfirmasi PO. */
+/* Format angka kg jadi tonase (1 ton = 1000 kg) — dipakai khusus di Monitoring Sisa PO */
+function fmtTon(kg){
+  return (Number(kg)/1000).toLocaleString('id-ID', {maximumFractionDigits:2}) + ' ton';
+}
 function renderPOMonitoring(){
   const wrap = document.getElementById('poMonitoringTableWrap');
   if(!wrap) return;
@@ -5025,16 +5073,16 @@ function renderPOMonitoring(){
         <td class="sv-left">${esc(p.sales || '-')}</td>
         <td>${esc(p.gsm || '-')}</td>
         <td>${esc(p.ukuran || '-')}</td>
-        <td class="sv-num">${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
-        <td class="sv-num">${terkirim > 0 ? terkirim.toLocaleString('id-ID') + ' kg' : '-'}</td>
-        <td class="sv-num" style="${sisa < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? sisa.toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num">${p.tonase ? fmtTon(p.tonase) : '-'}</td>
+        <td class="sv-num">${terkirim > 0 ? fmtTon(terkirim) : '-'}</td>
+        <td class="sv-num" style="${sisa < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? fmtTon(sisa) : '-'}</td>
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
       </tr>`;
     }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
       <td colspan="7" class="sv-left">TOTAL SISA PO</td>
-      <td class="sv-num">${totalTonasePO.toLocaleString('id-ID')} kg</td>
-      <td class="sv-num">${totalTerkirim.toLocaleString('id-ID')} kg</td>
-      <td class="sv-num">${totalSisa.toLocaleString('id-ID')} kg</td>
+      <td class="sv-num">${fmtTon(totalTonasePO)}</td>
+      <td class="sv-num">${fmtTon(totalTerkirim)}</td>
+      <td class="sv-num">${fmtTon(totalSisa)}</td>
       <td></td>
     </tr></tfoot></table></div>`;
 }
@@ -5156,6 +5204,7 @@ document.getElementById('formPOInput').addEventListener('submit', async function
     tanggalKonfirmasi: '',
     dibuatOleh: acc ? acc.email : '',
     createdAt: new Date().toISOString(),
+    notifWaSent: false, /* dipakai Apps Script (checkAndNotifyPoBaru) supaya notif WA PO baru tidak terkirim dobel */
   });
   savePO();
   this.reset();
