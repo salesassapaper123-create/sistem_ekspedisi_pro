@@ -754,6 +754,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
             Input Legalitas Kendaraan
           </button>
+          <button class="nav-item nav-sub" data-view="po-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M12 11v6M9 14h6"/></svg>
+            Input SO &amp; Upload PO
+          </button>
         </div>
       </div>
 
@@ -779,6 +783,11 @@
           <button class="nav-item nav-sub" data-view="borongan">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5-2V6l5 2 6-2 5 2v12l-5-2-6 2z"/><path d="M9 6v14M15 4v14"/></svg>
             Ongkos Borongan
+          </button>
+          <button class="nav-item nav-sub" data-view="po">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            Konfirmasi PO
+            <span class="notif-badge" id="poBadge" style="position:static; margin-left:auto; border:none;"></span>
           </button>
         </div>
       </div>
@@ -1005,6 +1014,13 @@
                   <input type="text" id="doKota" list="doKotaList" placeholder="cth. Bandung">
                   <datalist id="doKotaList"></datalist>
                 </div>
+                <div class="field">
+                  <label for="doNoCO">PO terkait (No CO) <span class="hint">(opsional, hanya PO yang sudah ACC)</span></label>
+                  <select id="doNoCO">
+                    <option value="">- Tidak terkait PO -</option>
+                  </select>
+                  <div class="hint" id="doNoCOHint" style="margin-top:4px;"></div>
+                </div>
                 <div class="field full" id="section1" style="grid-column:1 / -1; display:contents;">
                   <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
                     <label style="margin-bottom:10px;">Tujuan muat &amp; bongkar (BK)</label>
@@ -1204,6 +1220,130 @@
               </div>
               <div class="btn-row" style="justify-content:flex-end;">
                 <button type="submit" class="btn btn-primary">Simpan kendaraan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT SO & UPLOAD PO — hasilnya tampil & dikonfirmasi lewat menu Daftar > Konfirmasi PO -->
+      <div class="view" data-view="po-input">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Input SO &amp; upload PO</h2>
+              <p>Isi data Sales Order lalu upload foto/scan dokumen PO — order akan masuk ke daftar "Konfirmasi PO" untuk di-ACC atau ditolak.</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <form id="formPOInput">
+              <div class="grid2">
+                <div class="field">
+                  <label for="poNoCO">No. CO</label>
+                  <input type="text" id="poNoCO" placeholder="cth. CO-0001" required style="text-transform:uppercase;">
+                </div>
+                <div class="field">
+                  <label for="poTanggalCO">Tanggal CO</label>
+                  <input type="date" id="poTanggalCO" required>
+                </div>
+                <div class="field">
+                  <label for="poNoPO">No. PO</label>
+                  <input type="text" id="poNoPO" placeholder="cth. PO-2026-0001" required style="text-transform:uppercase;">
+                </div>
+                <div class="field">
+                  <label for="poNamaCustomer">Nama customer</label>
+                  <input type="text" id="poNamaCustomer" placeholder="cth. PT Contoh Kertas" required>
+                </div>
+                <div class="field">
+                  <label for="poSales">Sales</label>
+                  <input type="text" id="poSales" placeholder="cth. Budi" required>
+                </div>
+                <div class="field">
+                  <label for="poGsm">GSM</label>
+                  <input type="text" id="poGsm" placeholder="cth. 150 GSM" required>
+                </div>
+                <div class="field">
+                  <label for="poUkuran">UK <span class="hint">(ukuran)</span></label>
+                  <input type="text" id="poUkuran" placeholder="cth. 65 x 100 cm" required>
+                </div>
+                <div class="field">
+                  <label for="poTonase">Tonase (kg)</label>
+                  <input type="number" id="poTonase" min="0" step="1" placeholder="cth. 8000" required>
+                </div>
+                <div class="field">
+                  <label for="poHarga">Harga (Rp)</label>
+                  <input type="number" id="poHarga" min="0" step="1" placeholder="cth. 12500000" required>
+                </div>
+                <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
+                  <label for="poFotoInput">Upload foto/scan PO <span class="hint">(opsional, format gambar — JPG/PNG)</span></label>
+                  <input type="file" id="poFotoInput" accept="image/*">
+                  <div id="poFotoPreviewWrap" style="display:none; margin-top:10px;">
+                    <img id="poFotoPreviewImg" alt="Preview foto PO" style="max-width:220px; max-height:220px; border-radius:8px; border:1px solid var(--border); display:block;">
+                  </div>
+                  <div class="login-error" id="poFotoError" style="margin-top:6px;"></div>
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary" id="btnSubmitPO">Simpan SO &amp; PO</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- KONFIRMASI PO — daftar SO/PO yang diinput, tempat admin/user yang diberi akses meng-ACC atau menolak order -->
+      <div class="view" data-view="po">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Konfirmasi PO</h2>
+              <p>Daftar SO/PO yang masuk — order yang belum dikonfirmasi perlu ditinjau dan di-ACC atau ditolak.</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="poTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: LIHAT FOTO PO (ukuran penuh) -->
+      <div class="form-modal-overlay" id="poFotoModalOverlay">
+        <div class="form-modal" style="max-width:560px;">
+          <div class="form-modal-head">
+            <div>
+              <h3>Foto PO</h3>
+            </div>
+            <button type="button" class="form-modal-close" id="btnClosePoFotoModal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="form-modal-body" style="text-align:center;">
+            <img id="poFotoModalImg" alt="Foto PO" style="max-width:100%; border-radius:8px;">
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: TOLAK PO (alasan penolakan) -->
+      <div class="form-modal-overlay" id="poTolakModalOverlay">
+        <div class="form-modal">
+          <div class="form-modal-head">
+            <div>
+              <h3>Tolak order PO</h3>
+              <p>Order tidak dikonfirmasi — tuliskan alasannya supaya bisa diperbaiki.</p>
+            </div>
+            <button type="button" class="form-modal-close" id="btnClosePoTolakModal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="form-modal-body">
+            <form id="formPoTolak">
+              <div class="field">
+                <label for="poTolakAlasan">Alasan penolakan</label>
+                <input type="text" id="poTolakAlasan" placeholder="cth. data tonase tidak sesuai, foto PO tidak jelas, dsb." required>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnBatalPoTolak">Batal</button>
+                <button type="submit" class="btn btn-primary">Tolak order ini</button>
               </div>
             </form>
           </div>
@@ -2544,6 +2684,8 @@ function attachFirebaseListenersInner(){
       if(v === 'rekap') renderTable();
       if(v === 'dashboard') renderDashboard();
       if(v === 'peringatan') renderPeringatan();
+      if(v === 'po') renderPO(); // tonase PO terpakai/sisa dihitung dari data DO, jadi ikut refresh saat DO berubah
+      if(v === 'input') updateDoNoCOHint();
       updatePeringatanBadge();
     }else if(val == null){
       if(records.length > 0 && !sudahPernahSinkron){
@@ -2557,6 +2699,8 @@ function attachFirebaseListenersInner(){
         if(v === 'rekap') renderTable();
         if(v === 'dashboard') renderDashboard();
         if(v === 'peringatan') renderPeringatan();
+        if(v === 'po') renderPO();
+        if(v === 'input') updateDoNoCOHint();
         updatePeringatanBadge();
       }
     }
@@ -2689,6 +2833,36 @@ function attachFirebaseListenersInner(){
       }
     }
   });
+
+  fbDb.ref('po').on('value', snap => {
+    if(fbPendingWrites['po']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
+    const val = snap.val();
+    const arr = fbToArray(val);
+    const sudahPernahSinkron = fbHasSyncedBefore('po');
+    fbMarkSynced('po');
+    if(arr){
+      poList = fbFilterTombstoned('po', arr);
+      if(ensureIds(poList, 'po')) fbPush('po', poList);
+      localStorage.setItem(PO_KEY, JSON.stringify(poList));
+      const v = currentViewName();
+      if(v === 'po') renderPO();
+      if(v === 'input') populateDoNoCODropdown();
+      updatePoBadge();
+      updatePeringatanBadge();
+    }else if(val == null){
+      if(poList.length > 0 && !sudahPernahSinkron){
+        fbPush('po', poList); // Firebase masih kosong (pertama kali pakai) -> unggah data lokal sebagai data awal
+      }else if(poList.length > 0){
+        poList = [];
+        localStorage.setItem(PO_KEY, JSON.stringify(poList));
+        const v = currentViewName();
+        if(v === 'po') renderPO();
+        if(v === 'input') populateDoNoCODropdown();
+        updatePoBadge();
+        updatePeringatanBadge();
+      }
+    }
+  });
 }
 
 const STORAGE_KEY = 'ekspedisi_pro_records';
@@ -2699,6 +2873,8 @@ const DRIVER_KEY = 'ekspedisi_pro_driver';
 let driverList = loadDriver();
 const MAINTENANCE_KEY = 'ekspedisi_pro_maintenance';
 let maintenanceList = loadMaintenance();
+const PO_KEY = 'ekspedisi_pro_po';
+let poList = loadPO();
 const HPP_KEY = 'ekspedisi_pro_hpp_asumsi';
 let hppAsumsi = loadHpp();
 
@@ -2729,6 +2905,8 @@ function loadDriver(){ try{ const l = JSON.parse(localStorage.getItem(DRIVER_KEY
 function saveDriver(){ localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList)); fbPush('driver', driverList); }
 function loadMaintenance(){ try{ const l = JSON.parse(localStorage.getItem(MAINTENANCE_KEY)) || []; ensureIds(l, 'mt'); return l; }catch(e){ return []; } }
 function saveMaintenance(){ localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList)); fbPush('maintenance', maintenanceList); }
+function loadPO(){ try{ const l = JSON.parse(localStorage.getItem(PO_KEY)) || []; ensureIds(l, 'po'); return l; }catch(e){ return []; } }
+function savePO(){ localStorage.setItem(PO_KEY, JSON.stringify(poList)); fbPush('po', poList); }
 function loadHpp(){ try{ return JSON.parse(localStorage.getItem(HPP_KEY)) || {}; }catch(e){ return {}; } }
 function saveHpp(){ localStorage.setItem(HPP_KEY, JSON.stringify(hppAsumsi)); }
 
@@ -2956,13 +3134,14 @@ function emptyState(msg){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan'};
+const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
   document.getElementById('pageTitle').textContent = titles[view];
   if(view === 'dashboard') renderDashboard();
+  if(view === 'input') populateDoNoCODropdown();
   if(view === 'rekap') renderTable();
   if(view === 'kendaraan') renderKendaraan();
   if(view === 'legalitas') renderLegalitas();
@@ -2978,6 +3157,7 @@ function goTo(view){
     renderHppResult();
   }
   if(view === 'borongan') renderBoronganTables();
+  if(view === 'po') renderPO();
   if(view === 'pengaturan'){
     const acc = currentAccount();
     if(acc){
@@ -3263,6 +3443,17 @@ function isAdminUser(){
   }catch(e){
     // Dipanggil saat render awal sebelum login (variabel sesi belum siap) — anggap bukan admin dulu,
     // nanti otomatis dirender ulang dengan status yang benar setelah login lewat goTo('borongan').
+    return false;
+  }
+}
+/* Hak konfirmasi PO (ACC/Tolak) berbeda dari hak admin biasa — admin selalu bisa, tapi admin juga bisa
+   memberi akses ini secara khusus ke akun non-admin tertentu (toggle "Bisa konfirmasi PO" di menu
+   Pengaturan > kelola akun), tanpa perlu menjadikan orang itu admin penuh. */
+function canConfirmPO(){
+  try{
+    const acc = currentAccount();
+    return !acc || accountRole(acc) === 'admin' || !!acc.bisaKonfirmasiPO;
+  }catch(e){
     return false;
   }
 }
@@ -3644,6 +3835,9 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     return;
   }
 
+  const poIdVal = document.getElementById('doNoCO').value || null;
+  const poTerkait = poIdVal ? poList.find(p => String(p.id) === String(poIdVal)) : null;
+
   const fieldsData = {
     tanggal: tanggal,
     nopol: document.getElementById('nopol').value.trim(),
@@ -3653,6 +3847,8 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     kirimOCC: kirimOCC,
     jenisArmada: document.getElementById('jenisArmada').value,
     kota: document.getElementById('doKota').value.trim(),
+    poId: poIdVal,
+    noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
     pendapatan: calcPendapatan(document.getElementById('jenisArmada').value, document.getElementById('doKota').value.trim(), kirimBK ? tonase1Val : null, kirimRoll ? tonase2Val : null, kirimOCC ? tonase3Val : null),
     uangJalan: document.getElementById('uangJalan').value === '' ? 0 : parseFloat(document.getElementById('uangJalan').value),
     biayaLain: document.getElementById('biayaLain').value === '' ? 0 : parseFloat(document.getElementById('biayaLain').value),
@@ -3719,6 +3915,7 @@ function editRecordDO(id){
   document.getElementById('tonase3').value = rec.tonase3 ?? '';
   document.getElementById('status').value = normalizeStatus(rec.status);
   toggleJenisSections();
+  populateDoNoCODropdown(rec.poId || '');
 
   document.getElementById('inputDOTitle').textContent = 'Edit DO';
   document.getElementById('btnSubmitDOLabel').textContent = 'Update DO';
@@ -3734,6 +3931,7 @@ function cancelEditDO(){
   document.getElementById('formError').textContent = '';
   document.getElementById('tanggal').valueAsDate = new Date();
   toggleJenisSections();
+  populateDoNoCODropdown('');
   document.getElementById('inputDOTitle').textContent = 'Input Surat Tugas';
   document.getElementById('btnSubmitDOLabel').textContent = 'Simpan DO';
   document.getElementById('btnCancelEdit').style.display = 'none';
@@ -3745,6 +3943,7 @@ document.getElementById('btnReset').addEventListener('click', function(){
   document.getElementById('formError').textContent = '';
   document.getElementById('tanggal').valueAsDate = new Date();
   toggleJenisSections();
+  populateDoNoCODropdown('');
 });
 document.getElementById('btnCancelEdit').addEventListener('click', cancelEditDO);
 
@@ -4567,6 +4766,329 @@ function closeMaintenanceModal(){
   });
 })();
 
+/* ---------- INPUT SO & KONFIRMASI PO ---------- */
+const PO_STATUS_META = {
+  menunggu:     { label: 'Menunggu Konfirmasi', cls: 'badge-legal-warn' },
+  dikonfirmasi: { label: 'Dikonfirmasi (ACC)',   cls: 'badge-done' },
+  ditolak:      { label: 'Tidak Dikonfirmasi',   cls: 'badge-legal-danger' },
+};
+/* Total tonase satu DO (gabungan BK+Roll+OCC) */
+function recTotalTonase(r){
+  return (Number(r.tonase1)||0) + (Number(r.tonase2)||0) + (Number(r.tonase3)||0);
+}
+/* Tonase PO yang sudah "terpakai" dihitung LANGSUNG dari data DO yang terkait PO tsb (poId cocok) —
+   bukan angka tersimpan yang di-update manual, supaya selalu akurat walau DO diedit/dihapus/tonase-nya
+   diisi belakangan lewat modal tonase. Berkurang begitu DO-nya DISIMPAN (apapun status pengirimannya),
+   bukan menunggu status jadi Selesai. excludeRecordId dipakai saat sedang mengedit satu DO tertentu,
+   supaya kontribusi DO itu sendiri tidak dihitung dobel. */
+function computePOTerpakai(po, excludeRecordId){
+  return records.reduce((sum, r) => {
+    if(excludeRecordId && String(r.id) === String(excludeRecordId)) return sum;
+    if(r.poId && String(r.poId) === String(po.id)){
+      return sum + recTotalTonase(r);
+    }
+    return sum;
+  }, 0);
+}
+function computePOSisa(po, excludeRecordId){
+  return (Number(po.tonase)||0) - computePOTerpakai(po, excludeRecordId);
+}
+/* Isi ulang dropdown "PO terkait (No CO)" di form Input DO — hanya PO yang sudah Dikonfirmasi (ACC)
+   yang bisa dipilih. selectedPoId dipakai saat membuka form dalam mode edit DO. */
+function populateDoNoCODropdown(selectedPoId){
+  const sel = document.getElementById('doNoCO');
+  if(!sel) return;
+  const want = selectedPoId !== undefined ? (selectedPoId || '') : sel.value;
+  const confirmed = poList.filter(p => p.status === 'dikonfirmasi');
+  sel.innerHTML = '<option value="">- Tidak terkait PO -</option>' + confirmed.map(p => {
+    const sisa = computePOSisa(p, editingId);
+    const sisaLabel = sisa < 0 ? `minus ${Math.abs(sisa).toLocaleString('id-ID')} kg` : `sisa ${sisa.toLocaleString('id-ID')} kg`;
+    return `<option value="${esc(p.id)}">${esc(p.noCO || '-')} — ${esc(p.namaCustomer || '-')} (${sisaLabel})</option>`;
+  }).join('');
+  sel.value = confirmed.some(p => String(p.id) === String(want)) ? want : '';
+  updateDoNoCOHint();
+}
+function updateDoNoCOHint(){
+  const sel = document.getElementById('doNoCO');
+  const hint = document.getElementById('doNoCOHint');
+  if(!sel || !hint) return;
+  const poId = sel.value;
+  if(!poId){ hint.textContent = ''; return; }
+  const po = poList.find(p => String(p.id) === String(poId));
+  if(!po){ hint.textContent = ''; return; }
+  const sisa = computePOSisa(po, editingId);
+  hint.innerHTML = sisa < 0
+    ? `<span style="color:#c0392b; font-weight:600;">Sisa PO ini sudah minus ${Math.abs(sisa).toLocaleString('id-ID')} kg (tonase terpakai melebihi PO).</span>`
+    : `Sisa tonase PO ini saat ini: ${sisa.toLocaleString('id-ID')} kg dari total ${(Number(po.tonase)||0).toLocaleString('id-ID')} kg.`;
+}
+document.getElementById('doNoCO').addEventListener('change', updateDoNoCOHint);
+function poStatusBadge(status){
+  const meta = PO_STATUS_META[status] || PO_STATUS_META.menunggu;
+  return `<span class="badge ${meta.cls}"><span class="badge-dot"></span>${esc(meta.label)}</span>`;
+}
+/* Mengompres foto PO di sisi browser sebelum disimpan — supaya ukuran data tidak membengkak di
+   localStorage/Firebase (foto kamera HP bisa 3-8 MB per file kalau tidak dikompres dulu). Dikecilkan ke
+   maksimal ~1000px sisi terpanjang, dan diubah ke JPEG kualitas sedang. */
+function compressImageFile(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    if(!file){ resolve(null); return; }
+    if(!file.type || !file.type.startsWith('image/')){ reject(new Error('File yang dipilih bukan gambar.')); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Gagal membaca file.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('File bukan gambar yang valid.'));
+      img.onload = () => {
+        let width = img.naturalWidth, height = img.naturalHeight;
+        const scale = Math.min(1, (maxDim || 1000) / Math.max(width, height));
+        width = Math.max(1, Math.round(width * scale));
+        height = Math.max(1, Math.round(height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        try{
+          resolve(canvas.toDataURL('image/jpeg', quality || 0.6));
+        }catch(err){
+          reject(err);
+        }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function updatePoBadge(){
+  const badge = document.getElementById('poBadge');
+  if(!badge) return;
+  if(!canConfirmPO()){ badge.style.display = 'none'; badge.textContent = ''; return; }
+  const count = poList.filter(p => (p.status || 'menunggu') === 'menunggu').length;
+  if(count > 0){
+    badge.textContent = count > 99 ? '99+' : String(count);
+    badge.style.display = 'flex';
+  }else{
+    badge.textContent = '';
+    badge.style.display = 'none';
+  }
+}
+function renderPO(){
+  const wrap = document.getElementById('poTableWrap');
+  const admin = isAdminUser();
+  const bisaKonfirmasi = canConfirmPO();
+  updatePoBadge();
+  if(poList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
+    return;
+  }
+  const sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? 1 : -1));
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
+      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terpakai (DO Tersimpan)</th><th>Sisa PO</th><th>Harga</th><th>Foto PO</th><th>Status</th><th></th>
+    </tr></thead><tbody>${sorted.map(p => {
+      const terpakai = computePOTerpakai(p);
+      const sisa = computePOSisa(p);
+      return `
+      <tr>
+        <td class="mono">${esc(p.noCO || '-')}</td>
+        <td>${fmtDate(p.tanggalCO)}</td>
+        <td class="mono">${esc(p.noPO || '-')}</td>
+        <td class="sv-left">${esc(p.namaCustomer || '-')}</td>
+        <td class="sv-left">${esc(p.sales || '-')}</td>
+        <td>${esc(p.gsm || '-')}</td>
+        <td>${esc(p.ukuran || '-')}</td>
+        <td class="sv-num">${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num">${terpakai > 0 ? terpakai.toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num" style="${sisa < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? sisa.toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
+        <td>${p.fotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
+        <td>${poStatusBadge(p.status || 'menunggu')}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
+        <td class="row-actions">
+          ${(bisaKonfirmasi && (p.status || 'menunggu') === 'menunggu') ? `
+            <button type="button" class="icon-btn po-acc" data-id="${p.id}" title="Konfirmasi (ACC)" style="color:var(--green-600);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>
+            <button type="button" class="icon-btn po-tolak" data-id="${p.id}" title="Tolak order" style="color:#c0392b;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>` : ''}
+          ${admin ? `<button type="button" class="icon-btn del" data-id="${p.id}" title="Hapus">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>` : ''}
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`;
+
+  wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', function(){
+    const item = poList.find(x => String(x.id) === String(this.dataset.id));
+    if(item && item.fotoPO) openPoFotoModal(item.fotoPO);
+  }));
+  if(bisaKonfirmasi){
+    wrap.querySelectorAll('.po-acc').forEach(btn => btn.addEventListener('click', function(){
+      const targetId = this.dataset.id;
+      const item = poList.find(x => String(x.id) === String(targetId));
+      if(!item) return;
+      if(confirm(`Konfirmasi (ACC) order PO ${item.noPO || item.noCO || ''}?`)){
+        item.status = 'dikonfirmasi';
+        item.catatanTolak = '';
+        const acc = currentAccount();
+        item.dikonfirmasiOleh = acc ? acc.email : '';
+        item.tanggalKonfirmasi = new Date().toISOString();
+        savePO();
+        renderPO();
+        updatePeringatanBadge();
+        showToast('Order berhasil dikonfirmasi (ACC)', 'success');
+      }
+    }));
+    wrap.querySelectorAll('.po-tolak').forEach(btn => btn.addEventListener('click', function(){
+      openPoTolakModal(this.dataset.id);
+    }));
+  }
+  if(admin){
+    wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+      if(confirm('Hapus data SO/PO ini?')){
+        const before = poList.length;
+        const targetId = this.dataset.id;
+        poList = poList.filter(x => String(x.id) !== String(targetId));
+        if(poList.length === before){
+          showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+          return;
+        }
+        localStorage.setItem(PO_KEY, JSON.stringify(poList));
+        fbRemoveFromList('po', item => String(item.id) === String(targetId), targetId);
+        renderPO();
+        updatePeringatanBadge();
+        showToast('Data SO/PO berhasil dihapus', 'danger');
+      }
+    }));
+  }
+}
+
+/* ---------- MODAL: LIHAT FOTO PO ---------- */
+function openPoFotoModal(fotoDataUrl){
+  document.getElementById('poFotoModalImg').src = fotoDataUrl;
+  const overlay = document.getElementById('poFotoModalOverlay');
+  if(overlay) overlay.classList.add('show');
+}
+function closePoFotoModal(){
+  const overlay = document.getElementById('poFotoModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  document.getElementById('poFotoModalImg').src = '';
+}
+(function(){
+  const btnClose = document.getElementById('btnClosePoFotoModal');
+  const overlay = document.getElementById('poFotoModalOverlay');
+  if(btnClose) btnClose.addEventListener('click', closePoFotoModal);
+  if(overlay) overlay.addEventListener('click', function(e){ if(e.target === overlay) closePoFotoModal(); });
+})();
+
+/* ---------- MODAL: TOLAK PO ---------- */
+let poTolakTargetId = null;
+function openPoTolakModal(id){
+  poTolakTargetId = id;
+  document.getElementById('poTolakAlasan').value = '';
+  const overlay = document.getElementById('poTolakModalOverlay');
+  if(overlay) overlay.classList.add('show');
+}
+function closePoTolakModal(){
+  poTolakTargetId = null;
+  const overlay = document.getElementById('poTolakModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formPoTolak');
+  if(form) form.reset();
+}
+(function(){
+  const btnClose = document.getElementById('btnClosePoTolakModal');
+  const btnCancel = document.getElementById('btnBatalPoTolak');
+  const overlay = document.getElementById('poTolakModalOverlay');
+  if(btnClose) btnClose.addEventListener('click', closePoTolakModal);
+  if(btnCancel) btnCancel.addEventListener('click', closePoTolakModal);
+  if(overlay) overlay.addEventListener('click', function(e){ if(e.target === overlay) closePoTolakModal(); });
+})();
+document.getElementById('formPoTolak').addEventListener('submit', function(e){
+  e.preventDefault();
+  if(!poTolakTargetId) return;
+  const item = poList.find(x => String(x.id) === String(poTolakTargetId));
+  if(!item){ closePoTolakModal(); return; }
+  const alasan = document.getElementById('poTolakAlasan').value.trim();
+  item.status = 'ditolak';
+  item.catatanTolak = alasan;
+  const acc = currentAccount();
+  item.dikonfirmasiOleh = acc ? acc.email : '';
+  item.tanggalKonfirmasi = new Date().toISOString();
+  savePO();
+  closePoTolakModal();
+  renderPO();
+  updatePeringatanBadge();
+  showToast('Order ditandai tidak dikonfirmasi', 'danger');
+});
+
+/* ---------- FORM: INPUT SO & UPLOAD PO ---------- */
+(function(){
+  const fileInput = document.getElementById('poFotoInput');
+  if(!fileInput) return;
+  fileInput.addEventListener('change', async function(){
+    const errEl = document.getElementById('poFotoError');
+    const previewWrap = document.getElementById('poFotoPreviewWrap');
+    errEl.textContent = '';
+    const file = this.files[0];
+    if(!file){ previewWrap.style.display = 'none'; return; }
+    try{
+      const compressed = await compressImageFile(file, 1000, 0.65);
+      document.getElementById('poFotoPreviewImg').src = compressed;
+      previewWrap.style.display = '';
+    }catch(err){
+      errEl.textContent = err.message || 'Gagal memproses foto.';
+      previewWrap.style.display = 'none';
+      this.value = '';
+    }
+  });
+})();
+document.getElementById('formPOInput').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const errEl = document.getElementById('poFotoError');
+  errEl.textContent = '';
+  const btn = document.getElementById('btnSubmitPO');
+  const fileInput = document.getElementById('poFotoInput');
+  const file = fileInput.files[0];
+
+  btn.disabled = true;
+  let fotoPO = null;
+  try{
+    if(file) fotoPO = await compressImageFile(file, 1000, 0.65);
+  }catch(err){
+    errEl.textContent = 'Gagal memproses foto PO: ' + (err.message || err);
+    btn.disabled = false;
+    return;
+  }
+
+  const acc = currentAccount();
+  poList.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    noCO: document.getElementById('poNoCO').value.trim().toUpperCase(),
+    tanggalCO: document.getElementById('poTanggalCO').value,
+    noPO: document.getElementById('poNoPO').value.trim().toUpperCase(),
+    namaCustomer: document.getElementById('poNamaCustomer').value.trim(),
+    sales: document.getElementById('poSales').value.trim(),
+    gsm: document.getElementById('poGsm').value.trim(),
+    ukuran: document.getElementById('poUkuran').value.trim(),
+    tonase: Number(document.getElementById('poTonase').value) || 0,
+    harga: Number(document.getElementById('poHarga').value) || 0,
+    fotoPO: fotoPO,
+    status: 'menunggu',
+    catatanTolak: '',
+    dikonfirmasiOleh: '',
+    tanggalKonfirmasi: '',
+    dibuatOleh: acc ? acc.email : '',
+    createdAt: new Date().toISOString(),
+  });
+  savePO();
+  this.reset();
+  document.getElementById('poFotoPreviewWrap').style.display = 'none';
+  btn.disabled = false;
+  updatePeringatanBadge();
+  updatePoBadge();
+  showToast('SO & PO berhasil disimpan, menunggu konfirmasi', 'success');
+  goTo('po');
+});
+
 /* ---------- PUSAT PERINGATAN ---------- */
 function computePeringatanItems(){
   const items = [];
@@ -4588,6 +5110,17 @@ function computePeringatanItems(){
       desc:`${esc(r.nopol)} — ${fmtDate(r.tanggal)} — ${esc(r.tujuanMuat)} &rarr; ${esc(r.tujuanBongkar)}`,
     });
   });
+
+  if(canConfirmPO()){
+    poList.filter(p => (p.status || 'menunggu') === 'menunggu').forEach(p => {
+      items.push({
+        key: `po:${p.id}`,
+        type:'warn',
+        title:`SO/PO ${esc(p.noPO || p.noCO || '-')} menunggu konfirmasi`,
+        desc:`${esc(p.namaCustomer || '-')} — Sales: ${esc(p.sales || '-')} — Tonase ${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}`,
+      });
+    });
+  }
 
   /* Peringatan legalitas kendaraan (KIR & pajak) — tampil kalau sudah lewat jatuh tempo atau tinggal H-30 hari */
   kendaraanList.forEach(k => {
@@ -5163,7 +5696,7 @@ function renderTable(){
       <td class="do-td-tanggal">${fmtDate(r.tanggal)}</td>
       <td class="do-td-nopol"><span class="plate-cell">${esc(r.nopol)}</span></td>
       <td class="do-td-armada">${esc(armadaLabel(r.jenisArmada))}</td>
-      <td class="do-td-kota">${esc(r.kota || '-')}</td>
+      <td class="do-td-kota">${esc(r.kota || '-')}${r.noCOTerkait ? `<div class="hint" style="margin-top:2px;">PO: ${esc(r.noCOTerkait)}</div>` : ''}</td>
       <td class="do-td-sopir">${esc(r.sopir || '-')}</td>
       <td class="do-td-uang mono">${rupiah(Number(r.uangJalan) || 0)}</td>
       <td class="do-td-biayalain mono">${rupiah(Number(r.biayaLain) || 0)}</td>
@@ -6245,6 +6778,10 @@ function renderAccountList(){
       <div class="info">
         <div class="em">${esc(a.email)} ${!accountApproved(a) ? '<span class="badge badge-legal-warn" style="margin-left:6px;"><span class="badge-dot"></span>Menunggu persetujuan</span>' : ''}</div>
         <div class="nm">${esc(a.nama || 'Tanpa nama')} — ${accountRole(a) === 'admin' ? 'Admin (akses penuh)' : 'Terbatas (profil &amp; password saja)'}</div>
+        ${accountRole(a) !== 'admin' ? `<label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted); cursor:pointer;">
+          <input type="checkbox" class="po-access-toggle" data-email="${esc(a.email)}" ${a.bisaKonfirmasiPO ? 'checked' : ''}>
+          Bisa konfirmasi PO (ACC / tolak Sales Order)
+        </label>` : ''}
       </div>
       ${acc && normEmail(a.email) === normEmail(acc.email)
         ? '<span class="account-badge-you">AKUN INI</span>'
@@ -6274,6 +6811,15 @@ function renderAccountList(){
       fbRemoveFromList('accounts', item => normEmail(item && item.email) === normEmail(targetEmail), normEmail(targetEmail));
       renderAccountList();
       showToast('Akun berhasil dihapus', 'danger');
+    }
+  }));
+  wrap.querySelectorAll('.po-access-toggle').forEach(cb => cb.addEventListener('change', function(){
+    let list = loadAccounts();
+    const target = list.find(a => normEmail(a.email) === normEmail(this.dataset.email));
+    if(target){
+      target.bisaKonfirmasiPO = this.checked;
+      saveAccounts(list);
+      showToast(this.checked ? `${this.dataset.email} sekarang bisa konfirmasi PO` : `Akses konfirmasi PO ${this.dataset.email} dicabut`, 'success');
     }
   }));
 }
