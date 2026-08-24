@@ -842,6 +842,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
             Biaya Pengeluaran Ekspedisi
           </button>
+          <button class="nav-item nav-sub" data-view="laporan-sisapo">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            Laporan Sisa PO
+          </button>
         </div>
       </div>
 
@@ -1337,7 +1341,6 @@
           <div class="panel-head">
             <div>
               <h2>Monitoring Sisa PO</h2>
-              <p>Pantau tonase PO yang sudah terkirim (dari DO yang tersimpan) dan sisa tonase yang masih tersedia per PO. Hanya PO yang sudah <strong>dikonfirmasi (ACC)</strong> dan masih memiliki sisa yang tampil di sini — PO yang belum dikonfirmasi tidak akan ter-update di menu ini, dan PO yang sudah habis otomatis tidak muncul (lihat tanda "PO Habis" di menu Konfirmasi PO).</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1506,7 +1509,6 @@
           <div class="panel-head">
             <div>
               <h2>Ritase per nopol (rekap)</h2>
-              <p>Rekap ritase &amp; tonase per kendaraan (BK, Roll, OCC) — pilih periode untuk memantau performa tiap armada</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1581,7 +1583,6 @@
           <div class="panel-head">
             <div>
               <h2>Monitoring service berkala (KM)</h2>
-              <p>Status berwarna otomatis saat mendekati atau melewati target — KM dari GPS Cartrack update otomatis real-time lewat Firebase</p>
             </div>
             <button type="button" class="btn btn-primary" id="btnTambahService">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
@@ -2046,6 +2047,42 @@
             <div id="rekapNopolWrap"></div>
             <h3 style="margin:22px 0 10px; font-size:14px;">Detail pengiriman (per DO)</h3>
             <div id="laporanWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LAPORAN SISA PO -->
+      <div class="view" data-view="laporan-sisapo">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Laporan Sisa PO</h2>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="flex-wrap:wrap;">
+              <div class="field">
+                <label for="lapSisaPoDari">Dari tanggal (Tgl CO)</label>
+                <input type="date" id="lapSisaPoDari">
+              </div>
+              <div class="field">
+                <label for="lapSisaPoSampai">Sampai tanggal (Tgl CO)</label>
+                <input type="date" id="lapSisaPoSampai">
+              </div>
+              <button class="btn btn-primary" id="btnLapSisaPoGenerate">Tampilkan laporan</button>
+              <button class="btn btn-secondary" id="btnLapSisaPoExportExcel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Export Excel
+              </button>
+              <button class="btn btn-secondary" id="btnLapSisaPoExportPdf">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Export PDF
+              </button>
+              <button class="btn btn-secondary" id="btnLapSisaPoPrint">Cetak</button>
+              <span class="hint" id="lapSisaPoExportStatus" style="align-self:center;"></span>
+            </div>
+            <p class="hint" id="lapSisaPoPeriodLabel" style="margin:0 0 10px;"></p>
+            <div id="lapSisaPoWrap"></div>
           </div>
         </div>
       </div>
@@ -3258,7 +3295,7 @@ function emptyState(msg){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO'};
+const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -3283,6 +3320,7 @@ function goTo(view){
   if(view === 'borongan') renderBoronganTables();
   if(view === 'po') renderPO();
   if(view === 'po-monitoring') renderPOMonitoring();
+  if(view === 'laporan-sisapo') initLaporanSisaPoView();
   if(view === 'pengaturan'){
     const acc = currentAccount();
     if(acc){
@@ -5106,24 +5144,12 @@ function renderPO(){
 function fmtTon(kg){
   return (Number(kg)/1000).toLocaleString('id-ID', {maximumFractionDigits:2}) + ' ton';
 }
-function renderPOMonitoring(){
-  const wrap = document.getElementById('poMonitoringTableWrap');
-  if(!wrap) return;
-  if(poList.length === 0){
-    wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
-    return;
-  }
-  /* Hanya PO yang statusnya sudah "Dikonfirmasi (ACC)" DAN sisanya masih > 0 yang tampil di monitoring.
-     PO yang belum dikonfirmasi (masih menunggu/ditolak) tidak akan ikut muncul/ke-update di sini, dan
-     PO yang sudah habis (sisa <= 0) otomatis tidak ikut muncul (tandanya sudah ada di menu Konfirmasi PO). */
-  const sorted = poList
-    .filter(p => p.status === 'dikonfirmasi' && computePOSisa(p) > 0)
-    .slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
-  if(sorted.length === 0){
-    wrap.innerHTML = emptyState('Belum ada PO yang dikonfirmasi dengan sisa tersedia — PO yang belum di-ACC atau sudah habis tidak ditampilkan di sini.');
-    return;
-  }
-
+/* Bangun HTML tabel Sisa PO LENGKAP (baris data + pengelompokan BK 1 + baris-baris total) dari daftar
+   PO yang SUDAH difilter (status dikonfirmasi & sisa > 0) dan diurutkan — dipakai bersama oleh
+   Monitoring Sisa PO (tanpa filter periode, sesi kedelapanbelas s/d keduapuluh) dan Laporan Sisa PO
+   (dengan filter periode "Tgl CO", sesi keduapuluhdua) supaya tampilan & rumus totalnya selalu
+   seragam satu sama lain — cukup diubah/diperbaiki di satu tempat ini untuk keduanya sekaligus. */
+function buildSisaPoTableHtml(sorted){
   /* PO dengan nama customer diawali "BK 1" (mis. "BK 1" atau "BK 1 ( ML 75 )") ditampilkan terpisah
      di paling BAWAH, dengan subtotal sendiri "SISA PENGIRIMAN CO URP" lalu baris grand total
      "TOTAL KELUAR+URP" yang menjumlahkan kelompok utama + kelompok BK 1 — mengikuti format rekap
@@ -5203,9 +5229,28 @@ function renderPOMonitoring(){
     footHtml = totalRow('TOTAL KELUAR+URP', semuaSum, 'var(--bg)', true);
   }
 
-  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
+  return `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
       <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa PO</th><th>Harga</th><th>Status PO</th>
     </tr></thead><tbody>${bodyHtml}</tbody><tfoot>${footHtml}</tfoot></table></div>`;
+}
+function renderPOMonitoring(){
+  const wrap = document.getElementById('poMonitoringTableWrap');
+  if(!wrap) return;
+  if(poList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
+    return;
+  }
+  /* Hanya PO yang statusnya sudah "Dikonfirmasi (ACC)" DAN sisanya masih > 0 yang tampil di monitoring.
+     PO yang belum dikonfirmasi (masih menunggu/ditolak) tidak akan ikut muncul/ke-update di sini, dan
+     PO yang sudah habis (sisa <= 0) otomatis tidak ikut muncul (tandanya sudah ada di menu Konfirmasi PO). */
+  const sorted = poList
+    .filter(p => p.status === 'dikonfirmasi' && computePOSisa(p) > 0)
+    .slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
+  if(sorted.length === 0){
+    wrap.innerHTML = emptyState('Belum ada PO yang dikonfirmasi dengan sisa tersedia — PO yang belum di-ACC atau sudah habis tidak ditampilkan di sini.');
+    return;
+  }
+  wrap.innerHTML = buildSisaPoTableHtml(sorted);
 }
 
 /* ---------- MODAL: LIHAT FOTO PO ---------- */
@@ -6836,6 +6881,358 @@ function exportLaporanPdf(){
 }
 document.getElementById('btnExportPdf').addEventListener('click', exportLaporanPdf);
 document.getElementById('btnPrint').addEventListener('click', exportLaporanPdf);
+
+/* ==================================================================================
+   LAPORAN SISA PO — versi periodik (tanggal bisa diatur bebas) dari Monitoring Sisa PO,
+   ditaruh di grup menu Laporan supaya bisa direkap per periode (berdasarkan Tgl CO) &
+   diekspor ke Excel/PDF/cetak. Struktur baris (pengelompokan customer "BK 1" ke bawah +
+   baris TOTAL/SISA PENGIRIMAN CO URP/TOTAL KELUAR+URP) memakai persis logika yang sama
+   dengan Monitoring Sisa PO lewat buildSisaPoTableHtml() yang sudah dipisah jadi fungsi
+   tersendiri, supaya tampilan layar keduanya selalu seragam. TIDAK ADA kontrol edit/hapus/
+   ubah data apa pun di halaman ini — murni tampilan + ekspor untuk semua user login, sesuai
+   kebijakan "edit hanya admin" yang berlaku di seluruh sistem: karena memang tidak ada
+   kontrol edit yang ditampilkan di sini sama sekali (data PO itu sendiri hanya bisa diubah
+   lewat menu Konfirmasi PO / Input SO & Upload PO, yang sudah punya aturan aksesnya sendiri).
+   ================================================================================== */
+function getSisaPoPeriodInfo(){
+  const dari = document.getElementById('lapSisaPoDari').value;
+  const sampai = document.getElementById('lapSisaPoSampai').value;
+  if(!dari || !sampai) return null;
+  const startDate = dari <= sampai ? dari : sampai;
+  const endDate = dari <= sampai ? sampai : dari;
+  const label = startDate === endDate ? fmtDate(startDate) : `${fmtDate(startDate)} – ${fmtDate(endDate)}`;
+  const slug = startDate === endDate ? startDate : `${startDate}_sd_${endDate}`;
+  return { startDate, endDate, label, slug };
+}
+/* Basis filter PERSIS sama dengan Monitoring Sisa PO (status 'dikonfirmasi' & computePOSisa(p) > 0),
+   ditambah filter rentang Tgl CO supaya bisa direkap per periode. */
+function getSisaPoRowsForPeriod(period){
+  return poList
+    .filter(p => p.status === 'dikonfirmasi' && computePOSisa(p) > 0)
+    .filter(p => p.tanggalCO && p.tanggalCO >= period.startDate && p.tanggalCO <= period.endDate)
+    .slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
+}
+function generateLaporanSisaPo(){
+  const period = getSisaPoPeriodInfo();
+  const labelEl = document.getElementById('lapSisaPoPeriodLabel');
+  const wrap = document.getElementById('lapSisaPoWrap');
+  if(!period){
+    if(labelEl) labelEl.textContent = '';
+    wrap.innerHTML = emptyState('Pilih periode terlebih dahulu.');
+    return;
+  }
+  if(labelEl) labelEl.innerHTML = `Periode (berdasarkan Tgl CO): <b>${esc(period.label)}</b>`;
+  const rows = getSisaPoRowsForPeriod(period);
+  if(rows.length === 0){
+    wrap.innerHTML = emptyState('Tidak ada PO dikonfirmasi dengan sisa pada periode Tgl CO ini.');
+    return;
+  }
+  wrap.innerHTML = buildSisaPoTableHtml(rows);
+}
+function initLaporanSisaPoView(){
+  defaultThisMonthRange('lapSisaPoDari', 'lapSisaPoSampai');
+  generateLaporanSisaPo();
+}
+document.getElementById('btnLapSisaPoGenerate').addEventListener('click', generateLaporanSisaPo);
+
+function getSisaPoRowsForExport(){
+  const period = getSisaPoPeriodInfo();
+  if(!period){ alert('Pilih periode terlebih dahulu.'); return null; }
+  const rows = getSisaPoRowsForPeriod(period);
+  if(rows.length === 0){ alert('Tidak ada data Sisa PO untuk diexport pada periode ini.'); return null; }
+  return { period, rows };
+}
+
+/* ---- Export Excel (.xlsx) — dibangun sendiri lewat util ZIP (makeZip/crc32Bytes/xlsxColLetter)
+   yang sudah dipakai bareng Laporan Pengiriman, tapi pakai styles.xml & sheet sendiri (SISAPO_*)
+   supaya perubahan di sini tidak berisiko mengganggu export Laporan Pengiriman yang sudah ada. ---- */
+const SISAPO_XLSX_HEADERS = ['No. CO','Tgl CO','No. PO','Customer','Sales','GSM','UK','Tonase PO (Ton)','Terkirim (Ton)','Sisa PO (Ton)','Harga (Rp)','Status PO'];
+const SISAPO_XLSX_WIDTHS = [12,12,12,26,10,8,16,14,13,13,14,11];
+const XS_SP = { TITLE:1, SUB:2, HEAD:3, CELL:4, CELL_ALT:5, NUM:6, NUM_ALT:7, CUR:8, CUR_ALT:9, TOTAL_LABEL:10, TOTAL_NUM:11, GRAND_LABEL:12, GRAND_NUM:13 };
+
+function buildSisaPoSheetXml(periodLabel, sorted){
+  const isBK1 = p => String(p.namaCustomer || '').trim().toUpperCase().startsWith('BK 1');
+  const utama = sorted.filter(p => !isBK1(p));
+  const bk1 = sorted.filter(p => isBK1(p));
+  const nCols = SISAPO_XLSX_HEADERS.length;
+  const headerRowIdx = 4;
+  let rowIdx = headerRowIdx + 1;
+  let rowsXml = '';
+  const mergeRefs = [];
+
+  rowsXml += `<row r="1"><c r="A1" t="inlineStr" s="${XS_SP.TITLE}"><is><t>${esc('LAPORAN SISA PO')}</t></is></c></row>`;
+  rowsXml += `<row r="2"><c r="A2" t="inlineStr" s="${XS_SP.SUB}"><is><t>${esc('Periode (Tgl CO): ' + periodLabel)}</t></is></c></row>`;
+  rowsXml += `<row r="3"></row>`;
+  let headerCells = '';
+  SISAPO_XLSX_HEADERS.forEach((h,i) => { headerCells += `<c r="${xlsxColLetter(i+1)}${headerRowIdx}" t="inlineStr" s="${XS_SP.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
+  rowsXml += `<row r="${headerRowIdx}">${headerCells}</row>`;
+
+  const dataRowXml = (p, alt) => {
+    const terkirim = computePOTerpakai(p);
+    const sisa = computePOSisa(p);
+    const sText = alt ? XS_SP.CELL_ALT : XS_SP.CELL;
+    const sNum = alt ? XS_SP.NUM_ALT : XS_SP.NUM;
+    const sCur = alt ? XS_SP.CUR_ALT : XS_SP.CUR;
+    const textVals = [p.noCO || '-', fmtDate(p.tanggalCO), p.noPO || '-', p.namaCustomer || '-', p.sales || '-', p.gsm || '-', p.ukuran || '-'];
+    let cells = '';
+    textVals.forEach((v,ci) => { cells += `<c r="${xlsxColLetter(ci+1)}${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(String(v))}</t></is></c>`; });
+    cells += `<c r="H${rowIdx}" s="${sNum}"><v>${(Number(p.tonase)||0)/1000}</v></c>`;
+    cells += terkirim > 0 ? `<c r="I${rowIdx}" s="${sNum}"><v>${terkirim/1000}</v></c>` : `<c r="I${rowIdx}" s="${sNum}"/>`;
+    cells += `<c r="J${rowIdx}" s="${sNum}"><v>${sisa/1000}</v></c>`;
+    cells += p.harga ? `<c r="K${rowIdx}" s="${sCur}"><v>${Number(p.harga)||0}</v></c>` : `<c r="K${rowIdx}" s="${sCur}"/>`;
+    cells += `<c r="L${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(p.statusKirim || '-')}</t></is></c>`;
+    rowsXml += `<row r="${rowIdx}">${cells}</row>`;
+    rowIdx++;
+  };
+  const sumGroup = list => list.reduce((acc,p) => { acc.tonase += Number(p.tonase)||0; acc.terkirim += computePOTerpakai(p); acc.sisa += computePOSisa(p); return acc; }, {tonase:0, terkirim:0, sisa:0});
+
+  /* Baris total onlySisa: label di-merge kolom A..I (sama seperti colspan=9 di layar), lalu cuma
+     kolom Sisa PO (J) yang terisi angka; K & L dibiarkan kosong bergaya sama. */
+  const totalRowOnlySisa = (label, sum, styleLabel, styleNum) => {
+    mergeRefs.push(`A${rowIdx}:I${rowIdx}`);
+    let cells = `<c r="A${rowIdx}" t="inlineStr" s="${styleLabel}"><is><t>${esc(label)}</t></is></c>`;
+    for(let c = 2; c <= 9; c++) cells += `<c r="${xlsxColLetter(c)}${rowIdx}" s="${styleLabel}"/>`;
+    cells += `<c r="J${rowIdx}" s="${styleNum}"><v>${sum.sisa/1000}</v></c>`;
+    cells += `<c r="K${rowIdx}" s="${styleLabel}"/><c r="L${rowIdx}" s="${styleLabel}"/>`;
+    rowsXml += `<row r="${rowIdx}">${cells}</row>`;
+    rowIdx++;
+  };
+  /* Baris fallback "TOTAL SISA PO" (dipakai kalau tidak ada PO customer "BK 1" sama sekali) — TIDAK
+     di-merge, 3 kolom (Tonase PO/Terkirim/Sisa PO) diisi angka, seragam dengan tampilan layar. */
+  const totalRowFull = (label, sum) => {
+    let cells = `<c r="A${rowIdx}" t="inlineStr" s="${XS_SP.TOTAL_LABEL}"><is><t>${esc(label)}</t></is></c>`;
+    for(let c = 2; c <= 7; c++) cells += `<c r="${xlsxColLetter(c)}${rowIdx}" s="${XS_SP.TOTAL_LABEL}"/>`;
+    cells += `<c r="H${rowIdx}" s="${XS_SP.TOTAL_NUM}"><v>${sum.tonase/1000}</v></c>`;
+    cells += `<c r="I${rowIdx}" s="${XS_SP.TOTAL_NUM}"><v>${sum.terkirim/1000}</v></c>`;
+    cells += `<c r="J${rowIdx}" s="${XS_SP.TOTAL_NUM}"><v>${sum.sisa/1000}</v></c>`;
+    cells += `<c r="K${rowIdx}" s="${XS_SP.TOTAL_LABEL}"/><c r="L${rowIdx}" s="${XS_SP.TOTAL_LABEL}"/>`;
+    rowsXml += `<row r="${rowIdx}">${cells}</row>`;
+    rowIdx++;
+  };
+
+  utama.forEach((p,i) => dataRowXml(p, i % 2 === 1));
+  const utamaSum = sumGroup(utama);
+  if(bk1.length === 0){
+    totalRowFull('TOTAL SISA PO', utamaSum);
+  }else{
+    totalRowOnlySisa('TOTAL', utamaSum, XS_SP.TOTAL_LABEL, XS_SP.TOTAL_NUM);
+    bk1.forEach((p,i) => dataRowXml(p, i % 2 === 1));
+    const bk1Sum = sumGroup(bk1);
+    totalRowOnlySisa('SISA PENGIRIMAN CO URP', bk1Sum, XS_SP.TOTAL_LABEL, XS_SP.TOTAL_NUM);
+    const semuaSum = { tonase: utamaSum.tonase + bk1Sum.tonase, terkirim: utamaSum.terkirim + bk1Sum.terkirim, sisa: utamaSum.sisa + bk1Sum.sisa };
+    totalRowOnlySisa('TOTAL KELUAR+URP', semuaSum, XS_SP.GRAND_LABEL, XS_SP.GRAND_NUM);
+  }
+
+  const lastRowIdx = rowIdx - 1;
+  const colsXml = SISAPO_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const dimensionRef = `A1:${xlsxColLetter(nCols)}${lastRowIdx}`;
+  const lastCol = xlsxColLetter(nCols);
+  const mergeCellsXml = [`A1:${lastCol}1`, `A2:${lastCol}2`, ...mergeRefs].map(ref => `<mergeCell ref="${ref}"/>`).join('');
+  const mergeCount = 2 + mergeRefs.length;
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="${dimensionRef}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colsXml}</cols>
+<sheetData>${rowsXml}</sheetData>
+<mergeCells count="${mergeCount}">${mergeCellsXml}</mergeCells>
+</worksheet>`;
+}
+
+const SISAPO_XLSX_STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="2">
+<numFmt numFmtId="164" formatCode="#,##0.00"/>
+<numFmt numFmtId="165" formatCode="&quot;Rp&quot; #,##0"/>
+</numFmts>
+<fonts count="5">
+<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>
+<font><b/><sz val="14"/><color rgb="FF1B2A4A"/><name val="Calibri"/></font>
+<font><i/><sz val="11"/><color rgb="FF5B6472"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FF14181F"/><name val="Calibri"/></font>
+</fonts>
+<fills count="6">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF1B2A4A"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFAFBFC"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFF3CD"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFEFF1F5"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="2">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFD9DCE3"/></left><right style="thin"><color rgb="FFD9DCE3"/></right><top style="thin"><color rgb="FFD9DCE3"/></top><bottom style="thin"><color rgb="FFD9DCE3"/></bottom><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="14">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment horizontal="left"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment horizontal="left"/></xf>
+<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="164" fontId="0" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="165" fontId="0" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="164" fontId="4" fillId="4" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="4" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+<xf numFmtId="164" fontId="4" fillId="5" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+function exportLaporanSisaPoExcel(){
+  const ready = getSisaPoRowsForExport();
+  if(!ready) return;
+  const { period, rows } = ready;
+  const statusEl = document.getElementById('lapSisaPoExportStatus');
+  if(statusEl) statusEl.textContent = 'Menyiapkan file Excel...';
+  try{
+    const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+    const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+    const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Laporan Sisa PO" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+    const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+    const sheetXml = buildSisaPoSheetXml(period.label, rows);
+
+    const zipBytes = makeZip([
+      { name: '[Content_Types].xml', data: contentTypesXml },
+      { name: '_rels/.rels', data: rootRelsXml },
+      { name: 'xl/workbook.xml', data: workbookXml },
+      { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
+      { name: 'xl/styles.xml', data: SISAPO_XLSX_STYLES_XML },
+      { name: 'xl/worksheets/sheet1.xml', data: sheetXml },
+    ]);
+
+    const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `laporan_sisa_po_${period.slug}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Laporan Sisa PO (Excel) berhasil diunduh', 'success');
+  }catch(err){
+    alert('Gagal membuat file Excel: ' + err.message);
+  }finally{
+    if(statusEl) statusEl.textContent = '';
+  }
+}
+document.getElementById('btnLapSisaPoExportExcel').addEventListener('click', exportLaporanSisaPoExcel);
+
+/* ---- Export PDF / Cetak — sama seperti Laporan Pengiriman: buka jendela cetak berisi tabel rapi,
+   lalu pakai fitur "Simpan sebagai PDF" bawaan browser saat mencetak (tanpa library luar). ---- */
+function buildSisaPoPrintHtml(periodLabel, sorted){
+  const isBK1 = p => String(p.namaCustomer || '').trim().toUpperCase().startsWith('BK 1');
+  const utama = sorted.filter(p => !isBK1(p));
+  const bk1 = sorted.filter(p => isBK1(p));
+  const sumGroup = list => list.reduce((acc,p) => { acc.tonase += Number(p.tonase)||0; acc.terkirim += computePOTerpakai(p); acc.sisa += computePOSisa(p); return acc; }, {tonase:0, terkirim:0, sisa:0});
+
+  const rowHtml = p => {
+    const terkirim = computePOTerpakai(p);
+    const sisa = computePOSisa(p);
+    return `<tr>
+      <td>${esc(p.noCO || '-')}</td>
+      <td>${esc(fmtDate(p.tanggalCO))}</td>
+      <td>${esc(p.noPO || '-')}</td>
+      <td>${esc(p.namaCustomer || '-')}</td>
+      <td>${esc(p.sales || '-')}</td>
+      <td>${esc(p.gsm || '-')}</td>
+      <td>${esc(p.ukuran || '-')}</td>
+      <td style="text-align:right;">${p.tonase ? esc(fmtTon(p.tonase)) : '-'}</td>
+      <td style="text-align:right;">${terkirim > 0 ? esc(fmtTon(terkirim)) : '-'}</td>
+      <td style="text-align:right;">${p.tonase ? esc(fmtTon(sisa)) : '-'}</td>
+      <td style="text-align:right;">${p.harga ? esc(rupiah(p.harga)) : '-'}</td>
+      <td>${esc(p.statusKirim || '-')}</td>
+    </tr>`;
+  };
+  const totalRowOnlySisa = (label, sum, bg) => `<tr style="font-weight:700; background:${bg} !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
+    <td colspan="9" style="text-align:center;">${esc(label)}</td>
+    <td style="text-align:right;">${esc(fmtTon(sum.sisa))}</td>
+    <td></td><td></td>
+  </tr>`;
+  const totalRowFull = (label, sum) => `<tr style="font-weight:700; background:#eff2f7 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
+    <td colspan="7" style="text-align:right;">${esc(label)}</td>
+    <td style="text-align:right;">${esc(fmtTon(sum.tonase))}</td>
+    <td style="text-align:right;">${esc(fmtTon(sum.terkirim))}</td>
+    <td style="text-align:right;">${esc(fmtTon(sum.sisa))}</td>
+    <td></td><td></td>
+  </tr>`;
+
+  const utamaSum = sumGroup(utama);
+  let bodyHtml = utama.map(rowHtml).join('');
+  if(bk1.length === 0){
+    bodyHtml += totalRowFull('TOTAL SISA PO', utamaSum);
+  }else{
+    bodyHtml += totalRowOnlySisa('TOTAL', utamaSum, '#fff3cd');
+    bodyHtml += bk1.map(rowHtml).join('');
+    const bk1Sum = sumGroup(bk1);
+    bodyHtml += totalRowOnlySisa('SISA PENGIRIMAN CO URP', bk1Sum, '#fff3cd');
+    const semuaSum = { tonase: utamaSum.tonase + bk1Sum.tonase, terkirim: utamaSum.terkirim + bk1Sum.terkirim, sisa: utamaSum.sisa + bk1Sum.sisa };
+    bodyHtml += totalRowOnlySisa('TOTAL KELUAR+URP', semuaSum, '#eff2f7');
+  }
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Laporan Sisa PO - ${esc(periodLabel)}</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm 10mm; }
+  *{ box-sizing:border-box; }
+  body{ font-family: Arial, Helvetica, sans-serif; color:#1a1f29; margin:0; padding:0; }
+  h1{ font-size:18px; margin:0 0 2px; color:#1B2A4A; }
+  .sub{ font-size:11px; color:#5b6472; margin:0 0 14px; font-style:italic; }
+  table{ width:100%; border-collapse:collapse; font-size:10px; margin-bottom:6px; }
+  th, td{ border:1px solid #333; padding:6px 7px; text-align:left; }
+  th{ background:#1B2A4A !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; color:#fff; text-transform:uppercase; font-size:9px; letter-spacing:.03em; }
+</style>
+</head><body>
+  <h1>Laporan Sisa PO</h1>
+  <p class="sub">Periode (Tgl CO): ${esc(periodLabel)}</p>
+  <table>
+    <thead><tr>
+      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa PO</th><th>Harga</th><th>Status PO</th>
+    </tr></thead>
+    <tbody>${bodyHtml}</tbody>
+  </table>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };<\/script>
+</body></html>`;
+}
+function exportLaporanSisaPoPdf(){
+  const ready = getSisaPoRowsForExport();
+  if(!ready) return;
+  const { period, rows } = ready;
+  const html = buildSisaPoPrintHtml(period.label, rows);
+  const win = window.open('', '_blank');
+  if(!win){
+    alert('Popup diblokir oleh browser. Izinkan pop-up untuk halaman ini, lalu coba lagi — jendela cetak akan terbuka dengan pilihan "Simpan sebagai PDF".');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  showToast('Jendela cetak dibuka — pilih tujuan "Simpan sebagai PDF" untuk mengunduh, atau langsung Cetak', 'success');
+}
+document.getElementById('btnLapSisaPoExportPdf').addEventListener('click', exportLaporanSisaPoPdf);
+document.getElementById('btnLapSisaPoPrint').addEventListener('click', exportLaporanSisaPoPdf);
 
 /* ---------- LOGIN / AUTH (multi akun berbasis email, maks 5 akun) ---------- */
 const ACCOUNTS_KEY = 'ekspedisi_pro_accounts';
