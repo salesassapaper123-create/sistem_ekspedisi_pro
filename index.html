@@ -4761,7 +4761,15 @@ function renderWaLegalBanner(){
       <button type="button" class="btn btn-primary" id="btnBannerKirimWa" style="white-space:nowrap;">Kirim pengingat WA</button>
     </div>`;
   const btn = document.getElementById('btnBannerKirimWa');
-  if(btn) btn.addEventListener('click', () => { goTo('kendaraan'); setTimeout(sendWaLegalReminder, 200); });
+  if(btn) btn.addEventListener('click', () => {
+    /* Panggil sendWaLegalReminder() LANGSUNG & SINKRON di sini (bukan lewat setTimeout) supaya
+       window.open() ke wa.me masih dianggap browser sebagai aksi klik user secara langsung.
+       Kalau dibungkus setTimeout (walau cuma 200ms), browser modern (Chrome/Firefox/Safari) akan
+       kehilangan status "user gesture" itu dan diam-diam MEMBLOKIR tab WhatsApp yang coba dibuka —
+       tanpa pesan error apa pun, jadi terlihat seperti tombolnya tidak melakukan apa-apa. */
+    sendWaLegalReminder();
+    goTo('kendaraan');
+  });
 }
 document.getElementById('btnKirimWaLegal').addEventListener('click', sendWaLegalReminder);
 document.getElementById('waAutoBanner').addEventListener('change', function(){
@@ -5102,16 +5110,19 @@ function renderPOMonitoring(){
     wrap.innerHTML = emptyState('Belum ada PO yang dikonfirmasi dengan sisa tersedia — PO yang belum di-ACC atau sudah habis tidak ditampilkan di sini.');
     return;
   }
-  let totalTonasePO = 0, totalTerkirim = 0, totalSisa = 0;
-  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
-      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa PO</th><th>Harga</th><th>Status PO</th>
-    </tr></thead><tbody>${sorted.map(p => {
-      const terkirim = computePOTerpakai(p);
-      const sisa = computePOSisa(p);
-      totalTonasePO += Number(p.tonase)||0;
-      totalTerkirim += terkirim;
-      totalSisa += sisa;
-      return `
+
+  /* PO dengan nama customer diawali "BK 1" (mis. "BK 1" atau "BK 1 ( ML 75 )") ditampilkan terpisah
+     di paling BAWAH, dengan subtotal sendiri "SISA PENGIRIMAN CO URP" lalu baris grand total
+     "TOTAL KELUAR+URP" yang menjumlahkan kelompok utama + kelompok BK 1 — mengikuti format rekap
+     manual yang sudah biasa dipakai user sebelumnya (dicontohkan lewat foto rekap Excel user). */
+  const isBK1 = p => String(p.namaCustomer || '').trim().toUpperCase().startsWith('BK 1');
+  const utama = sorted.filter(p => !isBK1(p));
+  const bk1 = sorted.filter(p => isBK1(p));
+
+  const poRowHtml = p => {
+    const terkirim = computePOTerpakai(p);
+    const sisa = computePOSisa(p);
+    return `
       <tr>
         <td class="mono">${esc(p.noCO || '-')}</td>
         <td>${fmtDate(p.tanggalCO)}</td>
@@ -5126,14 +5137,47 @@ function renderPOMonitoring(){
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
         <td>${p.statusKirim ? esc(p.statusKirim) : '-'}</td>
       </tr>`;
-    }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
-      <td colspan="7" class="sv-left">TOTAL SISA PO</td>
-      <td class="sv-num">${fmtTon(totalTonasePO)}</td>
-      <td class="sv-num">${fmtTon(totalTerkirim)}</td>
-      <td class="sv-num">${fmtTon(totalSisa)}</td>
+  };
+  const sumGroup = list => list.reduce((acc, p) => {
+    acc.tonase += Number(p.tonase) || 0;
+    acc.terkirim += computePOTerpakai(p);
+    acc.sisa += computePOSisa(p);
+    return acc;
+  }, { tonase: 0, terkirim: 0, sisa: 0 });
+
+  const totalRow = (label, sum, bg) => `
+    <tr style="font-weight:700; background:${bg};">
+      <td colspan="7" class="sv-left">${label}</td>
+      <td class="sv-num">${fmtTon(sum.tonase)}</td>
+      <td class="sv-num">${fmtTon(sum.terkirim)}</td>
+      <td class="sv-num">${fmtTon(sum.sisa)}</td>
       <td></td>
       <td></td>
-    </tr></tfoot></table></div>`;
+    </tr>`;
+
+  const utamaRows = utama.map(poRowHtml).join('');
+  const utamaSum = sumGroup(utama);
+
+  let bodyHtml, footHtml;
+  if(bk1.length === 0){
+    /* Tidak ada PO customer "BK 1" saat ini — tampilan tetap seperti semula (satu baris total saja),
+       supaya tidak ada perubahan visual kalau grup BK 1 memang sedang kosong. */
+    bodyHtml = utamaRows;
+    footHtml = totalRow('TOTAL SISA PO', utamaSum, 'var(--bg)');
+  }else{
+    const bk1Rows = bk1.map(poRowHtml).join('');
+    const bk1Sum = sumGroup(bk1);
+    const semuaSum = { tonase: utamaSum.tonase + bk1Sum.tonase, terkirim: utamaSum.terkirim + bk1Sum.terkirim, sisa: utamaSum.sisa + bk1Sum.sisa };
+    bodyHtml = utamaRows
+      + totalRow('TOTAL', utamaSum, 'var(--bg)')
+      + bk1Rows
+      + totalRow('SISA PENGIRIMAN CO URP', bk1Sum, '#fff3cd');
+    footHtml = totalRow('TOTAL KELUAR+URP', semuaSum, 'var(--bg)');
+  }
+
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
+      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa PO</th><th>Harga</th><th>Status PO</th>
+    </tr></thead><tbody>${bodyHtml}</tbody><tfoot>${footHtml}</tfoot></table></div>`;
 }
 
 /* ---------- MODAL: LIHAT FOTO PO ---------- */
