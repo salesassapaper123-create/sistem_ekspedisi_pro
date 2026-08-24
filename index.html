@@ -5145,11 +5145,13 @@ function renderPOMonitoring(){
     return acc;
   }, { tonase: 0, terkirim: 0, sisa: 0 });
 
-  const totalRow = (label, sum, bg) => `
+  /* onlySisa=true -> kolom Tonase PO & Terkirim dikosongkan (cuma Sisa PO yang ditampilkan di baris
+     total itu), sesuai format acuan user: baris "TOTAL" hanya menonjolkan angka Sisa PO. */
+  const totalRow = (label, sum, bg, onlySisa) => `
     <tr style="font-weight:700; background:${bg};">
       <td colspan="7" class="sv-left">${label}</td>
-      <td class="sv-num">${fmtTon(sum.tonase)}</td>
-      <td class="sv-num">${fmtTon(sum.terkirim)}</td>
+      <td class="sv-num">${onlySisa ? '' : fmtTon(sum.tonase)}</td>
+      <td class="sv-num">${onlySisa ? '' : fmtTon(sum.terkirim)}</td>
       <td class="sv-num">${fmtTon(sum.sisa)}</td>
       <td></td>
       <td></td>
@@ -5163,16 +5165,18 @@ function renderPOMonitoring(){
     /* Tidak ada PO customer "BK 1" saat ini — tampilan tetap seperti semula (satu baris total saja),
        supaya tidak ada perubahan visual kalau grup BK 1 memang sedang kosong. */
     bodyHtml = utamaRows;
-    footHtml = totalRow('TOTAL SISA PO', utamaSum, 'var(--bg)');
+    footHtml = totalRow('TOTAL SISA PO', utamaSum, 'var(--bg)', false);
   }else{
     const bk1Rows = bk1.map(poRowHtml).join('');
     const bk1Sum = sumGroup(bk1);
     const semuaSum = { tonase: utamaSum.tonase + bk1Sum.tonase, terkirim: utamaSum.terkirim + bk1Sum.terkirim, sisa: utamaSum.sisa + bk1Sum.sisa };
+    /* Baris "TOTAL" (subtotal kelompok utama) dibuat seragam dengan "SISA PENGIRIMAN CO URP":
+       sama-sama latar kuning (#fff3cd) & sama-sama cuma menonjolkan Sisa PO (Tonase PO dikosongkan). */
     bodyHtml = utamaRows
-      + totalRow('TOTAL', utamaSum, 'var(--bg)')
+      + totalRow('TOTAL', utamaSum, '#fff3cd', true)
       + bk1Rows
-      + totalRow('SISA PENGIRIMAN CO URP', bk1Sum, '#fff3cd');
-    footHtml = totalRow('TOTAL KELUAR+URP', semuaSum, 'var(--bg)');
+      + totalRow('SISA PENGIRIMAN CO URP', bk1Sum, '#fff3cd', true);
+    footHtml = totalRow('TOTAL KELUAR+URP', semuaSum, 'var(--bg)', false);
   }
 
   wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
