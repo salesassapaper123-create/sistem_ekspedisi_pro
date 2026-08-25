@@ -19,7 +19,7 @@
     --green-600:#1f7a54; --green-100:#e3f5ec;
     --amber-600:#b9740a; --amber-100:#fdf1dc;
     --red-600:#c0392b; --red-100:#fceceb;
-    --blue-500:#2f6fed; --purple-500:#8b5cf6; --teal-500:#12b3ae;
+    --blue-500:#2f6fed;
     --radius:10px; --radius-lg:14px;
   }
   *{box-sizing:border-box;}
@@ -652,9 +652,9 @@
 
   /* ---------- MONITORING SERVICE BERKALA (KM) ---------- */
   /* ---------- MONITORING SERVICE BERKALA (KM) — meniru persis tampilan Google Sheet "MONITORING SERVICE BERKALA" ---------- */
-  .sv-table{ width:100%; border-collapse:collapse; border:2px solid var(--navy-700); }
-  .sv-table th, .sv-table td{ border:2px solid var(--navy-700); padding:7px 9px; font-size:12px; text-align:center; }
-  .sv-table th{ background:#d5d9e1; color:var(--navy-700); font-weight:800; font-size:11px; text-transform:uppercase; }
+  .sv-table{ width:100%; border-collapse:collapse; border:1px solid var(--border-strong); }
+  .sv-table th, .sv-table td{ border:1px solid var(--border-strong); padding:7px 9px; font-size:12px; text-align:center; }
+  .sv-table th{ background:var(--orange-500); color:#fff; font-weight:800; font-size:11px; text-transform:uppercase; }
   .sv-table td.sv-num{ text-align:right; font-family:'IBM Plex Mono',monospace; }
   .sv-table td.sv-left{ text-align:left; }
   .sv-table tbody tr:hover td{ filter:brightness(0.97); cursor:pointer; }
@@ -927,7 +927,7 @@
             <div class="lbl">Selesai</div>
           </div>
           <div class="stat-card">
-            <div class="icon" style="background:var(--purple-500)">
+            <div class="icon" style="background:var(--navy-700)">
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="15" height="10" rx="2"/><path d="M18 10h3l2 3v4h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
             </div>
             <div class="num" id="statKendaraan">0</div>
