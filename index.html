@@ -865,7 +865,11 @@
           </button>
           <button class="nav-item nav-sub" data-view="biayapengeluaran">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
-            Biaya Pengeluaran Ekspedisi
+            Biaya Pengeluaran Organik
+          </button>
+          <button class="nav-item nav-sub" data-view="biayapengeluaran-vendor">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
+            Biaya Pengeluaran Vendor Luar
           </button>
           <button class="nav-item nav-sub" data-view="laporan-sisapo">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
@@ -1018,23 +1022,42 @@
           <div class="panel-body">
             <form id="formDO">
               <div class="grid2">
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label>Jenis angkutan</label>
+                  <div style="display:flex; gap:18px; align-items:center; height:38px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin:0;">
+                      <input type="radio" name="jenisAngkutan" id="raOrganik" value="organik" checked style="width:16px; height:16px; cursor:pointer;"> Angkutan Organik
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin:0;">
+                      <input type="radio" name="jenisAngkutan" id="raVendor" value="vendor" style="width:16px; height:16px; cursor:pointer;"> Vendor Luar
+                    </label>
+                  </div>
+                  <p class="hint" style="margin:6px 0 0;">Vendor luar = angkutan di luar armada organik sendiri, tarifnya dari Ongkos Borongan (bukan armada milik Ekspedisi Jaya).</p>
+                </div>
                 <div class="field">
                   <label for="tanggal">Tanggal</label>
                   <input type="date" id="tanggal" required>
                 </div>
                 <div class="field">
-                  <label for="nopol">Nopol</label>
+                  <label for="nopol" id="nopolLabel">Nopol</label>
                   <input type="text" id="nopol" placeholder="cth. B 1234 XYZ" required style="text-transform:uppercase;">
                 </div>
                 <div class="field">
-                  <label for="sopir">Nama sopir</label>
+                  <label for="sopir" id="sopirLabel">Nama sopir</label>
                   <input type="text" id="sopir" placeholder="cth. Budi Santoso">
                 </div>
-                <div class="field">
-                  <label for="uangJalan">Uang jalan driver (Rp)</label>
+                <div class="field full" id="vendorRuteBlock" style="grid-column:1 / -1; display:none;">
+                  <label for="doVendorRute">Rute &amp; tarif vendor (dari Ongkos Borongan)</label>
+                  <select id="doVendorRute">
+                    <option value="">- Pilih rute vendor -</option>
+                  </select>
+                  <p class="hint" style="margin:6px 0 0;">Vendor: <b id="doVendorNamaShow">-</b> &mdash; pilih rute untuk isi otomatis nama vendor &amp; tarif ongkos di bawah (bisa diubah manual kalau perlu).</p>
+                </div>
+                <div class="field" id="uangJalanBlock">
+                  <label for="uangJalan" id="uangJalanLabel">Uang jalan driver (Rp)</label>
                   <input type="number" id="uangJalan" min="0" step="1000" placeholder="cth. 250000">
                 </div>
-                <div class="field">
+                <div class="field" id="biayaLainBlock">
                   <label for="biayaLain">Biaya lain-lain (Rp)</label>
                   <input type="number" id="biayaLain" min="0" step="1000" placeholder="cth. 50000">
                 </div>
@@ -1061,7 +1084,7 @@
                     <option value="lainnya">Lainnya</option>
                   </select>
                 </div>
-                <div class="field">
+                <div class="field" id="doKotaBlock">
                   <label for="doKota">Kota tarif</label>
                   <input type="text" id="doKota" list="doKotaList" placeholder="cth. Bandung">
                   <datalist id="doKotaList"></datalist>
@@ -1182,6 +1205,14 @@
                   <option value="selesai">Selesai</option>
                 </select>
               </div>
+              <div class="field">
+                <label>Jenis angkutan</label>
+                <select id="filterAngkutan">
+                  <option value="">Semua (Organik + Vendor)</option>
+                  <option value="organik">Organik</option>
+                  <option value="vendor">Vendor Luar</option>
+                </select>
+              </div>
               <button class="btn btn-secondary" id="btnClearFilter">Reset filter</button>
             </div>
             <div id="tableWrap"></div>
@@ -1209,7 +1240,7 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h2>Input data kendaraan</h2>
+              <h2 id="kendaraanInputTitle">Input data kendaraan</h2>
             </div>
           </div>
           <div class="panel-body">
@@ -1272,7 +1303,8 @@
                 </div>
               </div>
               <div class="btn-row" style="justify-content:flex-end;">
-                <button type="submit" class="btn btn-primary">Simpan kendaraan</button>
+                <button type="submit" class="btn btn-primary"><span id="btnSubmitKendaraanLabel">Simpan kendaraan</span></button>
+                <button type="button" class="btn btn-secondary" id="btnCancelEditKendaraan" style="display:none;">Batal edit</button>
               </div>
             </form>
           </div>
@@ -1629,8 +1661,8 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h2>Biaya pengeluaran ekspedisi</h2>
-              <p>Rekap uang jalan driver, biaya lain-lain &amp; biaya perbaikan kendaraan pada periode yang dipilih</p>
+              <h2>Biaya pengeluaran organik</h2>
+              <p>Rekap uang jalan driver, biaya lain-lain &amp; biaya perbaikan kendaraan (armada organik) pada periode yang dipilih</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1648,8 +1680,36 @@
             <div id="bpSummaryWrap"></div>
             <h3 style="margin:18px 0 10px; font-size:14px;">Rincian biaya perbaikan</h3>
             <div id="bpPerbaikanWrap"></div>
-            <h3 style="margin:22px 0 10px; font-size:14px;">Rincian uang jalan driver &amp; biaya lain-lain per DO</h3>
+            <h3 style="margin:22px 0 10px; font-size:14px;">Rincian uang jalan driver &amp; biaya lain-lain per DO (organik)</h3>
             <div id="bpUangJalanWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BIAYA PENGELUARAN VENDOR LUAR — Laporan -->
+      <div class="view" data-view="biayapengeluaran-vendor">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Biaya pengeluaran vendor luar</h2>
+              <p>Rekap tarif ongkos yang dibayarkan ke vendor/angkutan luar pada periode yang dipilih</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="flex-wrap:wrap;">
+              <div class="field">
+                <label for="bpvDari">Dari tanggal</label>
+                <input type="date" id="bpvDari">
+              </div>
+              <div class="field">
+                <label for="bpvSampai">Sampai tanggal</label>
+                <input type="date" id="bpvSampai">
+              </div>
+              <button class="btn btn-primary" id="btnBpvGenerate">Tampilkan</button>
+            </div>
+            <div id="bpvSummaryWrap"></div>
+            <h3 style="margin:22px 0 10px; font-size:14px;">Rincian biaya per pengiriman vendor luar</h3>
+            <div id="bpvRincianWrap"></div>
           </div>
         </div>
       </div>
@@ -3100,6 +3160,7 @@ function attachFirebaseListenersInner(){
     if(val && (Array.isArray(val.table1) || Array.isArray(val.table2))){
       boronganData = { table1: Array.isArray(val.table1) ? val.table1 : [], table2: Array.isArray(val.table2) ? val.table2 : [] };
       localStorage.setItem(BORONGAN_KEY, JSON.stringify(boronganData));
+      migrateBoronganArmadaNames(); // rapikan nama armada lama (AJ/UB/UD/UH) kalau data yang baru disinkron dari Firebase masih pakai kode lama
       const v = currentViewName();
       if(v === 'borongan') renderBoronganTables();
     }else if(val == null){
@@ -3475,6 +3536,14 @@ function jenisBadge(r){
   if(recKirimOCC(r)) parts.push('<span class="badge" style="background:#dcf1f7; color:#0f6e8c;">OCC</span>');
   return parts.join(' ') || '-';
 }
+/* Badge Organik (armada milik sendiri) vs Vendor Luar — dipakai di Rekap Data, Laporan Pengiriman,
+   dan Dashboard supaya kedua jenis angkutan mudah dibedakan sekilas. */
+function jenisAngkutanBadge(r){
+  if(r && r.jenisAngkutan === 'vendor'){
+    return `<span class="badge" style="background:var(--amber-100); color:var(--amber-600);" title="${esc(r.vendorNama || 'Vendor luar')}">Vendor Luar</span>`;
+  }
+  return '<span class="badge" style="background:#eef1fb; color:var(--navy-700);">Organik</span>';
+}
 function tujuanList(r){
   const rows = [];
   if(recKirimBK(r) && (r.tujuanMuat || r.tujuanBongkar)){
@@ -3504,14 +3573,14 @@ function emptyState(msg){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer'};
+const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
   document.getElementById('pageTitle').textContent = titles[view];
   if(view === 'dashboard') renderDashboard();
-  if(view === 'input') populateDoNoCODropdown();
+  if(view === 'input'){ populateDoNoCODropdown(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); }
   if(view === 'rekap') renderTable();
   if(view === 'kendaraan') renderKendaraan();
   if(view === 'legalitas') renderLegalitas();
@@ -3521,6 +3590,7 @@ function goTo(view){
   if(view === 'service') renderServiceMonitoring();
   if(view === 'ritase') initRitaseView();
   if(view === 'biayapengeluaran') initBiayaPengeluaranView();
+  if(view === 'biayapengeluaran-vendor') initBiayaPengeluaranVendorView();
   if(view === 'maintenance') renderMaintenance();
   if(view === 'peringatan'){ renderPeringatan(); markPeringatanSeenNow(); }
   if(view === 'hpp'){
@@ -3655,6 +3725,79 @@ document.getElementById('cbBK').addEventListener('change', toggleJenisSections);
 document.getElementById('cbRoll').addEventListener('change', toggleJenisSections);
 document.getElementById('cbOCC').addEventListener('change', toggleJenisSections);
 
+/* ---------- ORGANIK vs VENDOR LUAR (Input Surat Tugas) ----------
+   Angkutan organik = armada milik sendiri (Tronton/Engkel/CDD/dst, seperti selama ini).
+   Vendor luar = angkutan pihak luar; tarifnya diambil dari master Ongkos Borongan (tabel 1 baris
+   selain TRONTON/ENGKEL, mis. TFT, + seluruh tabel 2 "Harga Ongkos PA Luar") — tidak ada master
+   vendor terpisah, Ongkos Borongan sendiri yang jadi sumber datanya, sesuai permintaan user. */
+function currentJenisAngkutan(){
+  const el = document.querySelector('input[name="jenisAngkutan"]:checked');
+  return el ? el.value : 'organik';
+}
+/* Ambil angka rupiah dari teks harga Ongkos Borongan yang formatnya macam-macam
+   (mis. "Rp 1,300,000", "145/KG", "Rp 3,950,000") — ambil digit yang ada, sisanya diabaikan.
+   Kalau tidak ada digit sama sekali, hasilnya 0 (tetap bisa diubah manual oleh user). */
+function parseRupiahLoose(str){
+  const digits = String(str || '').replace(/[^\d]/g, '');
+  return digits ? parseInt(digits, 10) : 0;
+}
+/* Kumpulkan seluruh opsi rute vendor luar dari Ongkos Borongan: tabel 1 (baris armada BUKAN
+   TRONTON/ENGKEL, berarti vendor) + seluruh tabel 2 (memang khusus "Harga Ongkos PA Luar"). */
+function getVendorRuteOptions(){
+  const opts = [];
+  (boronganData.table1 || []).forEach((it, idx) => {
+    if(!it || it.armada === 'TRONTON' || it.armada === 'ENGKEL') return;
+    const label = `${it.armada || 'VENDOR'} — ${[it.start, it.midle, it.tujuan].filter(Boolean).join(' → ')} (${it.nominal || '-'})`;
+    opts.push({ key: 't1-' + idx, vendor: it.armada || '-', label, harga: parseRupiahLoose(it.nominal), rute: [it.start, it.midle, it.tujuan].filter(Boolean).join(' → ') });
+  });
+  (boronganData.table2 || []).forEach((it, idx) => {
+    if(!it) return;
+    const label = `${it.angkutan || 'VENDOR'} — ${it.tujuan || it.rute || '-'} (${it.harga || '-'})`;
+    opts.push({ key: 't2-' + idx, vendor: it.angkutan || '-', label, harga: parseRupiahLoose(it.harga), rute: it.rute || it.tujuan || '-' });
+  });
+  return opts;
+}
+function populateDoVendorRuteDropdown(){
+  const sel = document.getElementById('doVendorRute');
+  if(!sel) return;
+  const current = sel.value;
+  const opts = getVendorRuteOptions();
+  sel.innerHTML = '<option value="">- Pilih rute vendor -</option>' + opts.map(o =>
+    `<option value="${esc(o.key)}" data-vendor="${esc(o.vendor)}" data-harga="${o.harga}" data-rute="${esc(o.rute)}">${esc(o.label)}</option>`
+  ).join('');
+  if(current && [...sel.options].some(o => o.value === current)) sel.value = current;
+}
+document.getElementById('doVendorRute').addEventListener('change', function(){
+  const opt = this.selectedOptions[0];
+  const vendor = opt ? (opt.dataset.vendor || '') : '';
+  const harga = opt ? (opt.dataset.harga || '0') : '0';
+  document.getElementById('doVendorNamaShow').textContent = vendor || '-';
+  document.getElementById('uangJalan').value = harga || 0;
+});
+/* Tampilkan field yang relevan sesuai jenis angkutan yang dipilih:
+   - Organik: form seperti biasa (Kota tarif, Uang jalan driver manual, Biaya lain-lain).
+   - Vendor luar: Kota tarif & Biaya lain-lain disembunyikan (tidak relevan), field "Uang jalan
+     driver" berubah jadi "Tarif ongkos vendor" yang diisi dari dropdown rute Ongkos Borongan. */
+function toggleAngkutanSections(){
+  const isVendor = currentJenisAngkutan() === 'vendor';
+  document.getElementById('vendorRuteBlock').style.display = isVendor ? '' : 'none';
+  document.getElementById('doKotaBlock').style.display = isVendor ? 'none' : '';
+  document.getElementById('biayaLainBlock').style.display = isVendor ? 'none' : '';
+  document.getElementById('uangJalanLabel').textContent = isVendor ? 'Tarif ongkos vendor (Rp)' : 'Uang jalan driver (Rp)';
+  document.getElementById('nopolLabel').textContent = isVendor ? 'Nopol (armada vendor)' : 'Nopol';
+  document.getElementById('sopirLabel').textContent = isVendor ? 'Nama sopir vendor' : 'Nama sopir';
+  if(isVendor){
+    populateDoVendorRuteDropdown();
+    document.getElementById('biayaLain').value = '';
+    document.getElementById('doKota').value = '';
+  }else{
+    document.getElementById('doVendorRute').value = '';
+    document.getElementById('doVendorNamaShow').textContent = '-';
+  }
+}
+document.getElementById('raOrganik').addEventListener('change', toggleAngkutanSections);
+document.getElementById('raVendor').addEventListener('change', toggleAngkutanSections);
+
 /* ---------- Database tarif: init & listeners ---------- */
 let editingTarifIdx = null;
 function cancelEditTarif(){
@@ -3714,62 +3857,62 @@ const BORONGAN_KEY = 'ekspedisi_pro_borongan';
 function boronganDefaultData(){
   return {
     table1: [
-      {jenisLayanan:'OCC', start:'LKJ', midle:'KJ', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → KJ → ASSA → LKJ', jarak:'163 (KM)', kapasitas:'± 24 T', armada:'AJ/UB/UD', nominal:'Rp 1,300,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'KJ', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → KJ → ASSA → LKJ', jarak:'163 (KM)', kapasitas:'± 24 T', armada:'UH', nominal:'Rp 1,075,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'IJO', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → IJO → ASSA → LKJ', jarak:'147 (KM)', kapasitas:'24 T', armada:'AJ/UB/UD', nominal:'Rp 1,300,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ASSA → LKJ', jarak:'129 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,300,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ASSA', kategori:'KOSONGAN', rute:'LKJ → ASSA → LKJ', jarak:'129 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 975,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ASSA', kategori:'KOSONGAN', rute:'LKJ → ASSA → LKJ', jarak:'129 (KM)', kapasitas:'', armada:'UH', nominal:'Rp 810,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'ANATA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ANATA → ASSA → LKJ', jarak:'209 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,475,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'ANATA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ANATA → ASSA → LKJ', jarak:'209 (KM)', kapasitas:'', armada:'UH', nominal:'Rp 1,250,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'NIRWANA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → NIRWANA → ASSA → LKJ', jarak:'218 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,475,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'NIRWANA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → NIRWANA → ASSA → LKJ', jarak:'218 (KM)', kapasitas:'', armada:'UH', nominal:'Rp 1,250,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ANATA', kategori:'KOSONGAN', rute:'LKJ → ANATA → LKJ', jarak:'86.4 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 850,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ANATA', kategori:'KOSONGAN', rute:'LKJ → ANATA → LKJ', jarak:'86.4 (KM)', kapasitas:'', armada:'UH', nominal:'Rp 690,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ANATA', kategori:'ISI', rute:'LKJ → ANATA → LKJ', jarak:'86.4 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,000,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'ANATA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ANATA → ASSA', jarak:'209 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,675,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'ANATA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ANATA → ASSA', jarak:'209 (KM)', kapasitas:'', armada:'UH', nominal:'Rp 1,450,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'ASSA', tujuan:'MMS', kategori:'ISI', rute:'LKJ → ASSA → MMS → ASSA → LKJ', jarak:'333 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 2,600,000', keterangan:''},
-      {jenisLayanan:'OCC', start:'LKJ', midle:'CENGKARENG', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → CENGKARENG → ASSA → LKJ', jarak:'336 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 2,500,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'KJ', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → KJ → ASSA → LKJ', jarak:'163 (KM)', kapasitas:'± 24 T', armada:'TRONTON', nominal:'Rp 1,300,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'KJ', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → KJ → ASSA → LKJ', jarak:'163 (KM)', kapasitas:'± 24 T', armada:'ENGKEL', nominal:'Rp 1,075,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'IJO', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → IJO → ASSA → LKJ', jarak:'147 (KM)', kapasitas:'24 T', armada:'TRONTON', nominal:'Rp 1,300,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ASSA → LKJ', jarak:'129 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,300,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ASSA', kategori:'KOSONGAN', rute:'LKJ → ASSA → LKJ', jarak:'129 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 975,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ASSA', kategori:'KOSONGAN', rute:'LKJ → ASSA → LKJ', jarak:'129 (KM)', kapasitas:'', armada:'ENGKEL', nominal:'Rp 810,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'ANATA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ANATA → ASSA → LKJ', jarak:'209 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,475,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'ANATA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ANATA → ASSA → LKJ', jarak:'209 (KM)', kapasitas:'', armada:'ENGKEL', nominal:'Rp 1,250,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'NIRWANA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → NIRWANA → ASSA → LKJ', jarak:'218 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,475,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'NIRWANA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → NIRWANA → ASSA → LKJ', jarak:'218 (KM)', kapasitas:'', armada:'ENGKEL', nominal:'Rp 1,250,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ANATA', kategori:'KOSONGAN', rute:'LKJ → ANATA → LKJ', jarak:'86.4 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 850,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ANATA', kategori:'KOSONGAN', rute:'LKJ → ANATA → LKJ', jarak:'86.4 (KM)', kapasitas:'', armada:'ENGKEL', nominal:'Rp 690,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'', tujuan:'ANATA', kategori:'ISI', rute:'LKJ → ANATA → LKJ', jarak:'86.4 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,000,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'ANATA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ANATA → ASSA', jarak:'209 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,675,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'ANATA', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → ANATA → ASSA', jarak:'209 (KM)', kapasitas:'', armada:'ENGKEL', nominal:'Rp 1,450,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'ASSA', tujuan:'MMS', kategori:'ISI', rute:'LKJ → ASSA → MMS → ASSA → LKJ', jarak:'333 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 2,600,000', keterangan:''},
+      {jenisLayanan:'OCC', start:'LKJ', midle:'CENGKARENG', tujuan:'ASSA', kategori:'ISI', rute:'LKJ → CENGKARENG → ASSA → LKJ', jarak:'336 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 2,500,000', keterangan:''},
       {jenisLayanan:'OCC', start:'CISIRUNG', midle:'CISIRUNG', tujuan:'ASSA', kategori:'ISI', rute:'CISIRUNG -> ASSA - LKJ', jarak:'146.5 (KM)', kapasitas:'', armada:'TFT', nominal:'Rp 1,800,000', keterangan:'DARI ASSA BAWA ROLL UNTUK LINGGA'},
       {jenisLayanan:'OCC', start:'KJ', midle:'KALIPAH APO', tujuan:'ASSA', kategori:'ISI', rute:'KALIPAH APO -> ASSA -> LKJ', jarak:'', kapasitas:'', armada:'TFT', nominal:'Rp 1,800,000', keterangan:'DARI ASSA BAWA ROLL UNTUK LINGGA'},
       {jenisLayanan:'OCC', start:'GD IJO', midle:'CIBEREUM', tujuan:'ASSA', kategori:'ISI', rute:'GD IJO - > ASSA -> LKJ', jarak:'', kapasitas:'', armada:'TFT', nominal:'Rp 1,800,000', keterangan:'DARI ASSA BAWA ROLL UNTUK LINGGA'},
       {jenisLayanan:'OCC', start:'LKJ', midle:'CIMAREME', tujuan:'ASSA', kategori:'ISI', rute:'LKJ - > ASSA -> LKJ', jarak:'', kapasitas:'', armada:'TFT', nominal:'Rp 1,800,000', keterangan:'DARI ASSA BAWA ROLL UNTUK LINGGA'},
 
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'CIKARANG', kategori:'ISI', rute:'ASSA → CIKARANG → ASSA', jarak:'336 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 2,500,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'LKJ', midle:'ASSA', tujuan:'MMS', kategori:'ISI', rute:'LKJ → ASSA → SAPAN → LKJ', jarak:'196 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,450,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'ROLL', start:'LKJ', midle:'ASSA', tujuan:'DAMAPLAST', kategori:'ISI', rute:'LKJ → ASSA → KATAPANG → LKJ', jarak:'169 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,450,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'ROLL', start:'LKJ', midle:'ASSA', tujuan:'WP', kategori:'ISI', rute:'LKJ → ASSA → SEMARANG → ASSA → LKJ', jarak:'793 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 3,950,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'WP', kategori:'ISI', rute:'ASSA → SEMARANG → ASSA', jarak:'664 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 2,650,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'LKJ', midle:'ASSA', tujuan:'DANIEL SOLO', kategori:'ISI', rute:'LKJ → ASSA → SOLO → ASSA → LKJ', jarak:'1029 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'DANIEL SOLO', kategori:'ISI', rute:'ASSA → SOLO → ASSA', jarak:'900 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 3,700,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'DOMINO', tujuan:'MOJOKERTO', kategori:'ISI', rute:'ASSA → SIDOARJO → MOJOKERTO → ASSA', jarak:'1521 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 7,500,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'AON JEPARA', kategori:'ISI', rute:'ASSA → JEPARA → ASSA', jarak:'853 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 4,000,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'KARAWANG BARAT', kategori:'ISI', rute:'ASSA → KARAWANG → ASSA', jarak:'48 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 450,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'DOMINO', kategori:'ISI', rute:'ASSA → SIDOARJO → ASSA', jarak:'1344 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 6,400,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'ALVICONS', kategori:'ISI', rute:'ASSA → SIDOARJO → ASSA', jarak:'1358 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'ADHI SAKTI', kategori:'ISI', rute:'ASSA → BSD → ASSA', jarak:'256 (KM)', kapasitas:'', armada:'UH', nominal:'Rp 1,150,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'AON CIKANDE', kategori:'ISI', rute:'ASSA → AON CIKANDE → ASSA', jarak:'', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,100,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'DUTA INDAH', kategori:'ISI', rute:'ASSA → TGR.CIBODAS → ASSA', jarak:'280 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,200,000', keterangan:''},
-      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'ADHI SAKTI', kategori:'ISI', rute:'ASSA → BSD → ASSA', jarak:'256 (KM)', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 1,300,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'CIKARANG', kategori:'ISI', rute:'ASSA → CIKARANG → ASSA', jarak:'336 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 2,500,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'LKJ', midle:'ASSA', tujuan:'MMS', kategori:'ISI', rute:'LKJ → ASSA → SAPAN → LKJ', jarak:'196 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,450,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'ROLL', start:'LKJ', midle:'ASSA', tujuan:'DAMAPLAST', kategori:'ISI', rute:'LKJ → ASSA → KATAPANG → LKJ', jarak:'169 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,450,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'ROLL', start:'LKJ', midle:'ASSA', tujuan:'WP', kategori:'ISI', rute:'LKJ → ASSA → SEMARANG → ASSA → LKJ', jarak:'793 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 3,950,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'WP', kategori:'ISI', rute:'ASSA → SEMARANG → ASSA', jarak:'664 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 2,650,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'LKJ', midle:'ASSA', tujuan:'DANIEL SOLO', kategori:'ISI', rute:'LKJ → ASSA → SOLO → ASSA → LKJ', jarak:'1029 (KM)', kapasitas:'', armada:'TRONTON', nominal:'', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'DANIEL SOLO', kategori:'ISI', rute:'ASSA → SOLO → ASSA', jarak:'900 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 3,700,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'DOMINO', tujuan:'MOJOKERTO', kategori:'ISI', rute:'ASSA → SIDOARJO → MOJOKERTO → ASSA', jarak:'1521 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 7,500,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'AON JEPARA', kategori:'ISI', rute:'ASSA → JEPARA → ASSA', jarak:'853 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 4,000,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'KARAWANG BARAT', kategori:'ISI', rute:'ASSA → KARAWANG → ASSA', jarak:'48 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 450,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'DOMINO', kategori:'ISI', rute:'ASSA → SIDOARJO → ASSA', jarak:'1344 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 6,400,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'ALVICONS', kategori:'ISI', rute:'ASSA → SIDOARJO → ASSA', jarak:'1358 (KM)', kapasitas:'', armada:'TRONTON', nominal:'', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'ADHI SAKTI', kategori:'ISI', rute:'ASSA → BSD → ASSA', jarak:'256 (KM)', kapasitas:'', armada:'ENGKEL', nominal:'Rp 1,150,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'AON CIKANDE', kategori:'ISI', rute:'ASSA → AON CIKANDE → ASSA', jarak:'', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,100,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'DUTA INDAH', kategori:'ISI', rute:'ASSA → TGR.CIBODAS → ASSA', jarak:'280 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,200,000', keterangan:''},
+      {jenisLayanan:'ROLL', start:'ASSA', midle:'', tujuan:'ADHI SAKTI', kategori:'ISI', rute:'ASSA → BSD → ASSA', jarak:'256 (KM)', kapasitas:'', armada:'TRONTON', nominal:'Rp 1,300,000', keterangan:''},
 
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'CIREBON', kategori:'ISI PULANG KE ASSA', rute:'LKJ → CIREBON → ASSA → LKJ', jarak:'', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 2,510,000', keterangan:''},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'CIREBON', kategori:'ISI PULANG KE ASSA', rute:'LKJ → CIREBON → ASSA → LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 2,200,000', keterangan:''},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'SLAWI', kategori:'ISI PULANG KE ASSA', rute:'LKJ → SLAWI → ASSA → LKJ', jarak:'', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 3,050,000', keterangan:''},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'SLAWI', kategori:'ISI PULANG KE ASSA', rute:'LKJ → SLAWI → ASSA → LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 2,675,000', keterangan:''},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'TEGAL', kategori:'ISI PULANG KE ASSA', rute:'LKJ → TEGAL → ASSA → LKJ', jarak:'', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 3,050,000', keterangan:''},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'TEGAL', kategori:'ISI PULANG KE ASSA', rute:'LKJ → TEGAL → ASSA → LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 2,675,000', keterangan:''},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PURWOKERTO', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → PURWOKERTO → LKJ', jarak:'', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 2,530,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PURWOKERTO', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → PURWOKERTO → LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 2,275,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PURBALINGGA', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → PURBALINGGA → LKJ', jarak:'', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 2,530,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PURBALINGGA', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → PURBALINGGA → LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 2,275,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PEKALONGAN', kategori:'TIDAK KE ASSA POT 800', rute:'LKJ → PEKALONGAN → LKJ', jarak:'', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 4,000,000', keterangan:'KE ASSA BAWA ROLL LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'TASIKMALAYA', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → TASIKMALAYA→ LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 1,250,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'KOPO', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → MBP → LKJ', jarak:'', kapasitas:'', armada:'AJ/UB/UD', nominal:'Rp 550,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'KOPO', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → MBP → LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 550,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'SUKABUMI', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → SUKABUMI → LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 1,200,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'CIAMIS', kategori:'ISI BK PULANG KOSONG', rute:'LKJ -> CIAMIS -> LKJ', jarak:'150 ( KM )', kapasitas:'', armada:'UH', nominal:'Rp 1,500,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
-      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PEKALONGAN', kategori:'ISI PULANG KE ASSA', rute:'LKJ -> PEKALONGAN -> ASSA -> LKJ', jarak:'', kapasitas:'', armada:'UH', nominal:'Rp 3,300,000', keterangan:''}
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'CIREBON', kategori:'ISI PULANG KE ASSA', rute:'LKJ → CIREBON → ASSA → LKJ', jarak:'', kapasitas:'', armada:'TRONTON', nominal:'Rp 2,510,000', keterangan:''},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'CIREBON', kategori:'ISI PULANG KE ASSA', rute:'LKJ → CIREBON → ASSA → LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 2,200,000', keterangan:''},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'SLAWI', kategori:'ISI PULANG KE ASSA', rute:'LKJ → SLAWI → ASSA → LKJ', jarak:'', kapasitas:'', armada:'TRONTON', nominal:'Rp 3,050,000', keterangan:''},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'SLAWI', kategori:'ISI PULANG KE ASSA', rute:'LKJ → SLAWI → ASSA → LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 2,675,000', keterangan:''},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'TEGAL', kategori:'ISI PULANG KE ASSA', rute:'LKJ → TEGAL → ASSA → LKJ', jarak:'', kapasitas:'', armada:'TRONTON', nominal:'Rp 3,050,000', keterangan:''},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'TEGAL', kategori:'ISI PULANG KE ASSA', rute:'LKJ → TEGAL → ASSA → LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 2,675,000', keterangan:''},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PURWOKERTO', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → PURWOKERTO → LKJ', jarak:'', kapasitas:'', armada:'TRONTON', nominal:'Rp 2,530,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PURWOKERTO', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → PURWOKERTO → LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 2,275,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PURBALINGGA', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → PURBALINGGA → LKJ', jarak:'', kapasitas:'', armada:'TRONTON', nominal:'Rp 2,530,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PURBALINGGA', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → PURBALINGGA → LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 2,275,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PEKALONGAN', kategori:'TIDAK KE ASSA POT 800', rute:'LKJ → PEKALONGAN → LKJ', jarak:'', kapasitas:'', armada:'TRONTON', nominal:'Rp 4,000,000', keterangan:'KE ASSA BAWA ROLL LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'TASIKMALAYA', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → TASIKMALAYA→ LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 1,250,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'KOPO', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → MBP → LKJ', jarak:'', kapasitas:'', armada:'TRONTON', nominal:'Rp 550,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'KOPO', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → MBP → LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 550,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'SUKABUMI', kategori:'ISI BK PULANG KOSONG', rute:'LKJ → SUKABUMI → LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 1,200,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'CIAMIS', kategori:'ISI BK PULANG KOSONG', rute:'LKJ -> CIAMIS -> LKJ', jarak:'150 ( KM )', kapasitas:'', armada:'ENGKEL', nominal:'Rp 1,500,000', keterangan:'TIDAK KE ASSA AMBIL ROLL UNTUK LKJ'},
+      {jenisLayanan:'BK', start:'LKJ', midle:'', tujuan:'PEKALONGAN', kategori:'ISI PULANG KE ASSA', rute:'LKJ -> PEKALONGAN -> ASSA -> LKJ', jarak:'', kapasitas:'', armada:'ENGKEL', nominal:'Rp 3,300,000', keterangan:''}
     ],
     table2: [
       {angkutan:'AGENDA', tujuan:'JEPARA', tonase:'23000', rute:'ASSA → JEPARA', hargaKg:'270', harga:'Rp 6,210,000'},
@@ -3819,6 +3962,26 @@ function loadBorongan(){
 }
 function saveBorongan(data){ localStorage.setItem(BORONGAN_KEY, JSON.stringify(data)); fbPush('borongan', data); }
 let boronganData = loadBorongan();
+
+/* Migrasi satu kali: kode armada organik "AJ/UB/UD" & "UH" di tabel 1 Ongkos Borongan diganti jadi
+   nama jenis armada yang lebih jelas — TRONTON & ENGKEL (25 Agustus 2026). AJ/UB/UD dan UH adalah
+   kode armada organik milik perusahaan sendiri; nama armada lain di luar itu (mis. TFT) berarti
+   vendor/angkutan luar dan TIDAK ikut diubah. Fungsi ini dijalankan tiap kali boronganData
+   dimuat/disinkron (bukan cuma sekali di kode), supaya data LAMA yang sudah kadung tersimpan di
+   Firebase sejak sebelum penamaan ini ada juga ikut terbawa rapi, bukan cuma data baru/default. */
+function migrateBoronganArmadaNames(){
+  let changed = false;
+  const renameMap = { 'AJ/UB/UD': 'TRONTON', 'UH': 'ENGKEL' };
+  (boronganData.table1 || []).forEach(item => {
+    if(item && renameMap[item.armada]){
+      item.armada = renameMap[item.armada];
+      changed = true;
+    }
+  });
+  if(changed) saveBorongan(boronganData);
+  return changed;
+}
+migrateBoronganArmadaNames();
 
 function updateBoronganInfoLine(){
   const el = document.getElementById('boronganInfoLine');
@@ -4225,8 +4388,20 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     return;
   }
 
+  const jenisAngkutanVal = currentJenisAngkutan();
+  const isVendorVal = jenisAngkutanVal === 'vendor';
+  const uangJalanValRaw = document.getElementById('uangJalan').value === '' ? 0 : parseFloat(document.getElementById('uangJalan').value);
+  if(isVendorVal && (!uangJalanValRaw || uangJalanValRaw <= 0)){
+    errEl.textContent = 'Tarif ongkos vendor wajib diisi (pilih rute dari Ongkos Borongan, atau isi manual).';
+    return;
+  }
+  const vendorOpt = isVendorVal ? document.getElementById('doVendorRute').selectedOptions[0] : null;
+  const vendorNamaVal = isVendorVal ? (document.getElementById('doVendorNamaShow').textContent === '-' ? '' : document.getElementById('doVendorNamaShow').textContent) : '';
+  const vendorRuteVal = isVendorVal && vendorOpt ? (vendorOpt.dataset.rute || '') : '';
+
   const poIdVal = document.getElementById('doNoCO').value || null;
   const poTerkait = poIdVal ? poList.find(p => String(p.id) === String(poIdVal)) : null;
+  const kotaVal = isVendorVal ? '' : document.getElementById('doKota').value.trim();
 
   const fieldsData = {
     tanggal: tanggal,
@@ -4236,12 +4411,15 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     kirimRoll: kirimRoll,
     kirimOCC: kirimOCC,
     jenisArmada: document.getElementById('jenisArmada').value,
-    kota: document.getElementById('doKota').value.trim(),
+    jenisAngkutan: jenisAngkutanVal,
+    vendorNama: vendorNamaVal,
+    vendorRute: vendorRuteVal,
+    kota: kotaVal,
     poId: poIdVal,
     noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
-    pendapatan: calcPendapatan(document.getElementById('jenisArmada').value, document.getElementById('doKota').value.trim(), kirimBK ? tonase1Val : null, kirimRoll ? tonase2Val : null, kirimOCC ? tonase3Val : null),
-    uangJalan: document.getElementById('uangJalan').value === '' ? 0 : parseFloat(document.getElementById('uangJalan').value),
-    biayaLain: document.getElementById('biayaLain').value === '' ? 0 : parseFloat(document.getElementById('biayaLain').value),
+    pendapatan: calcPendapatan(document.getElementById('jenisArmada').value, kotaVal, kirimBK ? tonase1Val : null, kirimRoll ? tonase2Val : null, kirimOCC ? tonase3Val : null),
+    uangJalan: uangJalanValRaw,
+    biayaLain: isVendorVal ? 0 : (document.getElementById('biayaLain').value === '' ? 0 : parseFloat(document.getElementById('biayaLain').value)),
     tujuanMuat: kirimBK ? tujuanMuatVal : '',
     tujuanBongkar: kirimBK ? tujuanBongkarVal : '',
     tujuanMuat2: kirimRoll ? tujuanMuat2Val : '',
@@ -4294,6 +4472,16 @@ function editRecordDO(id){
   document.getElementById('doKota').value = rec.kota || '';
   document.getElementById('uangJalan').value = rec.uangJalan || '';
   document.getElementById('biayaLain').value = rec.biayaLain || '';
+  const jenisAngkutanRec = rec.jenisAngkutan === 'vendor' ? 'vendor' : 'organik';
+  document.getElementById('raOrganik').checked = jenisAngkutanRec === 'organik';
+  document.getElementById('raVendor').checked = jenisAngkutanRec === 'vendor';
+  toggleAngkutanSections();
+  if(jenisAngkutanRec === 'vendor'){
+    document.getElementById('uangJalan').value = rec.uangJalan || '';
+    document.getElementById('doVendorNamaShow').textContent = rec.vendorNama || '-';
+    const matchOpt = [...document.getElementById('doVendorRute').options].find(o => o.dataset.vendor === rec.vendorNama && o.dataset.rute === rec.vendorRute);
+    if(matchOpt) document.getElementById('doVendorRute').value = matchOpt.value;
+  }
   document.getElementById('tujuanMuat').value = rec.tujuanMuat || '';
   document.getElementById('tujuanBongkar').value = rec.tujuanBongkar || '';
   document.getElementById('tonase1').value = rec.tonase1 ?? '';
@@ -4321,6 +4509,7 @@ function cancelEditDO(){
   document.getElementById('formError').textContent = '';
   document.getElementById('tanggal').valueAsDate = new Date();
   toggleJenisSections();
+  toggleAngkutanSections();
   populateDoNoCODropdown('');
   document.getElementById('inputDOTitle').textContent = 'Input Surat Tugas';
   document.getElementById('btnSubmitDOLabel').textContent = 'Simpan DO';
@@ -4333,6 +4522,7 @@ document.getElementById('btnReset').addEventListener('click', function(){
   document.getElementById('formError').textContent = '';
   document.getElementById('tanggal').valueAsDate = new Date();
   toggleJenisSections();
+  toggleAngkutanSections();
   populateDoNoCODropdown('');
 });
 document.getElementById('btnCancelEdit').addEventListener('click', cancelEditDO);
@@ -4474,10 +4664,17 @@ function buildSuratTugasHtml(r){
       <tr><td class="st-label">Nama driver</td><td class="st-colon">:</td><td class="st-value">${esc(r.sopir || '-')}</td></tr>
       <tr><td class="st-label">Nopol kendaraan</td><td class="st-colon">:</td><td class="st-value">${esc(r.nopol || '-')}</td></tr>
       <tr><td class="st-label">Jenis armada</td><td class="st-colon">:</td><td class="st-value">${esc(armadaLabel(r.jenisArmada))}</td></tr>
+      ${r.jenisAngkutan === 'vendor' ? `
+      <tr><td class="st-label">Jenis angkutan</td><td class="st-colon">:</td><td class="st-value">Vendor Luar${r.vendorNama ? ' &mdash; ' + esc(r.vendorNama) : ''}</td></tr>
+      ${r.vendorRute ? `<tr><td class="st-label">Rute vendor</td><td class="st-colon">:</td><td class="st-value">${esc(r.vendorRute)}</td></tr>` : ''}
+      ` : `
       <tr><td class="st-label">Kota tujuan</td><td class="st-colon">:</td><td class="st-value">${esc(r.kota || '-')}</td></tr>
+      `}
       <tr><td class="st-label">Jenis pengiriman</td><td class="st-colon">:</td><td class="st-value">${esc(jenisLabel(r))}</td></tr>
+      ${r.jenisAngkutan === 'vendor' ? '' : `
       <tr><td class="st-label">Uang jalan driver</td><td class="st-colon">:</td><td class="st-value">${rupiah(Number(r.uangJalan) || 0)}</td></tr>
       <tr><td class="st-label">Biaya lain-lain</td><td class="st-colon">:</td><td class="st-value">${rupiah(Number(r.biayaLain) || 0)}</td></tr>
+      `}
     </tbody></table>
     ${rutes}
     <div class="st-doc-status-line">Status pengiriman saat surat ini dicetak: <b>${esc(meta.label)}</b></div>
@@ -4539,13 +4736,22 @@ function renderKendaraan(){
         <td class="mono">${esc(k.noRangka || '-')}</td>
         <td class="mono">${(k.panjang || k.lebar || k.tinggi) ? `${esc(k.panjang||'-')} x ${esc(k.lebar||'-')} x ${esc(k.tinggi||'-')} m` : '-'}</td>
         <td>
-          ${admin ? `<button class="icon-btn del" data-id="${k.id}" title="Hapus kendaraan ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
+          ${admin ? `<div style="display:flex; gap:6px; justify-content:center;">
+          <button class="icon-btn edit" data-id="${k.id}" title="Edit kendaraan ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            Edit
+          </button>
+          <button class="icon-btn del" data-id="${k.id}" title="Hapus kendaraan ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
             Hapus
-          </button>` : ''}
+          </button>
+          </div>` : ''}
         </td>
       </tr>`).join('')}</tbody></table>`;
     if(admin){
+      wrap.querySelectorAll('.edit').forEach(btn => btn.addEventListener('click', function(){
+        editKendaraan(this.dataset.id);
+      }));
       wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
         if(confirm('Hapus kendaraan ini?')){
           const before = kendaraanList.length;
@@ -4557,6 +4763,7 @@ function renderKendaraan(){
           }
           localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList));
           fbRemoveFromList('kendaraan', item => String(item.id) === String(targetId), targetId);
+          if(editingKendaraanId === targetId) cancelEditKendaraan();
           renderKendaraan(); renderLegalitas();
           showToast('Data kendaraan berhasil dihapus', 'danger');
         }
@@ -4585,13 +4792,61 @@ function buildKendaraanFromFields(prefix){
 /* ---------- INPUT DATA KENDARAAN (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Data Kendaraan) ---------- */
 document.getElementById('formKendaraanInput').addEventListener('submit', function(e){
   e.preventDefault();
-  kendaraanList.push(buildKendaraanFromFields('ki'));
-  saveKendaraan();
-  this.reset();
+  if(editingKendaraanId){
+    const rec = kendaraanList.find(k => String(k.id) === String(editingKendaraanId));
+    if(rec){
+      const updated = buildKendaraanFromFields('ki');
+      delete updated.id; // id lama dipertahankan, bukan dibuat ulang
+      Object.assign(rec, updated);
+      showToast('Data kendaraan berhasil diperbarui', 'success');
+    }else{
+      showToast('Gagal memperbarui: data tidak ditemukan (mungkin sudah dihapus). Coba muat ulang halaman.', 'danger');
+    }
+    saveKendaraan();
+    cancelEditKendaraan();
+  }else{
+    kendaraanList.push(buildKendaraanFromFields('ki'));
+    saveKendaraan();
+    this.reset();
+    showToast('Data kendaraan berhasil disimpan, cek menu Daftar > Data Kendaraan', 'success');
+  }
   renderKendaraan();
   renderLegalitas();
-  showToast('Data kendaraan berhasil disimpan, cek menu Daftar > Data Kendaraan', 'success');
 });
+
+/* ---------- MODE EDIT DATA KENDARAAN ---------- */
+let editingKendaraanId = null;
+function editKendaraan(id){
+  const k = kendaraanList.find(x => String(x.id) === String(id));
+  if(!k) return;
+  editingKendaraanId = id;
+
+  document.getElementById('kiNopol').value = k.nopol || '';
+  document.getElementById('kiJenisArmada').value = k.jenisArmada || 'tronton';
+  document.getElementById('kiSupir').value = k.supir || '';
+  document.getElementById('kiRute').value = k.rute || '';
+  document.getElementById('kiKapasitas').value = k.kapasitas || '';
+  document.getElementById('kiMerk').value = k.merk || '';
+  document.getElementById('kiNoMesin').value = k.noMesin || '';
+  document.getElementById('kiNoRangka').value = k.noRangka || '';
+  document.getElementById('kiPanjang').value = k.panjang || '';
+  document.getElementById('kiLebar').value = k.lebar || '';
+  document.getElementById('kiTinggi').value = k.tinggi || '';
+
+  document.getElementById('kendaraanInputTitle').textContent = 'Edit data kendaraan';
+  document.getElementById('btnSubmitKendaraanLabel').textContent = 'Update kendaraan';
+  document.getElementById('btnCancelEditKendaraan').style.display = '';
+
+  goTo('kendaraan-input');
+}
+function cancelEditKendaraan(){
+  editingKendaraanId = null;
+  document.getElementById('formKendaraanInput').reset();
+  document.getElementById('kendaraanInputTitle').textContent = 'Input data kendaraan';
+  document.getElementById('btnSubmitKendaraanLabel').textContent = 'Simpan kendaraan';
+  document.getElementById('btnCancelEditKendaraan').style.display = 'none';
+}
+document.getElementById('btnCancelEditKendaraan').addEventListener('click', cancelEditKendaraan);
 
 /* ---------- DRIVER ---------- */
 function renderDriver(){
@@ -6045,11 +6300,12 @@ function renderDashboard(){
     wrap.innerHTML = emptyState('Belum ada DO diinput.');
   }else{
     wrap.innerHTML = `<table><thead><tr>
-      <th>Tanggal</th><th>Nopol</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Status</th>
+      <th>Tanggal</th><th>Nopol</th><th>Angkutan</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Status</th>
     </tr></thead><tbody>${recent.map(r => `
       <tr>
         <td>${fmtDate(r.tanggal)}</td>
         <td><span class="plate-cell">${esc(r.nopol)}</span></td>
+        <td>${jenisAngkutanBadge(r)}</td>
         <td>${jenisBadge(r)}</td>
         <td>${tujuanList(r)}</td>
         <td>${statusBadge(r.status)}</td>
@@ -6260,11 +6516,13 @@ function renderTable(){
   const fTgl = document.getElementById('filterTanggal').value;
   const fBln = document.getElementById('filterBulan').value;
   const fStatus = document.getElementById('filterStatus').value;
+  const fAngkutan = document.getElementById('filterAngkutan').value;
 
   let list = records.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
   if(fTgl) list = list.filter(r => r.tanggal === fTgl);
   else if(fBln) list = list.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
   if(fStatus) list = list.filter(r => normalizeStatus(r.status) === fStatus);
+  if(fAngkutan) list = list.filter(r => (r.jenisAngkutan || 'organik') === fAngkutan);
   if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota]
     .some(v => (v||'').toLowerCase().includes(q)));
 
@@ -6273,14 +6531,15 @@ function renderTable(){
 
   const admin = isAdminUser();
   wrap.innerHTML = `<table class="do-table"><thead><tr>
-    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-kota">Kota</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
+    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th><th class="do-th-kota">Kota</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
     <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-pendapatan">Pendapatan (Rp)</th><th class="do-th-status">Status</th><th class="do-th-aksi"></th>
   </tr></thead><tbody>${list.map(r => `
     <tr>
       <td class="do-td-tanggal">${fmtDate(r.tanggal)}</td>
       <td class="do-td-nopol"><span class="plate-cell">${esc(r.nopol)}</span></td>
       <td class="do-td-armada">${esc(armadaLabel(r.jenisArmada))}</td>
-      <td class="do-td-kota">${esc(r.kota || '-')}${r.noCOTerkait ? `<div class="hint" style="margin-top:2px;">PO: ${esc(r.noCOTerkait)}</div>` : ''}</td>
+      <td class="do-td-angkutan">${jenisAngkutanBadge(r)}</td>
+      <td class="do-td-kota">${r.jenisAngkutan === 'vendor' ? `<span title="${esc(r.vendorRute || '')}">${esc(r.vendorNama || '-')}</span>` : esc(r.kota || '-')}${r.noCOTerkait ? `<div class="hint" style="margin-top:2px;">PO: ${esc(r.noCOTerkait)}</div>` : ''}</td>
       <td class="do-td-sopir">${esc(r.sopir || '-')}</td>
       <td class="do-td-uang mono">${rupiah(Number(r.uangJalan) || 0)}</td>
       <td class="do-td-biayalain mono">${rupiah(Number(r.biayaLain) || 0)}</td>
@@ -6339,7 +6598,7 @@ function renderTable(){
       </td>
     </tr>`).join('')}
     <tr class="do-total-row">
-      <td class="do-td-tanggal" colspan="5" style="text-align:right;">TOTAL (${list.length} DO)</td>
+      <td class="do-td-tanggal" colspan="6" style="text-align:right;">TOTAL (${list.length} DO)</td>
       <td class="do-td-uang mono">${rupiah(list.reduce((s,r) => s + (Number(r.uangJalan)||0), 0))}</td>
       <td class="do-td-biayalain mono">${rupiah(list.reduce((s,r) => s + (Number(r.biayaLain)||0), 0))}</td>
       <td class="do-td-jenis"></td>
@@ -6399,7 +6658,7 @@ function renderTable(){
     }));
   }
 }
-['searchBox','filterTanggal','filterBulan','filterStatus'].forEach(id => {
+['searchBox','filterTanggal','filterBulan','filterStatus','filterAngkutan'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderTable);
   document.getElementById(id).addEventListener('change', renderTable);
 });
@@ -6410,6 +6669,7 @@ document.getElementById('btnClearFilter').addEventListener('click', function(){
   document.getElementById('filterTanggal').value='';
   document.getElementById('filterBulan').value='';
   document.getElementById('filterStatus').value='';
+  document.getElementById('filterAngkutan').value='';
   renderTable();
 });
 
@@ -6452,6 +6712,8 @@ function generateLaporan(){
   const data = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate).sort((a,b) => a.tanggal.localeCompare(b.tanggal));
   const selesai = data.filter(r => r.status === 'selesai').length;
   const totalTonase = data.reduce((sum, r) => sum + (r.tonase1 ? Number(r.tonase1) : 0) + (r.tonase2 ? Number(r.tonase2) : 0) + (r.tonase3 ? Number(r.tonase3) : 0), 0);
+  const jumlahOrganik = data.filter(r => (r.jenisAngkutan || 'organik') === 'organik').length;
+  const jumlahVendor = data.filter(r => r.jenisAngkutan === 'vendor').length;
 
   sWrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>
   <div class="stat-grid" style="margin-bottom:18px;">
@@ -6459,6 +6721,8 @@ function generateLaporan(){
     <div class="stat-card"><div class="num">${selesai}</div><div class="lbl">Selesai</div></div>
     <div class="stat-card"><div class="num">${data.length - selesai}</div><div class="lbl">On Proses</div></div>
     <div class="stat-card"><div class="num">${totalTonase.toFixed(2)}</div><div class="lbl">Total tonase (kg)</div></div>
+    <div class="stat-card"><div class="num">${jumlahOrganik}</div><div class="lbl">DO Angkutan Organik</div></div>
+    <div class="stat-card"><div class="num">${jumlahVendor}</div><div class="lbl">DO Vendor Luar</div></div>
   </div>`;
 
   if(data.length === 0){ rWrap.innerHTML = ''; lWrap.innerHTML = emptyState('Tidak ada data DO pada periode ini.'); return; }
@@ -6471,13 +6735,14 @@ function generateLaporan(){
   const totalPendapatan = data.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
 
   lWrap.innerHTML = `<table class="sv-table"><thead><tr>
-    <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Kota</th><th>Sopir</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Tonase BK</th><th>Tonase Roll Assa</th><th>Tonase OCC</th><th>Pendapatan (Rp)</th><th>Status</th>
+    <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Angkutan</th><th>Kota</th><th>Sopir</th><th>Jenis</th><th>Rute muat &rarr; bongkar</th><th>Tonase BK</th><th>Tonase Roll Assa</th><th>Tonase OCC</th><th>Pendapatan (Rp)</th><th>Status</th>
   </tr></thead><tbody>${data.map(r => `
     <tr>
       <td>${fmtDate(r.tanggal)}</td>
       <td><span class="plate-cell">${esc(r.nopol)}</span></td>
       <td class="sv-left">${esc(armadaLabel(r.jenisArmada))}</td>
-      <td class="sv-left">${esc(r.kota || '-')}</td>
+      <td>${jenisAngkutanBadge(r)}</td>
+      <td class="sv-left">${r.jenisAngkutan === 'vendor' ? esc(r.vendorNama || '-') : esc(r.kota || '-')}</td>
       <td class="sv-left">${esc(r.sopir || '-')}</td>
       <td>${jenisBadge(r)}</td>
       <td class="sv-left">${tujuanList(r)}</td>
@@ -6488,7 +6753,7 @@ function generateLaporan(){
       <td>${statusBadge(r.status)}</td>
     </tr>`).join('')}</tbody>
     <tfoot><tr style="font-weight:700; background:#fafbfc;">
-      <td colspan="7" class="sv-left">TOTAL</td>
+      <td colspan="8" class="sv-left">TOTAL</td>
       <td class="mono sv-num">${totalT1.toLocaleString('id-ID')} kg</td>
       <td class="mono sv-num">${totalT2.toLocaleString('id-ID')} kg</td>
       <td class="mono sv-num">${totalT3.toLocaleString('id-ID')} kg</td>
@@ -6629,7 +6894,7 @@ function generateBiayaPengeluaran(){
   if(!period){ sWrap.innerHTML = ''; pWrap.innerHTML = ''; uWrap.innerHTML = emptyState('Pilih periode terlebih dahulu.'); return; }
 
   const biayaBulan = maintenanceList.filter(m => m.tanggal && m.tanggal >= period.startDate && m.tanggal <= period.endDate);
-  const doBulan = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate);
+  const doBulan = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate && (r.jenisAngkutan || 'organik') === 'organik');
   const totalBiayaPerbaikan = biayaBulan.reduce((s,m) => s + (Number(m.biaya)||0), 0);
   const totalUangJalan = doBulan.reduce((s,r) => s + (Number(r.uangJalan)||0), 0);
   const totalBiayaLain = doBulan.reduce((s,r) => s + (Number(r.biayaLain)||0), 0);
@@ -6679,6 +6944,47 @@ function initBiayaPengeluaranView(){
   generateBiayaPengeluaran();
 }
 document.getElementById('btnBpGenerate').addEventListener('click', generateBiayaPengeluaran);
+
+/* ---------- BIAYA PENGELUARAN VENDOR LUAR — Laporan ---------- */
+function generateBiayaPengeluaranVendor(){
+  const period = getRangePeriod('bpvDari', 'bpvSampai');
+  const sWrap = document.getElementById('bpvSummaryWrap');
+  const rWrap = document.getElementById('bpvRincianWrap');
+  if(!sWrap || !rWrap) return;
+  if(!period){ sWrap.innerHTML = ''; rWrap.innerHTML = emptyState('Pilih periode terlebih dahulu.'); return; }
+
+  const doBulan = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate && r.jenisAngkutan === 'vendor');
+  const totalTarifVendor = doBulan.reduce((s,r) => s + (Number(r.uangJalan)||0), 0);
+  const jumlahVendor = new Set(doBulan.map(r => r.vendorNama || '-')).size;
+
+  sWrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>
+  <div class="stat-grid" style="margin-bottom:18px;">
+    <div class="stat-card"><div class="num">${doBulan.length}</div><div class="lbl">Jumlah pengiriman vendor luar</div></div>
+    <div class="stat-card"><div class="num">${jumlahVendor}</div><div class="lbl">Jumlah vendor terpakai</div></div>
+    <div class="stat-card"><div class="num">${rupiah(totalTarifVendor)}</div><div class="lbl">Total tarif ongkos vendor</div></div>
+  </div>`;
+
+  if(doBulan.length === 0){
+    rWrap.innerHTML = emptyState('Tidak ada pengiriman via vendor luar pada periode ini.');
+  }else{
+    const sorted = doBulan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+    rWrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Sopir</th><th>Vendor</th><th>Rute</th><th>Tarif ongkos</th></tr></thead><tbody>${sorted.map(r => `
+      <tr>
+        <td>${fmtDate(r.tanggal)}</td>
+        <td><span class="plate-cell">${esc(r.nopol || '-')}</span></td>
+        <td class="sv-left">${esc(r.sopir || '-')}</td>
+        <td class="sv-left">${esc(r.vendorNama || '-')}</td>
+        <td class="sv-left">${esc(r.vendorRute || '-')}</td>
+        <td class="mono sv-num">${rupiah(Number(r.uangJalan) || 0)}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="5" class="sv-left">TOTAL</td><td class="mono sv-num">${rupiah(totalTarifVendor)}</td></tr></tfoot></table>`;
+  }
+}
+function initBiayaPengeluaranVendorView(){
+  defaultThisMonthRange('bpvDari', 'bpvSampai');
+  generateBiayaPengeluaranVendor();
+}
+document.getElementById('btnBpvGenerate').addEventListener('click', generateBiayaPengeluaranVendor);
 
 /* Ambil & validasi data laporan untuk periode terpilih — dipakai bersama oleh export Excel & PDF */
 function getLaporanRowsForExport(){
