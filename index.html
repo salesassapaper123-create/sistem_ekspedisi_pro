@@ -324,6 +324,22 @@
   }
   .topbar h1{font-size:18px; font-weight:700; margin:0;}
   .topbar .date{color:var(--text-muted); font-size:12.5px; margin-top:2px;}
+  /* Jam digital realtime di sebelah judul halaman — indikator visual bahwa sistem & koneksinya
+     selalu hidup/live (bukan indikator status koneksi Firebase itu sendiri, murni jam lokal
+     perangkat yang di-update tiap detik lewat JavaScript). */
+  .live-clock{
+    display:inline-flex; align-items:center; gap:6px; padding:3px 11px; border-radius:999px;
+    background:var(--green-100); color:var(--green-600); font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px; font-weight:600; letter-spacing:.02em; vertical-align:middle;
+  }
+  .live-clock-dot{
+    width:7px; height:7px; border-radius:50%; background:var(--green-600); flex-shrink:0;
+    animation:liveClockPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes liveClockPulse{
+    0%,100%{ opacity:1; box-shadow:0 0 0 0 rgba(31,122,84,.45); }
+    50%{ opacity:.55; box-shadow:0 0 0 4px rgba(31,122,84,0); }
+  }
   .content{padding:24px 28px 40px; width:100%;}
 
   .view{display:none;}
@@ -861,7 +877,13 @@
   <div class="main">
     <div class="topbar">
       <div>
-        <h1 id="pageTitle">Dashboard</h1>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <h1 id="pageTitle">Dashboard</h1>
+          <span class="live-clock" id="liveClock" title="Jam realtime perangkat ini, update tiap detik — menandakan sistem &amp; koneksinya selalu live">
+            <span class="live-clock-dot"></span>
+            <span id="liveClockTime">00:00:00</span>
+          </span>
+        </div>
         <div class="date" id="pageDate"></div>
       </div>
       <div class="user-menu">
@@ -3356,6 +3378,23 @@ document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(btn => {
   btn.addEventListener('click', () => goTo(btn.dataset.view));
 });
 document.getElementById('pageDate').textContent = new Date().toLocaleDateString('id-ID',{weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+
+/* Jam digital realtime di sebelah judul halaman (format Jam:Menit:Detik, update tiap detik) —
+   murni penanda visual bahwa sistem selalu "hidup"/live selama halaman terbuka. Bukan indikator
+   status koneksi Firebase itu sendiri (data tetap tersinkron realtime lewat listener Firebase
+   terlepas dari jam ini) — cuma jam lokal perangkat yang berjalan terus supaya user bisa lihat
+   dengan mata sendiri bahwa halaman ini responsif/tidak macet. */
+function updateLiveClock(){
+  const el = document.getElementById('liveClockTime');
+  if(!el) return;
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  const ss = String(now.getSeconds()).padStart(2, '0');
+  el.textContent = `${hh}:${mm}:${ss}`;
+}
+updateLiveClock();
+setInterval(updateLiveClock, 1000);
 
 /* ---------- GRUP MENU SIDEBAR (Administrasi / Daftar / Monitoring / Laporan) ---------- */
 const NAV_GROUPS_OPEN_KEY = 'ekspedisi_pro_nav_groups_open';
