@@ -788,6 +788,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M12 11v6M9 14h6"/></svg>
             Input SO &amp; Upload PO
           </button>
+          <button class="nav-item nav-sub" data-view="customer-input">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Input Customer
+          </button>
         </div>
       </div>
 
@@ -818,6 +822,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
             Konfirmasi PO
             <span class="notif-badge" id="poBadge" style="position:static; margin-left:auto; border:none;"></span>
+          </button>
+          <button class="nav-item nav-sub" data-view="customer">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Data Customer
           </button>
         </div>
       </div>
@@ -1071,11 +1079,12 @@
                   </div>
                   <div class="field">
                     <label for="tujuanMuat">Tujuan muat</label>
-                    <input type="text" id="tujuanMuat" placeholder="cth. Gudang Cikarang">
+                    <input type="text" id="tujuanMuat" list="customerDatalist" placeholder="cth. Gudang Cikarang">
+                    <datalist id="customerDatalist"></datalist>
                   </div>
                   <div class="field">
                     <label for="tujuanBongkar">Tujuan bongkar</label>
-                    <input type="text" id="tujuanBongkar" placeholder="cth. Pelabuhan Priok">
+                    <input type="text" id="tujuanBongkar" list="customerDatalist" placeholder="cth. Pelabuhan Priok">
                   </div>
                   <div class="field">
                     <label for="tonase1">Tonase BK (kg) <span class="hint">(wajib jika status langsung Selesai)</span></label>
@@ -1088,11 +1097,11 @@
                   </div>
                   <div class="field">
                     <label for="tujuanMuat2">Tujuan muat</label>
-                    <input type="text" id="tujuanMuat2" placeholder="cth. Gudang Bekasi">
+                    <input type="text" id="tujuanMuat2" list="customerDatalist" placeholder="cth. Gudang Bekasi">
                   </div>
                   <div class="field">
                     <label for="tujuanBongkar2">Tujuan bongkar</label>
-                    <input type="text" id="tujuanBongkar2" placeholder="cth. Pelabuhan Tanjung Priok">
+                    <input type="text" id="tujuanBongkar2" list="customerDatalist" placeholder="cth. Pelabuhan Tanjung Priok">
                   </div>
                   <div class="field">
                     <label for="tonase2">Tonase Roll Assa (kg) <span class="hint">(wajib jika status langsung Selesai)</span></label>
@@ -1105,11 +1114,11 @@
                   </div>
                   <div class="field">
                     <label for="tujuanMuat3">Tujuan muat</label>
-                    <input type="text" id="tujuanMuat3" placeholder="cth. Gudang Karawang">
+                    <input type="text" id="tujuanMuat3" list="customerDatalist" placeholder="cth. Gudang Karawang">
                   </div>
                   <div class="field">
                     <label for="tujuanBongkar3">Tujuan bongkar</label>
-                    <input type="text" id="tujuanBongkar3" placeholder="cth. Pabrik Kertas">
+                    <input type="text" id="tujuanBongkar3" list="customerDatalist" placeholder="cth. Pabrik Kertas">
                   </div>
                   <div class="field">
                     <label for="tonase3">Tonase OCC (kg) <span class="hint">(wajib jika status langsung Selesai)</span></label>
@@ -1228,8 +1237,8 @@
                   <input type="text" id="kiRute" placeholder="cth. Cikarang - Priok">
                 </div>
                 <div class="field">
-                  <label for="kiKapasitas">Kapasitas muatan (kg)</label>
-                  <input type="number" id="kiKapasitas" min="0" step="1" placeholder="cth. 8000">
+                  <label for="kiKapasitas">Kapasitas muatan (ton)</label>
+                  <input type="number" id="kiKapasitas" min="0" step="0.1" placeholder="cth. 8">
                 </div>
                 <div class="field">
                   <label for="kiMerk">Merk kendaraan <span class="hint">(opsional)</span></label>
@@ -1247,19 +1256,19 @@
                   <input type="text" id="kiNoRangka" placeholder="cth. MHFC1JG2K123456" style="text-transform:uppercase;">
                 </div>
                 <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
-                  <label style="margin-bottom:10px;">Spesifikasi bak (P - L - T) <span class="hint">(dalam cm)</span></label>
+                  <label style="margin-bottom:10px;">Spesifikasi bak (P - L - T) <span class="hint">(dalam meter)</span></label>
                 </div>
                 <div class="field">
                   <label for="kiPanjang">Panjang (P)</label>
-                  <input type="number" id="kiPanjang" min="0" step="1" placeholder="cth. 600">
+                  <input type="number" id="kiPanjang" min="0" step="0.1" placeholder="cth. 6">
                 </div>
                 <div class="field">
                   <label for="kiLebar">Lebar (L)</label>
-                  <input type="number" id="kiLebar" min="0" step="1" placeholder="cth. 220">
+                  <input type="number" id="kiLebar" min="0" step="0.1" placeholder="cth. 2.2">
                 </div>
                 <div class="field">
                   <label for="kiTinggi">Tinggi (T)</label>
-                  <input type="number" id="kiTinggi" min="0" step="1" placeholder="cth. 200">
+                  <input type="number" id="kiTinggi" min="0" step="0.1" placeholder="cth. 2">
                 </div>
               </div>
               <div class="btn-row" style="justify-content:flex-end;">
@@ -1296,7 +1305,7 @@
                 </div>
                 <div class="field">
                   <label for="poNamaCustomer">Nama customer</label>
-                  <input type="text" id="poNamaCustomer" placeholder="cth. PT Contoh Kertas" required>
+                  <input type="text" id="poNamaCustomer" list="customerDatalist" placeholder="cth. PT Contoh Kertas" required>
                 </div>
                 <div class="field">
                   <label for="poSales">Sales</label>
@@ -1520,6 +1529,70 @@
               </div>
               <div class="btn-row" style="justify-content:flex-end;">
                 <button type="submit" class="btn btn-primary">Simpan driver</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- DATA CUSTOMER (Master Data Customer) -->
+      <div class="view" data-view="customer">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Daftar customer</h2>
+              <p>Master data customer — dipakai sebagai saran dropdown di Input Surat Tugas &amp; Input SO/PO</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="customerTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INPUT CUSTOMER (form input langsung, tanpa tabel — hasilnya tampil di Daftar > Data Customer) -->
+      <div class="view" data-view="customer-input">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Input customer</h2>
+              <p>Data yang disimpan di sini otomatis jadi saran dropdown di field tujuan (Surat Tugas) &amp; nama customer (Input SO/PO), supaya tidak salah ketik.</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <form id="formCustomerInput">
+              <div class="grid2">
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="ciNama">Nama customer</label>
+                  <input type="text" id="ciNama" placeholder="cth. PT Contoh Kertas" required>
+                </div>
+                <div class="field">
+                  <label for="ciTujuan">Tujuan / kota <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciTujuan" placeholder="cth. Bandung">
+                </div>
+                <div class="field">
+                  <label for="ciTop">Termin pembayaran (TOP) <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciTop" placeholder="cth. 14 HARI / CASH / CBD">
+                </div>
+                <div class="field">
+                  <label for="ciUp">Contact person (UP) <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciUp" placeholder="cth. Ibu Melinda">
+                </div>
+                <div class="field">
+                  <label for="ciTelp">No. Telp <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciTelp" placeholder="cth. 0812-3456-7890">
+                </div>
+                <div class="field">
+                  <label for="ciTelp2">No. Telp 2 <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciTelp2" placeholder="cth. 021-1234567">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="ciAlamat">Alamat <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciAlamat" placeholder="cth. Jl. Raya Cikarang No. 10">
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">Simpan customer</button>
               </div>
             </form>
           </div>
@@ -2944,6 +3017,32 @@ function attachFirebaseListenersInner(){
     }
   });
 
+  fbDb.ref('customer').on('value', snap => {
+    if(fbPendingWrites['customer']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
+    const val = snap.val();
+    const arr = fbToArray(val);
+    const sudahPernahSinkron = fbHasSyncedBefore('customer');
+    fbMarkSynced('customer');
+    if(arr){
+      customerList = fbFilterTombstoned('customer', arr);
+      if(ensureIds(customerList, 'cs')) fbPush('customer', customerList);
+      localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customerList));
+      const v = currentViewName();
+      if(v === 'customer') renderCustomer();
+      updateCustomerDatalist();
+    }else if(val == null){
+      if(customerList.length > 0 && !sudahPernahSinkron){
+        fbPush('customer', customerList); // Firebase masih kosong (pertama kali pakai) -> unggah data default/lokal sebagai data awal
+      }else if(customerList.length > 0){
+        customerList = [];
+        localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customerList));
+        const v = currentViewName();
+        if(v === 'customer') renderCustomer();
+        updateCustomerDatalist();
+      }
+    }
+  });
+
   fbDb.ref('maintenance').on('value', snap => {
     if(fbPendingWrites['maintenance']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
@@ -3093,6 +3192,93 @@ function loadPO(){ try{ const l = JSON.parse(localStorage.getItem(PO_KEY)) || []
 function savePO(){ localStorage.setItem(PO_KEY, JSON.stringify(poList)); fbPush('po', poList); }
 function loadHpp(){ try{ return JSON.parse(localStorage.getItem(HPP_KEY)) || {}; }catch(e){ return {}; } }
 function saveHpp(){ localStorage.setItem(HPP_KEY, JSON.stringify(hppAsumsi)); }
+
+/* ---------- MASTER DATA CUSTOMER (dikelola langsung di aplikasi, tersinkron via Firebase) ----------
+   Dipakai sebagai sumber saran dropdown (datalist) di field tujuan Input Surat Tugas & Nama customer
+   Input SO/PO, supaya nama customer selalu konsisten dan tidak salah ketik. */
+const CUSTOMER_KEY = 'ekspedisi_pro_customer';
+/* Data awal — hasil import dari sheet "CUST" pada file MASTER BARANG CUSTOMER.xlsx milik user (25 Agustus 2026).
+   Dipakai sebagai isi default sebelum admin mulai menambah/mengubah data langsung lewat menu
+   Administrasi > Input Customer di aplikasi. */
+function customerDefaultData(){
+  return [
+    {nama:'ADAM JAYA INDAH, PT ( ASIH )', tujuan:'', alamat:'', up:'IBU ASIH', telp:'0815-6767-3306', telp2:'', top:'DP 50% + 3 HARI'},
+    {nama:'ADHI SAKTI GUMILANG ( RONNY )', tujuan:'', alamat:'JL. DAAN MOGOT 1 NO. 4 RT 005/001, TANJUNG DUREN UTARA GROGOL PETAMBURAN, JAKARTA BARAT', up:'BPK. RONNY', telp:'0818-807-899', telp2:'021-5607899', top:'CBD'},
+    {nama:'AGUNG BUMI LESTARI, PT', tujuan:'PEKANBARU', alamat:'', up:'', telp:'', telp2:'', top:'CASH'},
+    {nama:'ALVICONS ( SJ : HIDAYAT )', tujuan:'SURABAYA', alamat:'JL. MASTRIP KEMLATEN 12 SURABAYA', up:'IBU MELINDA', telp:'081332532253', telp2:'', top:'14 HARI'},
+    {nama:'ALVICONS, PT', tujuan:'SURABAYA', alamat:'JL. MASTRIP KEMLATEN 12 SURABAYA', up:'IBU MELINDA', telp:'081332532253', telp2:'', top:'14 HARI'},
+    {nama:'ANDRE', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'CASH/3 HARI'},
+    {nama:'ASIH', tujuan:'', alamat:'', up:'IBU ASIH', telp:'0815-6767-3306', telp2:'', top:'DP 50% + 30 HARI'},
+    {nama:'AVFAL MEGA INDAH, PT ( GUNAWAN ANDRE )', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'BAHANA LESTARI, PT', tujuan:'', alamat:'JL. RAYA SALEMBARAN PERGUDANGAN 99, BLOK RT 09/10, CENGKLONG, KOSAMBI KAB. TANGERANG BANTEN', up:'BPK. YOGI', telp:'0812-9010-878', telp2:'', top:'CBD'},
+    {nama:'BK 1', tujuan:'BANDUNG', alamat:'', up:'', telp:'', telp2:'', top:'7 HARI'},
+    {nama:'BK 1 ( ML 75 )', tujuan:'BANDUNG', alamat:'', up:'', telp:'', telp2:'', top:'7 HARI'},
+    {nama:'CAKRA INDAH, CV', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'DAMAPLAS', tujuan:'KATAPANG', alamat:'', up:'', telp:'', telp2:'', top:'15 HARI'},
+    {nama:'DAMAPLAS ( SJ : BUDI HAMBALI )', tujuan:'KATAPANG', alamat:'', up:'', telp:'', telp2:'', top:'15 HARI'},
+    {nama:'DAMEL KERTAS SEJAHTERA ( DANIEL )', tujuan:'SOLO', alamat:'JL. WARINGIN 2 RT 03/06 PUCANGSAWIT, JEBRES, SOLO ( BELAKANG GEREJA GENERASI PILIHAN )', up:'IBU VINA', telp:'087826933909', telp2:'', top:'COD'},
+    {nama:'DANIEL YUWONO', tujuan:'SOLO', alamat:'JL. WARINGIN 2 RT 03/06 PUCANGSAWIT, JEBRES, SOLO ( BELAKANG GEREJA GENERASI PILIHAN )', up:'IBU VINA', telp:'087826933909', telp2:'', top:'COD'},
+    {nama:'DMP ( SJ : DEVI )', tujuan:'SIDOARJO', alamat:'JL. DIPONEGORO RT 01/01 DESA WONOKALANG, KEC. WONOAYU SIDOARJO', up:'IBU ANA', telp:'081336835416', telp2:'', top:'14 HARI'},
+    {nama:'DMP / DOMINO', tujuan:'SIDOARJO', alamat:'JL. DIPONEGORO RT 01/01 DESA WONOKALANG, KEC. WONOAYU SIDOARJO', up:'IBU ANA', telp:'081336835416', telp2:'', top:'14 HARI'},
+    {nama:'DSB ( SJ : KEVIN )', tujuan:'SIDOARJO', alamat:'JL. RAYA SIMO ANGIN-ANGIN, AREA SAWAH RT 06/02 KEC. WONOAYU, KAB. SIDOARJO', up:'BPK.  IRWAN', telp:'0811308910', telp2:'', top:'7 HARI'},
+    {nama:'DSB / DOMINO SUKSES BERSAMA', tujuan:'SIDOARJO', alamat:'JL. RAYA SIMO ANGIN-ANGIN, AREA SAWAH RT 06/02 KEC. WONOAYU, KAB. SIDOARJO', up:'BPK.  IRWAN', telp:'0811308910', telp2:'', top:'7 HARI'},
+    {nama:'DUTA INDAH ( SJ : THJIN GUAN )', tujuan:'TANGGERANG', alamat:'', up:'', telp:'', telp2:'', top:'DP + COD'},
+    {nama:'DWI MITRA KEMASINDO, CV', tujuan:'KUDUS', alamat:'', up:'', telp:'', telp2:'', top:'7-14 HARI'},
+    {nama:'EKA KEMASINDO ASRI ( AON )', tujuan:'CIKANDE', alamat:'KAWASAN PANCATAMA IV KAV. 85B, DESA. LEUWILIMUS, CIKANDE, SERANG', up:'IBU JESSICA', telp:'0254-404008', telp2:'', top:'7 HARI'},
+    {nama:'FERDY', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'FORTUNA SAKTI GLOBALINDO, CV', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'GADINGMAS WIRAJAYA, PT', tujuan:'BANDUNG', alamat:'', up:'', telp:'', telp2:'', top:'7 HARI'},
+    {nama:'HADI', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'IBU DEWI', tujuan:'CIKANDE', alamat:'', up:'', telp:'', telp2:'', top:'7 HARI'},
+    {nama:'MANDIRI MITRA SEJATI / FUNG', tujuan:'MAJALAYA', alamat:'JL. RAYA SAPAN 1 NO. 47, BANDUNG', up:'', telp:'022-08882228/29', telp2:'', top:'14 HARI'},
+    {nama:'MITRA KEMAS', tujuan:'KUDUS', alamat:'JL. RAYA LINGKAR KUDUS - JEPARA KM 4 DS. GARUNG KIDUL KALIWUNGU, KUDUS', up:'', telp:'0291-4245588', telp2:'', top:'7-14 HARI'},
+    {nama:'MK ( SJ : DEA )', tujuan:'KUDUS', alamat:'JL. RAYA LINGKAR KUDUS - JEPARA KM 4 DS. GARUNG KIDUL KALIWUNGU, KUDUS', up:'', telp:'0291-4245588', telp2:'', top:'7-14 HARI'},
+    {nama:'MMS ( SJ : AURELIA )', tujuan:'MAJALAYA', alamat:'JL. RAYA SAPAN 1 NO. 47, BANDUNG', up:'', telp:'022-08882228/29', telp2:'', top:'COD - 7 HARI'},
+    {nama:'NAGAMAS PAPERINDO / DANIEL', tujuan:'SOLO', alamat:'JL. WARINGIN 2 RT 03/06 PUCANGSAWIT, JEBRES, SOLO ( BELAKANG GEREJA GENERASI PILIHAN )', up:'IBU VINA', telp:'087826933909', telp2:'', top:'COD'},
+    {nama:'NUGRAHA LUMINTU ( SJ : SINGGIH )', tujuan:'SOLO', alamat:'JL. SIMO - KALIOSO NO 2,2 KEDUNG BUNTAI KETITANG, KEC. NOGOSARI, KAB, BOYOLALI JAWA TENGAH', up:'', telp:'', telp2:'', top:'COD'},
+    {nama:'NUGRAHA LUMINTU JAYA, PT', tujuan:'SOLO', alamat:'JL. SIMO - KALIOSO NO 2,2 KEDUNG BUNTAI KETITANG, KEC. NOGOSARI, KAB, BOYOLALI JAWA TENGAH', up:'', telp:'', telp2:'', top:'COD'},
+    {nama:'PRIMA PAPER INDONESIA, PT ( PT. SIB )', tujuan:'', alamat:'DUSUN TIMANG KULON, DESA WONOKERTO, KEC. WONOGIRI, KAB. WONOGIRI JAWA TENGAH', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'PUKKA ( SJ : HANI )', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'14 HARI'},
+    {nama:'PUKKA INDONUSA', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'14 HARI'},
+    {nama:'QINGDA MASPION PAPER PRODUCT, PT', tujuan:'SIDOARJO', alamat:'', up:'', telp:'', telp2:'', top:'14 HARI'},
+    {nama:'RONNY', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'SANHE PAPER INDUSTRY, PT', tujuan:'', alamat:'JL.ANGKASA RAYA / KATIASA NO 7A GUDANG NO.05, KEL. KALIJAGA KEC.HARJAMUKTI CIREBON', up:'', telp:'081111879899', telp2:'', top:'CBD'},
+    {nama:'SANHO PLASTIK INDONESIA, PT', tujuan:'BALARAJA', alamat:'', up:'', telp:'', telp2:'', top:'COD'},
+    {nama:'SETIA INDAH BERKAT ( WILLIAM )', tujuan:'', alamat:'', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'SETIA KAWAN ABADI INDONESIA', tujuan:'TULUNGAGUNG', alamat:'', up:'', telp:'', telp2:'', top:'14 HARI'},
+    {nama:'SETIABUDI', tujuan:'BANDUNG', alamat:'', up:'', telp:'', telp2:'', top:'DP + CASH'},
+    {nama:'SINAR INDAH MANDIRI, PT', tujuan:'PURWODADI', alamat:'', up:'', telp:'', telp2:'', top:'COD NET 14 HARI'},
+    {nama:'URP', tujuan:'BANDUNG', alamat:'', up:'', telp:'', telp2:'', top:'7 HARI'},
+    {nama:'URP ( ML 75 )', tujuan:'BANDUNG', alamat:'', up:'', telp:'', telp2:'', top:'7 HARI'},
+    {nama:'WARMAN, PAK', tujuan:'SEMARANG', alamat:'', up:'', telp:'', telp2:'', top:'CBD'},
+    {nama:'WP', tujuan:'SEMARANG', alamat:'JL. RAYA MANGKANG WETAN KM 14,5 WONOSARI KEC. NGALIYAN, SEMARANG', up:'IBU ANIK', telp:'085876528268', telp2:'', top:'14 HARI'},
+    {nama:'WP ( SJ : ZANUROCHMAN )', tujuan:'SEMARANG', alamat:'JL. RAYA MANGKANG WETAN KM 14,5 WONOSARI KEC. NGALIYAN, SEMARANG', up:'IBU ANIK', telp:'085876528268', telp2:'', top:'14 HARI'},
+    {nama:'MYORI INDONESIA, PT', tujuan:'TANGGERANG', alamat:'JL.RAYA RAJEG KUKUN NO.8 KAMPUNG PERIUK RT2/3 KEC.RAJEG , TANGGERANG BANTEN', up:'', telp:'', telp2:'', top:'COD'},
+  ];
+}
+function loadCustomer(){
+  try{
+    const raw = localStorage.getItem(CUSTOMER_KEY);
+    if(!raw){ const d = customerDefaultData(); ensureIds(d, 'cs'); return d; }
+    const parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed) || parsed.length === 0){ const d = customerDefaultData(); ensureIds(d, 'cs'); return d; }
+    ensureIds(parsed, 'cs');
+    return parsed;
+  }catch(e){ const d = customerDefaultData(); ensureIds(d, 'cs'); return d; }
+}
+function saveCustomer(){ localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customerList)); fbPush('customer', customerList); }
+let customerList = loadCustomer();
+/* Daftar nama customer unik dari master data — dipakai untuk datalist saran di field tujuan
+   Input Surat Tugas & field Nama customer Input SO/PO, agar penulisan nama customer konsisten. */
+function getCustomerNameList(){
+  const set = new Set();
+  (customerList || []).forEach(c => { if(c.nama) set.add(c.nama); });
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+function updateCustomerDatalist(){
+  const el = document.getElementById('customerDatalist');
+  if(el) el.innerHTML = getCustomerNameList().map(n => `<option value="${esc(n)}"></option>`).join('');
+}
 
 /* ---------- TARIF ONGKOS ANGKUT (dikelola langsung di aplikasi, tersinkron via Firebase) ---------- */
 const TARIF_KEY = 'ekspedisi_pro_tarif';
@@ -3318,7 +3504,7 @@ function emptyState(msg){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO'};
+const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Ekspedisi', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -3331,6 +3517,7 @@ function goTo(view){
   if(view === 'legalitas') renderLegalitas();
   if(view === 'legalitas-input') populateLegalitasInputSelect();
   if(view === 'driver') renderDriver();
+  if(view === 'customer') renderCustomer();
   if(view === 'service') renderServiceMonitoring();
   if(view === 'ritase') initRitaseView();
   if(view === 'biayapengeluaran') initBiayaPengeluaranView();
@@ -4347,10 +4534,10 @@ function renderKendaraan(){
         <td>${esc(armadaLabel(k.jenisArmada))}</td>
         <td class="sv-left">${esc(k.supir || '-')}</td>
         <td class="sv-left">${esc(k.rute || '-')}</td>
-        <td class="sv-num">${k.kapasitas ? Number(k.kapasitas).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num">${k.kapasitas ? Number(k.kapasitas).toLocaleString('id-ID') + ' ton' : '-'}</td>
         <td class="mono">${esc(k.noMesin || '-')}</td>
         <td class="mono">${esc(k.noRangka || '-')}</td>
-        <td class="mono">${(k.panjang || k.lebar || k.tinggi) ? `${esc(k.panjang||'-')} x ${esc(k.lebar||'-')} x ${esc(k.tinggi||'-')} cm` : '-'}</td>
+        <td class="mono">${(k.panjang || k.lebar || k.tinggi) ? `${esc(k.panjang||'-')} x ${esc(k.lebar||'-')} x ${esc(k.tinggi||'-')} m` : '-'}</td>
         <td>
           ${admin ? `<button class="icon-btn del" data-id="${k.id}" title="Hapus kendaraan ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
@@ -4464,6 +4651,69 @@ document.getElementById('formDriverInput').addEventListener('submit', function(e
   renderDriver();
   this.reset();
   showToast('Data driver berhasil disimpan, cek menu Daftar > Driver', 'success');
+});
+
+/* ---------- MASTER DATA CUSTOMER ---------- */
+function renderCustomer(){
+  const wrap = document.getElementById('customerTableWrap');
+  if(!wrap) return;
+  const admin = isAdminUser();
+  if(customerList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada customer terdaftar. Tambahkan lewat menu Administrasi &gt; Input Customer.');
+  }else{
+    const sorted = [...customerList].sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nama Customer</th><th>Tujuan</th><th>TOP</th><th>Contact (UP)</th><th>No. Telp</th><th>Alamat</th><th></th></tr></thead><tbody>${sorted.map(c => `
+      <tr>
+        <td class="sv-left">${esc(c.nama)}</td>
+        <td>${esc(c.tujuan || '-')}</td>
+        <td>${esc(c.top || '-')}</td>
+        <td class="sv-left">${esc(c.up || '-')}</td>
+        <td class="mono">${esc(c.telp || '-')}${c.telp2 ? ' / ' + esc(c.telp2) : ''}</td>
+        <td class="sv-left">${esc(c.alamat || '-')}</td>
+        <td>
+          ${admin ? `<button class="icon-btn del" data-id="${c.id}" title="Hapus customer ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
+            Hapus
+          </button>` : ''}
+        </td>
+      </tr>`).join('')}</tbody></table>`;
+    if(admin){
+      wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+        if(confirm('Hapus customer ini?')){
+          const before = customerList.length;
+          const targetId = this.dataset.id;
+          customerList = customerList.filter(x => String(x.id) !== String(targetId));
+          if(customerList.length === before){
+            showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+            return;
+          }
+          localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customerList));
+          fbRemoveFromList('customer', item => String(item.id) === String(targetId), targetId);
+          renderCustomer();
+          showToast('Data customer berhasil dihapus', 'danger');
+        }
+      }));
+    }
+  }
+  updateCustomerDatalist();
+}
+/* ---------- INPUT CUSTOMER (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Data Customer) ---------- */
+document.getElementById('formCustomerInput').addEventListener('submit', function(e){
+  e.preventDefault();
+  customerList.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    nama: document.getElementById('ciNama').value.trim(),
+    tujuan: document.getElementById('ciTujuan').value.trim(),
+    top: document.getElementById('ciTop').value.trim(),
+    up: document.getElementById('ciUp').value.trim(),
+    telp: document.getElementById('ciTelp').value.trim(),
+    telp2: document.getElementById('ciTelp2').value.trim(),
+    alamat: document.getElementById('ciAlamat').value.trim(),
+  });
+  saveCustomer();
+  renderCustomer();
+  this.reset();
+  showToast('Data customer berhasil disimpan, cek menu Daftar > Data Customer', 'success');
 });
 
 /* ---------- MONITORING LEGALITAS KENDARAAN (KIR & PAJAK) ---------- */
@@ -7352,6 +7602,7 @@ function initApp(){
   renderKendaraan();
   renderLegalitas();
   renderDriver();
+  updateCustomerDatalist();
   updatePeringatanBadge();
   const acc = currentAccount();
   if(acc){
