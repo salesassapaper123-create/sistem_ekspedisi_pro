@@ -1047,11 +1047,10 @@
                   <input type="text" id="sopir" placeholder="cth. Budi Santoso">
                 </div>
                 <div class="field full" id="vendorRuteBlock" style="grid-column:1 / -1; display:none;">
-                  <label for="doVendorRute">Rute &amp; tarif vendor (dari Ongkos Borongan)</label>
-                  <select id="doVendorRute">
-                    <option value="">- Pilih rute vendor -</option>
-                  </select>
-                  <p class="hint" style="margin:6px 0 0;">Vendor: <b id="doVendorNamaShow">-</b> &mdash; pilih rute untuk isi otomatis nama vendor &amp; tarif ongkos di bawah (bisa diubah manual kalau perlu).</p>
+                  <label for="doVendorRute">Rute / tujuan vendor</label>
+                  <input type="text" id="doVendorRute" list="doVendorRuteList" placeholder="Ketik rute/tujuan, atau pilih saran dari Ongkos Borongan / data customer...">
+                  <datalist id="doVendorRuteList"></datalist>
+                  <p class="hint" style="margin:6px 0 0;">Vendor: <b id="doVendorNamaShow">-</b> &mdash; pilih saran rute dari Ongkos Borongan untuk isi otomatis nama vendor &amp; tarif ongkos (bisa diubah manual). Boleh juga ketik bebas nama tujuan/customer kalau tidak ada di daftar.</p>
                 </div>
                 <div class="field" id="uangJalanBlock">
                   <label for="uangJalan" id="uangJalanLabel">Uang jalan driver (Rp)</label>
@@ -3757,22 +3756,35 @@ function getVendorRuteOptions(){
   });
   return opts;
 }
+/* Lookup teks-persis "label rute" -> {vendor, harga, rute} untuk auto-isi saat teks yang diketik/dipilih
+   di field rute vendor cocok dengan salah satu rute ber-harga dari Ongkos Borongan. Diisi ulang setiap
+   kali dropdown saran dibangun (populateDoVendorRuteDropdown). */
+let vendorRuteLookup = {};
+/* Field "Rute / tujuan vendor" adalah input teks bebas + <datalist> saran (bukan <select> baku), supaya
+   tetap bisa diketik manual. Saran datalist berisi gabungan: (a) rute ber-harga dari Ongkos Borongan
+   (memilihnya otomatis mengisi nama vendor & tarif ongkos), dan (b) nama-nama dari Master Data Customer
+   (murni saran nama, tidak mengisi tarif otomatis — silakan isi tarif manual kalau pakai ini). */
 function populateDoVendorRuteDropdown(){
-  const sel = document.getElementById('doVendorRute');
-  if(!sel) return;
-  const current = sel.value;
+  const dl = document.getElementById('doVendorRuteList');
+  if(!dl) return;
   const opts = getVendorRuteOptions();
-  sel.innerHTML = '<option value="">- Pilih rute vendor -</option>' + opts.map(o =>
-    `<option value="${esc(o.key)}" data-vendor="${esc(o.vendor)}" data-harga="${o.harga}" data-rute="${esc(o.rute)}">${esc(o.label)}</option>`
-  ).join('');
-  if(current && [...sel.options].some(o => o.value === current)) sel.value = current;
+  vendorRuteLookup = {};
+  opts.forEach(o => { vendorRuteLookup[o.label] = { vendor: o.vendor, harga: o.harga, rute: o.rute }; });
+  const ruteOptionsHtml = opts.map(o => `<option value="${esc(o.label)}"></option>`).join('');
+  const customerOptionsHtml = getCustomerNameList().map(n => `<option value="${esc(n)}"></option>`).join('');
+  dl.innerHTML = ruteOptionsHtml + customerOptionsHtml;
 }
-document.getElementById('doVendorRute').addEventListener('change', function(){
-  const opt = this.selectedOptions[0];
-  const vendor = opt ? (opt.dataset.vendor || '') : '';
-  const harga = opt ? (opt.dataset.harga || '0') : '0';
-  document.getElementById('doVendorNamaShow').textContent = vendor || '-';
-  document.getElementById('uangJalan').value = harga || 0;
+document.getElementById('doVendorRute').addEventListener('input', function(){
+  const match = vendorRuteLookup[this.value];
+  if(match){
+    document.getElementById('doVendorNamaShow').textContent = match.vendor || '-';
+    document.getElementById('uangJalan').value = match.harga || 0;
+  }else{
+    /* Teks yang diketik tidak cocok persis dengan rute ber-harga manapun (mis. nama customer atau
+       tujuan bebas) — kosongkan label "Vendor" supaya tidak menyesatkan (seolah masih vendor yang lama),
+       tapi tarif ongkos TIDAK ikut dikosongkan karena itu field angka yang memang boleh diisi manual. */
+    document.getElementById('doVendorNamaShow').textContent = '-';
+  }
 });
 /* Tampilkan field yang relevan sesuai jenis angkutan yang dipilih:
    - Organik: form seperti biasa (Kota tarif, Uang jalan driver manual, Biaya lain-lain).
@@ -4395,9 +4407,10 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     errEl.textContent = 'Tarif ongkos vendor wajib diisi (pilih rute dari Ongkos Borongan, atau isi manual).';
     return;
   }
-  const vendorOpt = isVendorVal ? document.getElementById('doVendorRute').selectedOptions[0] : null;
+  const vendorRuteTextVal = isVendorVal ? document.getElementById('doVendorRute').value.trim() : '';
+  const vendorMatch = isVendorVal ? vendorRuteLookup[vendorRuteTextVal] : null;
   const vendorNamaVal = isVendorVal ? (document.getElementById('doVendorNamaShow').textContent === '-' ? '' : document.getElementById('doVendorNamaShow').textContent) : '';
-  const vendorRuteVal = isVendorVal && vendorOpt ? (vendorOpt.dataset.rute || '') : '';
+  const vendorRuteVal = isVendorVal ? (vendorMatch ? vendorMatch.rute : vendorRuteTextVal) : '';
 
   const poIdVal = document.getElementById('doNoCO').value || null;
   const poTerkait = poIdVal ? poList.find(p => String(p.id) === String(poIdVal)) : null;
@@ -4479,8 +4492,11 @@ function editRecordDO(id){
   if(jenisAngkutanRec === 'vendor'){
     document.getElementById('uangJalan').value = rec.uangJalan || '';
     document.getElementById('doVendorNamaShow').textContent = rec.vendorNama || '-';
-    const matchOpt = [...document.getElementById('doVendorRute').options].find(o => o.dataset.vendor === rec.vendorNama && o.dataset.rute === rec.vendorRute);
-    if(matchOpt) document.getElementById('doVendorRute').value = matchOpt.value;
+    const matchLabel = Object.keys(vendorRuteLookup).find(label => {
+      const v = vendorRuteLookup[label];
+      return v.vendor === rec.vendorNama && v.rute === rec.vendorRute;
+    });
+    document.getElementById('doVendorRute').value = matchLabel || rec.vendorRute || '';
   }
   document.getElementById('tujuanMuat').value = rec.tujuanMuat || '';
   document.getElementById('tujuanBongkar').value = rec.tujuanBongkar || '';
