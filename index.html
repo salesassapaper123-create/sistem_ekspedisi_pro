@@ -265,26 +265,26 @@
     font-family:'Courier New', Courier, monospace;
   }
   #suratTugasPrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
-  /* ---------- PKB (Perintah Kerja Borongan) — layout mengikuti contoh form fisik: satu kartu/kotak
-     utuh berbingkai ganda (.pkb-outer) berisi judul besar + kotak-kotak berbatas garis (mirip form
-     Excel/spreadsheet), bukan paragraf surat resmi seperti versi lama. ---------- */
-  .pkb-doc{}
-  .pkb-outer{border:4px double #111; padding:16px 18px 20px;}
-  .pkb-title{text-align:center; font-weight:800; font-size:19px; letter-spacing:.05em; text-decoration:underline; margin:0 0 16px; text-transform:uppercase;}
-  .pkb-table{width:100%; border-collapse:collapse;}
-  .pkb-table td{border:1.4px solid #111; padding:7px 10px; font-size:12.5px; vertical-align:middle; line-height:1.5;}
-  .pkb-table td.pkb-lbl{font-weight:700; font-size:15px; width:130px; color:#111;}
-  .pkb-table td.pkb-colon{width:16px; text-align:center; font-weight:700; font-size:15px;}
-  .pkb-table td.pkb-val{font-weight:400; font-size:13px;}
-  .pkb-table td.pkb-val.pkb-val-strong{font-weight:700;}
-  .pkb-table tr.pkb-untuk td{color:#c0392b;}
-  .pkb-table-gap{margin-top:12px;}
-  .pkb-barang-head{border:1.4px solid #111; border-bottom:none; padding:7px 10px; font-weight:700; font-size:12.5px; margin-top:12px;}
-  .pkb-barang-box{border:1.4px solid #111; min-height:150px; padding:8px 10px; font-size:12.5px; white-space:pre-wrap;}
-  .pkb-footer{width:100%; border-collapse:collapse;}
-  .pkb-footer td{border:1.4px solid #111; padding:14px 10px; text-align:center; font-size:12px; font-weight:700; width:50%;}
-  .pkb-footer .pkb-footer-note{font-style:italic; font-weight:400; font-size:11px;}
-  .pkb-footer .pkb-footer-sign{padding-top:36px;}
+  .st-doc-head{text-align:center; border-bottom:2px solid #111; padding-bottom:12px; margin-bottom:18px;}
+  .st-doc-head .st-brand{font-weight:700; font-size:15px; letter-spacing:.03em;}
+  .st-doc-head .st-sub{font-size:11px; color:#555; margin-top:3px; letter-spacing:.02em;}
+  .st-doc-title{text-align:center; font-weight:700; font-size:14px; text-decoration:underline; letter-spacing:.04em; margin:16px 0 5px;}
+  .st-doc-intro{font-size:12px; margin-bottom:14px; line-height:1.7; text-align:justify; margin-top:18px;}
+  .st-doc-table{width:100%; border-collapse:collapse; margin-bottom:16px;}
+  .st-doc-table td{padding:4px 6px; font-size:12px; vertical-align:top; border:none; line-height:1.6;}
+  .st-doc-table td.st-label{width:175px; color:#333;}
+  .st-doc-table td.st-colon{width:14px;}
+  .st-doc-table td.st-value{font-weight:700;}
+  .st-doc-route{
+    border:1px solid #111; padding:10px 14px; margin-bottom:12px;
+  }
+  .st-doc-route .st-route-title{font-weight:700; font-size:12px; margin-bottom:8px; text-decoration:underline;}
+  .st-doc-status-line{font-size:12px; margin:16px 0 20px; font-weight:700;}
+  .st-doc-note{font-size:11.5px; color:#333; line-height:1.7; border-top:1px dashed #999; padding-top:12px; margin-bottom:30px; text-align:justify;}
+  .st-doc-sign{display:flex; justify-content:space-between; gap:26px; font-size:12px; text-align:center; margin-top:12px;}
+  .st-doc-sign .st-sign-col{flex:1;}
+  .st-doc-sign .st-sign-space{height:68px;}
+  .st-doc-sign .st-sign-name{border-top:1px solid #111; padding-top:5px; font-weight:700;}
   @media print{
     body *{visibility:hidden;}
     #suratTugasPrintArea, #suratTugasPrintArea *{visibility:visible;}
@@ -760,10 +760,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
         Dashboard
       </button>
-      <button class="nav-item" data-view="rekap">
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
-        Rekap Data DO
-      </button>
 
       <div class="nav-group" data-group="administrasi">
         <button type="button" class="nav-group-head" data-group-toggle="administrasi">
@@ -774,7 +770,7 @@
         <div class="nav-group-items">
           <button class="nav-item nav-sub" data-view="input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h6"/></svg>
-            Input PKB
+            Input Surat Tugas
           </button>
           <button class="nav-item nav-sub" data-view="kendaraan-input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
@@ -795,10 +791,6 @@
           <button class="nav-item nav-sub" data-view="customer-input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Input Customer
-          </button>
-          <button class="nav-item nav-sub" data-view="barang-input">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.3 12 12m0 0L3.5 7.3M12 12v9.5M21 16.2V7.8a1.7 1.7 0 0 0-.9-1.5l-7.2-4a1.7 1.7 0 0 0-1.8 0l-7.2 4a1.7 1.7 0 0 0-.9 1.5v8.4a1.7 1.7 0 0 0 .9 1.5l7.2 4a1.7 1.7 0 0 0 1.8 0l7.2-4a1.7 1.7 0 0 0 .9-1.5z"/></svg>
-            Input Barang
           </button>
         </div>
       </div>
@@ -834,10 +826,6 @@
           <button class="nav-item nav-sub" data-view="customer">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Data Customer
-          </button>
-          <button class="nav-item nav-sub" data-view="barang">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.3 12 12m0 0L3.5 7.3M12 12v9.5M21 16.2V7.8a1.7 1.7 0 0 0-.9-1.5l-7.2-4a1.7 1.7 0 0 0-1.8 0l-7.2 4a1.7 1.7 0 0 0-.9 1.5v8.4a1.7 1.7 0 0 0 .9 1.5l7.2 4a1.7 1.7 0 0 0 1.8 0l7.2-4a1.7 1.7 0 0 0 .9-1.5z"/></svg>
-            Data Barang
           </button>
         </div>
       </div>
@@ -1028,7 +1016,7 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h2 id="inputDOTitle">Input PKB</h2>
+              <h2 id="inputDOTitle">Input Surat Tugas</h2>
             </div>
           </div>
           <div class="panel-body">
@@ -1049,10 +1037,6 @@
                 <div class="field">
                   <label for="tanggal">Tanggal</label>
                   <input type="date" id="tanggal" required>
-                </div>
-                <div class="field">
-                  <label for="doNoPKB">No. PKB <span class="hint">(opsional, diisi manual)</span></label>
-                  <input type="text" id="doNoPKB" placeholder="cth. PKB-001/VIII/2026">
                 </div>
                 <div class="field">
                   <label for="nopol" id="nopolLabel">Nopol</label>
@@ -1099,20 +1083,13 @@
                     <option value="lainnya">Lainnya</option>
                   </select>
                 </div>
-                <div class="field" id="doKotaBlock" style="display:none;">
+                <div class="field" id="doKotaBlock">
                   <label for="doKota">Kota tarif</label>
                   <input type="text" id="doKota" list="doKotaList" placeholder="cth. Bandung">
                   <datalist id="doKotaList"></datalist>
                 </div>
-                <div class="field full" style="grid-column:1 / -1;">
-                  <label>Jenis barang &amp; tonase <span class="hint">(bisa lebih dari satu jenis dalam 1 PKB — isi tonase per jenis, total otomatis terhitung)</span></label>
-                  <div id="jenisBarangRows"></div>
-                  <datalist id="barangDatalist"></datalist>
-                  <button type="button" class="btn btn-secondary" id="btnAddJenisBarang" style="margin-top:4px;">+ Tambah jenis barang</button>
-                  <div id="totalTonaseBarang" style="margin-top:8px; font-weight:700; font-size:13px;">Total tonase: 0 kg</div>
-                </div>
                 <div class="field">
-                  <label for="doNoCO">PO terkait (No CO)</label>
+                  <label for="doNoCO">PO terkait (No CO) <span class="hint">(opsional, hanya PO yang sudah ACC)</span></label>
                   <select id="doNoCO">
                     <option value="">- Tidak terkait PO -</option>
                   </select>
@@ -1148,7 +1125,7 @@
                     <label for="tujuanBongkar2">Tujuan bongkar</label>
                     <input type="text" id="tujuanBongkar2" list="customerDatalist" placeholder="cth. Pelabuhan Tanjung Priok">
                   </div>
-                  <div class="field" style="display:none;">
+                  <div class="field">
                     <label for="tonase2">Tonase Roll Assa (kg) <span class="hint">(wajib jika status langsung Selesai)</span></label>
                     <input type="number" id="tonase2" step="1" min="0" placeholder="cth. 4200">
                   </div>
@@ -1595,7 +1572,7 @@
           <div class="panel-head">
             <div>
               <h2>Daftar customer</h2>
-              <p>Master data customer — dipakai sebagai saran dropdown di Input PKB &amp; Input SO/PO</p>
+              <p>Master data customer — dipakai sebagai saran dropdown di Input Surat Tugas &amp; Input SO/PO</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1610,7 +1587,7 @@
           <div class="panel-head">
             <div>
               <h2>Input customer</h2>
-              <p>Data yang disimpan di sini otomatis jadi saran dropdown di field tujuan (Input PKB) &amp; nama customer (Input SO/PO), supaya tidak salah ketik.</p>
+              <p>Data yang disimpan di sini otomatis jadi saran dropdown di field tujuan (Surat Tugas) &amp; nama customer (Input SO/PO), supaya tidak salah ketik.</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1647,46 +1624,6 @@
               </div>
               <div class="btn-row" style="justify-content:flex-end;">
                 <button type="submit" class="btn btn-primary">Simpan customer</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- DATA BARANG (Master Data Barang) -->
-      <div class="view" data-view="barang">
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Daftar barang</h2>
-              <p>Master data jenis barang — dipakai sebagai saran dropdown di baris "Jenis barang" pada Input PKB</p>
-            </div>
-          </div>
-          <div class="panel-body">
-            <div id="barangTableWrap"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- INPUT BARANG (form input langsung, tanpa tabel — hasilnya tampil di Daftar > Data Barang) -->
-      <div class="view" data-view="barang-input">
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <h2>Input barang</h2>
-              <p>Data yang disimpan di sini otomatis jadi saran dropdown di baris "Jenis barang" (Input PKB), supaya tidak salah ketik.</p>
-            </div>
-          </div>
-          <div class="panel-body">
-            <form id="formBarangInput">
-              <div class="grid2">
-                <div class="field full" style="grid-column:1 / -1;">
-                  <label for="biNama">Nama barang</label>
-                  <input type="text" id="biNama" placeholder="cth. Kertas HVS Bekas" required>
-                </div>
-              </div>
-              <div class="btn-row" style="justify-content:flex-end;">
-                <button type="submit" class="btn btn-primary">Simpan barang</button>
               </div>
             </form>
           </div>
@@ -2797,8 +2734,8 @@ function syncOdometerFromCartrack(){
   <div class="st-modal">
     <div class="st-modal-head no-print">
       <div>
-        <h3>PKB (Perintah Kerja Borongan)</h3>
-        <p>Cetak atau download (Simpan sebagai PDF) sebagai bukti PKB untuk driver</p>
+        <h3>Surat Tugas Pengiriman</h3>
+        <p>Perintah penugasan untuk driver — cetak atau simpan sebagai bukti serah tugas</p>
       </div>
       <button type="button" class="st-close-btn" id="stModalClose" title="Tutup">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -2808,7 +2745,7 @@ function syncOdometerFromCartrack(){
     <div class="btn-row no-print" style="padding:0 22px 20px;">
       <button type="button" class="btn btn-primary" id="stModalPrint">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
-        Cetak / Download PKB
+        Cetak surat tugas
       </button>
       <button type="button" class="btn btn-secondary" id="stModalCloseBtn">Tutup</button>
     </div>
@@ -3165,32 +3102,6 @@ function attachFirebaseListenersInner(){
     }
   });
 
-  fbDb.ref('barang').on('value', snap => {
-    if(fbPendingWrites['barang']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
-    const val = snap.val();
-    const arr = fbToArray(val);
-    const sudahPernahSinkron = fbHasSyncedBefore('barang');
-    fbMarkSynced('barang');
-    if(arr){
-      barangList = fbFilterTombstoned('barang', arr);
-      if(ensureIds(barangList, 'bg')) fbPush('barang', barangList);
-      localStorage.setItem(BARANG_KEY, JSON.stringify(barangList));
-      const v = currentViewName();
-      if(v === 'barang') renderBarang();
-      updateBarangDatalist();
-    }else if(val == null){
-      if(barangList.length > 0 && !sudahPernahSinkron){
-        fbPush('barang', barangList); // Firebase masih kosong (pertama kali pakai) -> unggah data lokal sebagai data awal
-      }else if(barangList.length > 0){
-        barangList = [];
-        localStorage.setItem(BARANG_KEY, JSON.stringify(barangList));
-        const v = currentViewName();
-        if(v === 'barang') renderBarang();
-        updateBarangDatalist();
-      }
-    }
-  });
-
   fbDb.ref('maintenance').on('value', snap => {
     if(fbPendingWrites['maintenance']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
@@ -3429,36 +3340,6 @@ function updateCustomerDatalist(){
   if(el) el.innerHTML = getCustomerNameList().map(n => `<option value="${esc(n)}"></option>`).join('');
 }
 
-/* ---------- MASTER DATA BARANG (dikelola langsung di aplikasi, tersinkron via Firebase) ----------
-   Daftar jenis barang yang biasa diangkut — dipakai sebagai saran dropdown (datalist, boleh ketik
-   bebas) di baris-baris "Jenis barang" pada Input PKB, supaya penulisan jenis barang konsisten.
-   Polanya identik dengan Master Data Customer di atas. Belum ada data awal (default kosong) karena
-   user belum mengunggah daftar barangnya — admin tambah sendiri lewat menu Administrasi > Input Barang,
-   atau minta diimpor sekali kalau nanti ada file daftar barangnya. */
-const BARANG_KEY = 'ekspedisi_pro_barang';
-function barangDefaultData(){ return []; }
-function loadBarang(){
-  try{
-    const raw = localStorage.getItem(BARANG_KEY);
-    if(!raw){ const d = barangDefaultData(); ensureIds(d, 'bg'); return d; }
-    const parsed = JSON.parse(raw);
-    if(!Array.isArray(parsed)){ const d = barangDefaultData(); ensureIds(d, 'bg'); return d; }
-    ensureIds(parsed, 'bg');
-    return parsed;
-  }catch(e){ const d = barangDefaultData(); ensureIds(d, 'bg'); return d; }
-}
-function saveBarang(){ localStorage.setItem(BARANG_KEY, JSON.stringify(barangList)); fbPush('barang', barangList); }
-let barangList = loadBarang();
-function getBarangNameList(){
-  const set = new Set();
-  (barangList || []).forEach(b => { if(b.nama) set.add(b.nama); });
-  return Array.from(set).sort((a, b) => a.localeCompare(b));
-}
-function updateBarangDatalist(){
-  const el = document.getElementById('barangDatalist');
-  if(el) el.innerHTML = getBarangNameList().map(n => `<option value="${esc(n)}"></option>`).join('');
-}
-
 /* ---------- TARIF ONGKOS ANGKUT (dikelola langsung di aplikasi, tersinkron via Firebase) ---------- */
 const TARIF_KEY = 'ekspedisi_pro_tarif';
 function loadTarif(){ try{ return JSON.parse(localStorage.getItem(TARIF_KEY)) || { items: [], lastSync: null }; }catch(e){ return { items: [], lastSync: null }; } }
@@ -3691,7 +3572,7 @@ function emptyState(msg){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang'};
+const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -3705,7 +3586,6 @@ function goTo(view){
   if(view === 'legalitas-input') populateLegalitasInputSelect();
   if(view === 'driver') renderDriver();
   if(view === 'customer') renderCustomer();
-  if(view === 'barang') renderBarang();
   if(view === 'service') renderServiceMonitoring();
   if(view === 'ritase') initRitaseView();
   if(view === 'biayapengeluaran') initBiayaPengeluaranView();
@@ -3907,16 +3787,13 @@ document.getElementById('doVendorRute').addEventListener('input', function(){
   }
 });
 /* Tampilkan field yang relevan sesuai jenis angkutan yang dipilih:
-   - Organik: form seperti biasa (Jenis barang, Uang jalan driver manual, Biaya lain-lain).
-   - Vendor luar: Biaya lain-lain disembunyikan (tidak relevan), field "Uang jalan driver" berubah
-     jadi "Tarif ongkos vendor" yang diisi dari dropdown rute Ongkos Borongan.
-   Catatan: "Kota tarif" (#doKotaBlock) SENGAJA selalu disembunyikan untuk kedua jenis angkutan —
-   field input-nya tetap ada di DOM (supaya calcPendapatan/data lama tidak error) tapi tidak lagi
-   ditampilkan di form sesuai permintaan user; diganti dengan field "Jenis barang" yang tampil di PKB. */
+   - Organik: form seperti biasa (Kota tarif, Uang jalan driver manual, Biaya lain-lain).
+   - Vendor luar: Kota tarif & Biaya lain-lain disembunyikan (tidak relevan), field "Uang jalan
+     driver" berubah jadi "Tarif ongkos vendor" yang diisi dari dropdown rute Ongkos Borongan. */
 function toggleAngkutanSections(){
   const isVendor = currentJenisAngkutan() === 'vendor';
   document.getElementById('vendorRuteBlock').style.display = isVendor ? '' : 'none';
-  document.getElementById('doKotaBlock').style.display = 'none';
+  document.getElementById('doKotaBlock').style.display = isVendor ? 'none' : '';
   document.getElementById('biayaLainBlock').style.display = isVendor ? 'none' : '';
   document.getElementById('uangJalanLabel').textContent = isVendor ? 'Tarif ongkos vendor (Rp)' : 'Uang jalan driver (Rp)';
   document.getElementById('nopolLabel').textContent = isVendor ? 'Nopol (armada vendor)' : 'Nopol';
@@ -3932,69 +3809,6 @@ function toggleAngkutanSections(){
 }
 document.getElementById('raOrganik').addEventListener('change', toggleAngkutanSections);
 document.getElementById('raVendor').addEventListener('change', toggleAngkutanSections);
-
-/* ---------- JENIS BARANG (baris dinamis, boleh lebih dari satu per PKB) ----------
-   Setiap baris = 1 input teks bebas (nama, saran datalist dari Master Data Barang) + 1 input
-   angka (tonase per jenis barang, kg). Total tonase dihitung otomatis (live) dari jumlah semua
-   baris, dan saat submit dijadikan sumber untuk field Tonase BK/Roll/OCC (kalau tepat satu jenis
-   pengiriman yang dicentang) — lihat totalTonaseBarangVal di handler submit formDO. */
-function addJenisBarangRow(nama, tonase){
-  const container = document.getElementById('jenisBarangRows');
-  const row = document.createElement('div');
-  row.className = 'jb-row';
-  row.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
-  const tonaseStr = (tonase === null || tonase === undefined || tonase === '') ? '' : esc(String(tonase));
-  row.innerHTML = `<input type="text" class="jb-row-input" list="barangDatalist" placeholder="cth. Kertas HVS Bekas" style="flex:2;" value="${esc(nama || '')}">
-    <input type="number" class="jb-row-tonase" step="1" min="0" placeholder="Tonase (kg)" style="flex:1; max-width:150px;" value="${tonaseStr}">
-    <button type="button" class="btn btn-secondary jb-row-remove" style="padding:6px 12px;" title="Hapus baris ini">&times;</button>`;
-  container.appendChild(row);
-}
-function resetJenisBarangRows(items){
-  const container = document.getElementById('jenisBarangRows');
-  container.innerHTML = '';
-  let list = (items && items.length) ? items : [{nama:'', tonase:''}];
-  list = list.map(it => typeof it === 'string' ? {nama: it, tonase: ''} : it);
-  list.forEach(it => addJenisBarangRow(it.nama, it.tonase));
-  updateTotalTonaseBarang();
-}
-function collectJenisBarangDetail(){
-  return [...document.querySelectorAll('#jenisBarangRows .jb-row')].map(row => {
-    const nama = row.querySelector('.jb-row-input').value.trim();
-    const tonaseRaw = row.querySelector('.jb-row-tonase').value;
-    const tonase = tonaseRaw === '' ? null : parseFloat(tonaseRaw);
-    return { nama: nama, tonase: tonase };
-  }).filter(it => it.nama);
-}
-function collectJenisBarangList(){
-  return collectJenisBarangDetail().map(it => it.nama);
-}
-function updateTotalTonaseBarang(){
-  const total = collectJenisBarangDetail().reduce((s, it) => s + (Number(it.tonase) || 0), 0);
-  const el = document.getElementById('totalTonaseBarang');
-  if(el) el.textContent = 'Total tonase: ' + total.toLocaleString('id-ID') + ' kg';
-}
-document.getElementById('jenisBarangRows').addEventListener('click', function(e){
-  const btn = e.target.closest('.jb-row-remove');
-  if(!btn) return;
-  const rows = this.querySelectorAll('.jb-row');
-  if(rows.length <= 1){
-    // baris terakhir: cukup dikosongkan, jangan sampai baris habis semua
-    const r = btn.closest('.jb-row');
-    r.querySelector('.jb-row-input').value = '';
-    r.querySelector('.jb-row-tonase').value = '';
-    updateTotalTonaseBarang();
-    return;
-  }
-  btn.closest('.jb-row').remove();
-  updateTotalTonaseBarang();
-});
-document.getElementById('jenisBarangRows').addEventListener('input', function(e){
-  if(e.target.classList.contains('jb-row-tonase')) updateTotalTonaseBarang();
-});
-document.getElementById('btnAddJenisBarang').addEventListener('click', function(){
-  addJenisBarangRow('', '');
-});
-resetJenisBarangRows([]);
 
 /* ---------- Database tarif: init & listeners ---------- */
 let editingTarifIdx = null;
@@ -4557,22 +4371,9 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   const tonase1Raw = document.getElementById('tonase1').value;
   const tonase2Raw = document.getElementById('tonase2').value;
   const tonase3Raw = document.getElementById('tonase3').value;
-  let tonase1Val = tonase1Raw === '' ? null : parseFloat(tonase1Raw);
-  let tonase2Val = tonase2Raw === '' ? null : parseFloat(tonase2Raw);
-  let tonase3Val = tonase3Raw === '' ? null : parseFloat(tonase3Raw);
-
-  /* Tonase per jenis barang: kalau diisi & tepat satu jenis pengiriman yang dicentang, totalnya
-     otomatis jadi sumber Tonase BK/Roll/OCC (menggantikan isian manual field itu) — dipilih user
-     lewat pertanyaan konfirmasi. Kalau lebih dari satu jenis pengiriman dicentang, tidak bisa
-     dipastikan totalnya milik yang mana, jadi field tonase1/2/3 tetap diisi manual seperti biasa. */
-  const jenisBarangDetailVal = collectJenisBarangDetail();
-  const totalTonaseBarangVal = jenisBarangDetailVal.reduce((s, it) => s + (Number(it.tonase) || 0), 0);
-  const jenisTerpilihCount = [kirimBK, kirimRoll, kirimOCC].filter(Boolean).length;
-  if(totalTonaseBarangVal > 0 && jenisTerpilihCount === 1){
-    if(kirimBK) tonase1Val = totalTonaseBarangVal;
-    if(kirimRoll) tonase2Val = totalTonaseBarangVal;
-    if(kirimOCC) tonase3Val = totalTonaseBarangVal;
-  }
+  const tonase1Val = tonase1Raw === '' ? null : parseFloat(tonase1Raw);
+  const tonase2Val = tonase2Raw === '' ? null : parseFloat(tonase2Raw);
+  const tonase3Val = tonase3Raw === '' ? null : parseFloat(tonase3Raw);
 
   if(kirimBK && (!tujuanMuatVal || !tujuanBongkarVal)){
     errEl.textContent = 'Tujuan muat dan tujuan bongkar (BK) wajib diisi.';
@@ -4588,6 +4389,10 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   }
   if(statusVal === 'selesai' && kirimBK && (!tonase1Val || tonase1Val <= 0)){
     errEl.textContent = 'Tonase BK wajib diisi terlebih dahulu untuk status Selesai.';
+    return;
+  }
+  if(statusVal === 'selesai' && kirimRoll && (!tonase2Val || tonase2Val <= 0)){
+    errEl.textContent = 'Tonase Roll Assa wajib diisi terlebih dahulu untuk status Selesai.';
     return;
   }
   if(statusVal === 'selesai' && kirimOCC && (!tonase3Val || tonase3Val <= 0)){
@@ -4610,11 +4415,9 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   const poIdVal = document.getElementById('doNoCO').value || null;
   const poTerkait = poIdVal ? poList.find(p => String(p.id) === String(poIdVal)) : null;
   const kotaVal = isVendorVal ? '' : document.getElementById('doKota').value.trim();
-  const jenisBarangListVal = jenisBarangDetailVal.map(it => it.nama);
 
   const fieldsData = {
     tanggal: tanggal,
-    noPKB: document.getElementById('doNoPKB').value.trim(),
     nopol: document.getElementById('nopol').value.trim(),
     sopir: document.getElementById('sopir').value.trim(),
     kirimBK: kirimBK,
@@ -4625,9 +4428,6 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     vendorNama: vendorNamaVal,
     vendorRute: vendorRuteVal,
     kota: kotaVal,
-    jenisBarangDetail: jenisBarangDetailVal,
-    jenisBarangList: jenisBarangListVal,
-    jenisBarang: jenisBarangListVal.join(', '),
     poId: poIdVal,
     noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
     pendapatan: calcPendapatan(document.getElementById('jenisArmada').value, kotaVal, kirimBK ? tonase1Val : null, kirimRoll ? tonase2Val : null, kirimOCC ? tonase3Val : null),
@@ -4676,7 +4476,6 @@ function editRecordDO(id){
   editingId = id;
 
   document.getElementById('tanggal').value = rec.tanggal || '';
-  document.getElementById('doNoPKB').value = rec.noPKB || '';
   document.getElementById('nopol').value = rec.nopol || '';
   document.getElementById('sopir').value = rec.sopir || '';
   document.getElementById('cbBK').checked = recKirimBK(rec);
@@ -4684,11 +4483,6 @@ function editRecordDO(id){
   document.getElementById('cbOCC').checked = recKirimOCC(rec);
   document.getElementById('jenisArmada').value = rec.jenisArmada || 'tronton';
   document.getElementById('doKota').value = rec.kota || '';
-  resetJenisBarangRows(
-    rec.jenisBarangDetail && rec.jenisBarangDetail.length ? rec.jenisBarangDetail :
-    (rec.jenisBarangList && rec.jenisBarangList.length ? rec.jenisBarangList :
-    (rec.jenisBarang ? [rec.jenisBarang] : []))
-  );
   document.getElementById('uangJalan').value = rec.uangJalan || '';
   document.getElementById('biayaLain').value = rec.biayaLain || '';
   const jenisAngkutanRec = rec.jenisAngkutan === 'vendor' ? 'vendor' : 'organik';
@@ -4732,9 +4526,8 @@ function cancelEditDO(){
   document.getElementById('tanggal').valueAsDate = new Date();
   toggleJenisSections();
   toggleAngkutanSections();
-  resetJenisBarangRows([]);
   populateDoNoCODropdown('');
-  document.getElementById('inputDOTitle').textContent = 'Input PKB';
+  document.getElementById('inputDOTitle').textContent = 'Input Surat Tugas';
   document.getElementById('btnSubmitDOLabel').textContent = 'Simpan DO';
   document.getElementById('btnCancelEdit').style.display = 'none';
 }
@@ -4746,7 +4539,6 @@ document.getElementById('btnReset').addEventListener('click', function(){
   document.getElementById('tanggal').valueAsDate = new Date();
   toggleJenisSections();
   toggleAngkutanSections();
-  resetJenisBarangRows([]);
   populateDoNoCODropdown('');
 });
 document.getElementById('btnCancelEdit').addEventListener('click', cancelEditDO);
@@ -4837,67 +4629,84 @@ document.getElementById('tonaseModalSave').addEventListener('click', function(){
   closeTonaseModal();
 });
 
-/* ---------- PKB / Perintah Kerja Borongan (dulu "Surat Tugas") ----------
-   Format cetak mengikuti contoh form PKB fisik yang dipakai perusahaan: judul besar "PERINTAH KELUAR
-   BARANG", lalu TGL / UNTUK (diisi dari Tujuan Muat, sesuai contoh foto) / PKB NO, lalu blok
-   CUSTOMER / NO. CO / NO. PO / ANGKUTAN / NOPOL, lalu JENIS BARANG (kotak isian bebas), dan footer
-   tanda tangan DIBUAT / DISETUJUI (K/PO DAN DO) / EKSPEDISI — semuanya dibingkai satu bingkai luar
-   supaya terlihat seperti satu kartu/kotak utuh, bukan potongan-potongan terpisah. Berlaku SAMA untuk
-   Angkutan Organik maupun Vendor Luar — biaya (uang jalan/biaya lain-lain/tarif vendor) SENGAJA tidak
-   pernah dicetak di PKB manapun (datanya tetap tersimpan & dipakai di laporan pengeluaran seperti biasa,
-   cuma tidak ditampilkan di lembar PKB ini). */
-function buildPkbHtml(r){
-  const isVendor = r.jenisAngkutan === 'vendor';
-  const poTerkait = r.poId ? poList.find(p => String(p.id) === String(r.poId)) : (r.noCOTerkait ? poList.find(p => p.noCO === r.noCOTerkait) : null);
-  const angkutanVal = isVendor ? `${esc(r.vendorNama || '-')} (Vendor Luar)` : esc(armadaLabel(r.jenisArmada));
-  const untukVal = r.tujuanMuat || r.tujuanMuat2 || r.tujuanMuat3 || '-';
-  /* Daftar jenis barang: pakai jenisBarangDetail (nama + tonase per baris, format terbaru) kalau
-     ada; kalau tidak, fallback berjenjang ke jenisBarangList (nama saja) lalu jenisBarang (string
-     tunggal, format paling lama) supaya PKB dari DO lama tetap tercetak benar. Tonase per jenis
-     ditampilkan di sebelah nama barangnya, plus total keseluruhan di baris terakhir kalau ada. */
-  const barangDetailVal = (r.jenisBarangDetail && r.jenisBarangDetail.length)
-    ? r.jenisBarangDetail
-    : ((r.jenisBarangList && r.jenisBarangList.length) ? r.jenisBarangList.map(nama => ({nama: nama, tonase: null})) : (r.jenisBarang ? [{nama: r.jenisBarang, tonase: null}] : []));
-  const totalTonaseBarangVal = barangDetailVal.reduce((s, it) => s + (Number(it.tonase) || 0), 0);
-  const barangBoxHtml = barangDetailVal.length
-    ? barangDetailVal.map((b, i) => `<div>${i + 1}. ${esc(b.nama)}${(b.tonase !== null && b.tonase !== undefined && b.tonase !== '') ? ` &mdash; ${Number(b.tonase).toLocaleString('id-ID')} kg` : ''}</div>`).join('')
-      + (totalTonaseBarangVal > 0 ? `<div style="margin-top:8px; font-weight:700; border-top:1px solid #111; padding-top:6px;">TOTAL TONASE: ${totalTonaseBarangVal.toLocaleString('id-ID')} kg</div>` : '')
-    : '';
+/* ---------- SURAT TUGAS (perintah penugasan pengiriman untuk driver) ---------- */
+function buildSuratTugasHtml(r){
+  const todayStr = new Date().toLocaleDateString('id-ID', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  const meta = STATUS_META[normalizeStatus(r.status)] || STATUS_META.dijadwalkan;
+
+  let rutes = '';
+  if(recKirimBK(r)){
+    rutes += `<div class="st-doc-route">
+      <div class="st-route-title">Muatan BK</div>
+      <table class="st-doc-table"><tbody>
+        <tr><td class="st-label">Tujuan muat</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanMuat || '-')}</td></tr>
+        <tr><td class="st-label">Tujuan bongkar</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanBongkar || '-')}</td></tr>
+        <tr><td class="st-label">Tonase</td><td class="st-colon">:</td><td class="st-value">${r.tonase1 ? esc(String(r.tonase1)) + ' kg' : '-'}</td></tr>
+      </tbody></table>
+    </div>`;
+  }
+  if(recKirimRoll(r)){
+    rutes += `<div class="st-doc-route">
+      <div class="st-route-title">Muatan Roll Assa</div>
+      <table class="st-doc-table"><tbody>
+        <tr><td class="st-label">Tujuan muat</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanMuat2 || '-')}</td></tr>
+        <tr><td class="st-label">Tujuan bongkar</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanBongkar2 || '-')}</td></tr>
+        <tr><td class="st-label">Tonase</td><td class="st-colon">:</td><td class="st-value">${r.tonase2 ? esc(String(r.tonase2)) + ' kg' : '-'}</td></tr>
+      </tbody></table>
+    </div>`;
+  }
+  if(recKirimOCC(r)){
+    rutes += `<div class="st-doc-route">
+      <div class="st-route-title">Muatan OCC</div>
+      <table class="st-doc-table"><tbody>
+        <tr><td class="st-label">Tujuan muat</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanMuat3 || '-')}</td></tr>
+        <tr><td class="st-label">Tujuan bongkar</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanBongkar3 || '-')}</td></tr>
+        <tr><td class="st-label">Tonase</td><td class="st-colon">:</td><td class="st-value">${r.tonase3 ? esc(String(r.tonase3)) + ' kg' : '-'}</td></tr>
+      </tbody></table>
+    </div>`;
+  }
 
   return `
-    <div class="pkb-doc">
-      <div class="pkb-outer">
-        <div class="pkb-title">PERINTAH KELUAR BARANG</div>
-        <table class="pkb-table">
-          <tbody>
-            <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
-            <tr class="pkb-untuk"><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(untukVal)}</td></tr>
-            <tr><td class="pkb-lbl">PKB NO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noPKB || '-')}</td></tr>
-          </tbody>
-        </table>
-        <table class="pkb-table pkb-table-gap">
-          <tbody>
-            <tr><td class="pkb-lbl">CUSTOMER</td><td class="pkb-colon">:</td><td class="pkb-val pkb-val-strong">${esc(poTerkait ? (poTerkait.namaCustomer || '-') : '-')}</td></tr>
-            <tr><td class="pkb-lbl">NO. CO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noCO) || r.noCOTerkait || '-')}</td></tr>
-            <tr><td class="pkb-lbl">NO. PO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noPO) || '-')}</td></tr>
-            <tr><td class="pkb-lbl">ANGKUTAN</td><td class="pkb-colon">:</td><td class="pkb-val">${angkutanVal}</td></tr>
-            <tr><td class="pkb-lbl">NOPOL</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.nopol || '-')}</td></tr>
-          </tbody>
-        </table>
-        <div class="pkb-barang-head">JENIS BARANG :</div>
-        <div class="pkb-barang-box">${barangBoxHtml}</div>
-        <table class="pkb-footer pkb-table-gap">
-          <tbody>
-            <tr>
-              <td class="pkb-footer-head">DIBUAT</td>
-              <td class="pkb-footer-head">DISETUJUI<br><span class="pkb-footer-note">K/PO DAN DO</span></td>
-            </tr>
-            <tr>
-              <td class="pkb-footer-sign">EKSPEDISI</td>
-              <td class="pkb-footer-sign">(&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;.)</td>
-            </tr>
-          </tbody>
-        </table>
+    <div class="st-doc-head">
+      <div class="st-brand">EKSPEDISI &mdash; YOUR TRUSTED SOLUTION PARTNER</div>
+      <div class="st-sub">Divisi Operasional &amp; Armada</div>
+    </div>
+    <div class="st-doc-title">SURAT TUGAS PENGIRIMAN</div>
+    <div class="st-doc-intro">
+      Dengan ini menugaskan driver di bawah untuk melaksanakan pengiriman barang sesuai rincian berikut. Surat tugas ini merangkap sebagai bukti serah terima tugas dari admin/dispatcher kepada driver.
+    </div>
+    <table class="st-doc-table"><tbody>
+      <tr><td class="st-label">Tanggal tugas</td><td class="st-colon">:</td><td class="st-value">${fmtDate(r.tanggal)}</td></tr>
+      <tr><td class="st-label">Nama driver</td><td class="st-colon">:</td><td class="st-value">${esc(r.sopir || '-')}</td></tr>
+      <tr><td class="st-label">Nopol kendaraan</td><td class="st-colon">:</td><td class="st-value">${esc(r.nopol || '-')}</td></tr>
+      <tr><td class="st-label">Jenis armada</td><td class="st-colon">:</td><td class="st-value">${esc(armadaLabel(r.jenisArmada))}</td></tr>
+      ${r.jenisAngkutan === 'vendor' ? `
+      <tr><td class="st-label">Jenis angkutan</td><td class="st-colon">:</td><td class="st-value">Vendor Luar${r.vendorNama ? ' &mdash; ' + esc(r.vendorNama) : ''}</td></tr>
+      ${r.vendorRute ? `<tr><td class="st-label">Rute vendor</td><td class="st-colon">:</td><td class="st-value">${esc(r.vendorRute)}</td></tr>` : ''}
+      ` : `
+      <tr><td class="st-label">Kota tujuan</td><td class="st-colon">:</td><td class="st-value">${esc(r.kota || '-')}</td></tr>
+      `}
+      <tr><td class="st-label">Jenis pengiriman</td><td class="st-colon">:</td><td class="st-value">${esc(jenisLabel(r))}</td></tr>
+      ${r.jenisAngkutan === 'vendor' ? '' : `
+      <tr><td class="st-label">Uang jalan driver</td><td class="st-colon">:</td><td class="st-value">${rupiah(Number(r.uangJalan) || 0)}</td></tr>
+      <tr><td class="st-label">Biaya lain-lain</td><td class="st-colon">:</td><td class="st-value">${rupiah(Number(r.biayaLain) || 0)}</td></tr>
+      `}
+    </tbody></table>
+    ${rutes}
+    <div class="st-doc-status-line">Status pengiriman saat surat ini dicetak: <b>${esc(meta.label)}</b></div>
+    <div class="st-doc-note">
+      Driver wajib mengonfirmasi setiap perubahan status pengiriman (Dijadwalkan &rarr; Dalam Perjalanan &rarr; Sampai Tujuan &rarr; Selesai) kepada admin/dispatcher, serta menjaga keamanan muatan sampai proses bongkar selesai.
+    </div>
+    <div class="st-doc-sign">
+      <div class="st-sign-col">
+        <div>Dibuat di kantor, ${esc(todayStr)}</div>
+        <div class="st-sign-space"></div>
+        <div class="st-sign-name">Admin / Dispatcher</div>
+      </div>
+      <div class="st-sign-col">
+        <div>Diterima oleh,</div>
+        <div class="st-sign-space"></div>
+        <div class="st-sign-name">${esc(r.sopir || 'Driver')}</div>
       </div>
     </div>
   `;
@@ -4905,7 +4714,7 @@ function buildPkbHtml(r){
 function openSuratTugasModal(id){
   const r = records.find(x => x.id === id);
   if(!r) return;
-  document.getElementById('suratTugasPrintArea').innerHTML = buildPkbHtml(r);
+  document.getElementById('suratTugasPrintArea').innerHTML = buildSuratTugasHtml(r);
   document.getElementById('stModalOverlay').style.display = 'flex';
 }
 function closeSuratTugasModal(){
@@ -5176,57 +4985,6 @@ document.getElementById('formCustomerInput').addEventListener('submit', function
   renderCustomer();
   this.reset();
   showToast('Data customer berhasil disimpan, cek menu Daftar > Data Customer', 'success');
-});
-
-/* ---------- DATA BARANG (Master Data Barang) ---------- */
-function renderBarang(){
-  const wrap = document.getElementById('barangTableWrap');
-  if(!wrap) return;
-  const admin = isAdminUser();
-  if(barangList.length === 0){
-    wrap.innerHTML = emptyState('Belum ada barang terdaftar. Tambahkan lewat menu Administrasi > Input Barang.');
-  }else{
-    const sorted = [...barangList].sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
-    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nama Barang</th><th></th></tr></thead><tbody>${sorted.map(b => `
-      <tr>
-        <td class="sv-left">${esc(b.nama)}</td>
-        <td>
-          ${admin ? `<button class="icon-btn del" data-id="${b.id}" title="Hapus barang ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
-            Hapus
-          </button>` : ''}
-        </td>
-      </tr>`).join('')}</tbody></table>`;
-    if(admin){
-      wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
-        if(confirm('Hapus barang ini?')){
-          const before = barangList.length;
-          const targetId = this.dataset.id;
-          barangList = barangList.filter(x => String(x.id) !== String(targetId));
-          if(barangList.length === before){
-            showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
-            return;
-          }
-          localStorage.setItem(BARANG_KEY, JSON.stringify(barangList));
-          fbRemoveFromList('barang', item => String(item.id) === String(targetId), targetId);
-          renderBarang();
-          showToast('Data barang berhasil dihapus', 'danger');
-        }
-      }));
-    }
-  }
-  updateBarangDatalist();
-}
-document.getElementById('formBarangInput').addEventListener('submit', function(e){
-  e.preventDefault();
-  barangList.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    nama: document.getElementById('biNama').value.trim(),
-  });
-  saveBarang();
-  renderBarang();
-  this.reset();
-  showToast('Data barang berhasil disimpan, cek menu Daftar > Data Barang', 'success');
 });
 
 /* ---------- MONITORING LEGALITAS KENDARAAN (KIR & PAJAK) ---------- */
@@ -6847,7 +6605,7 @@ function renderTable(){
         <button class="icon-btn toggle" data-id="${r.id}" title="Maju ke status berikutnya (${esc((STATUS_META[nextStatus(r.status)] || {}).label || '')})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
         </button>` : ''}
-        <button class="icon-btn surat" data-id="${r.id}" title="Cetak PKB">
+        <button class="icon-btn surat" data-id="${r.id}" title="Cetak surat tugas">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         </button>
         ${admin ? `<button class="icon-btn del" data-id="${r.id}" title="Hapus">
@@ -8167,7 +7925,6 @@ function initApp(){
   renderLegalitas();
   renderDriver();
   updateCustomerDatalist();
-  updateBarangDatalist();
   updatePeringatanBadge();
   const acc = currentAccount();
   if(acc){
