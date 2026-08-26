@@ -2658,26 +2658,29 @@ function syncOdometerFromCartrack(){
           <div class="panel-head">
             <div>
               <h2>Keamanan sistem <span class="hint">(WAJIB dilakukan sekali di Firebase Console)</span></h2>
-              <p>Login sekarang pakai Firebase Authentication sungguhan (Sesi ketigapuluhtujuh) — dua langkah di bawah ini perlu dilakukan SEKALI di Firebase Console supaya perlindungannya benar-benar aktif</p>
+              <p>Login pakai Firebase Authentication sungguhan (Sesi ketigapuluhtujuh) + Security Rules diperketat lagi untuk menutup celah promosi-diri-jadi-admin (Sesi ketigapuluhdelapan) — langkah di bawah ini perlu dilakukan SEKALI di Firebase Console supaya perlindungannya benar-benar aktif</p>
             </div>
           </div>
           <div class="panel-body">
             <p class="hint" style="margin:-4px 0 14px; line-height:1.7;">Sebelumnya sistem "login diam-diam" ke Firebase (anonymous) + cek password di browser — cukup untuk gerbang tampilan, tapi bukan keamanan data sungguhan. Sekarang password dicek di server Firebase, dan akses baca/tulis database dikunci lewat <b>Security Rules</b> di bawah. Tanpa 2 langkah ini diterapkan, database masih memakai aturan lama (kemungkinan lebih longgar) — jadi jangan dilewati.</p>
+            <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--amber-600); background:#fff8ec;">
+              <b>Kalau sudah pernah pasang Rules versi sebelumnya (Sesi ketigapuluhtujuh):</b> tempel ulang kode di bawah ini & Publish lagi — versi ini memperbaiki celah keamanan yang baru ditemukan: sebelumnya, siapa pun yang login (bahkan yang belum disetujui admin) secara teknis bisa memanggil Firebase langsung dari luar aplikasi dan mengubah datanya sendiri jadi <span class="mono">role: "admin", approved: true</span> — langsung jadi admin penuh tanpa perlu persetujuan siapa pun. Versi baru ini mengunci 3 field itu (<span class="mono">role</span>, <span class="mono">approved</span>, <span class="mono">bisaKonfirmasiPO</span>) supaya HANYA akun yang rolenya sudah admin yang boleh mengubahnya — untuk akun sendiri maupun akun orang lain. Konsekuensinya: fitur "daftar ulang pakai email lama langsung aktif otomatis" tidak berlaku lagi mulai sekarang — SEMUA pendaftaran baru (termasuk yang cocok akun lama) tetap perlu 1x klik "Setujui" dari admin, sebagai jaminan bahwa tidak ada jalan pintas untuk melewati persetujuan itu.
+            </p>
             <div style="border-top:1px solid var(--border); padding-top:14px;">
               <label style="margin-bottom:8px; display:block;">Langkah 1 — aktifkan login Email/Password</label>
               <p class="hint" style="line-height:1.7; margin-bottom:14px;">
-                Buka <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a> &rarr; project <span class="mono">ekspedisi-jaya</span> &rarr; menu <b>Authentication</b> di sidebar kiri &rarr; tab <b>Sign-in method</b> &rarr; klik <b>Email/Password</b> &rarr; aktifkan (Enable) &rarr; Save. Kalau sebelumnya provider <b>Anonymous</b> juga aktif di daftar yang sama, boleh dimatikan sekarang (sudah tidak dipakai sistem ini lagi).
+                Buka <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a> &rarr; project <span class="mono">ekspedisi-jaya</span> &rarr; menu <b>Authentication</b> di sidebar kiri &rarr; tab <b>Sign-in method</b> &rarr; klik <b>Add new provider</b> (atau langsung klik barisnya kalau sudah ada di daftar) &rarr; pilih <b>Email/Password</b> &rarr; aktifkan (Enable) &rarr; Save. Kalau sebelumnya provider <b>Anonymous</b> juga aktif di daftar yang sama, boleh dimatikan sekarang (sudah tidak dipakai sistem ini lagi). Opsi "Email link (passwordless sign-in)" di bawahnya TIDAK perlu diaktifkan — sistem ini pakai password biasa.
               </p>
               <label style="margin-bottom:8px; display:block;">Langkah 2 — pasang Security Rules</label>
               <p class="hint" style="line-height:1.7; margin-bottom:8px;">
-                Masih di Firebase Console &rarr; menu <b>Realtime Database</b> di sidebar kiri &rarr; tab <b>Rules</b> &rarr; hapus semua isi kotak aturan yang ada &rarr; tempel kode di bawah ini &rarr; klik <b>Publish</b>. Efeknya: data (DO, kendaraan, PO, dll) cuma bisa dibaca/ditulis oleh akun yang sudah login DAN sudah disetujui admin (approved) — pengunjung yang cuma tahu alamat Firebase dari luar aplikasi ini tidak akan bisa akses apa pun lagi.
+                Masih di Firebase Console &rarr; menu <b>Realtime Database</b> di sidebar kiri &rarr; tab <b>Rules</b> (atau <b>Security Rules</b>) &rarr; hapus semua isi kotak aturan yang ada &rarr; tempel kode di bawah ini &rarr; klik <b>Publish</b>. Efeknya: data (DO, kendaraan, PO, dll) cuma bisa dibaca/ditulis oleh akun yang sudah login DAN sudah disetujui admin (approved), dan field <span class="mono">role</span>/<span class="mono">approved</span>/<span class="mono">bisaKonfirmasiPO</span> di akun mana pun cuma bisa diubah oleh akun yang rolenya admin.
               </p>
-              <textarea id="fbRulesCode" readonly style="width:100%; min-height:200px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">{
+              <textarea id="fbRulesCode" readonly style="width:100%; min-height:260px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">{
   "rules": {
     "accountsV2": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && (auth.uid === $uid || root.child('accountsV2').child(auth.uid).child('role').val() === 'admin')"
+        ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'user' && newData.child('approved').val() === false && newData.child('bisaKonfirmasiPO').val() === false) || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('approved').val() === data.child('approved').val() && newData.child('bisaKonfirmasiPO').val() === data.child('bisaKonfirmasiPO').val() && newData.child('email').val() === data.child('email').val()))"
       }
     },
     "accounts": {
@@ -2691,7 +2694,8 @@ function syncOdometerFromCartrack(){
   }
 }</textarea>
               <button type="button" class="btn btn-secondary" id="btnCopyFbRules" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin aturan</button>
-              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang sekali pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan akun lama yang sudah pernah disetujui.</p>
+              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan nama & akses dari akun lama untuk bahan pertimbangan admin.</p>
+              <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Pemulihan darurat:</b> kalau suatu saat node <span class="mono">accountsV2</span> sampai kosong sama sekali tanpa satu pun akun admin (misalnya karena database ter-reset), Rules di atas TIDAK mengizinkan siapa pun mem-promosikan diri sendiri jadi admin lagi lewat aplikasi (itu memang sengaja, itulah yang diperbaiki di sini) — satu-satunya jalan adalah admin project Firebase menambahkan field <span class="mono">role: "admin"</span> dan <span class="mono">approved: true</span> secara manual lewat tab <b>Data</b> di Realtime Database (akses lewat Firebase Console selalu diizinkan, tidak terikat Rules ini).</p>
             </div>
           </div>
         </div>
@@ -3144,34 +3148,26 @@ function fbDeleteAccountV2(uid){
     console.warn('Gagal menghapus akun di Firebase:', err);
   });
 }
-/* Tentukan role/approved untuk akun BARU (uid Firebase Auth yang baru dibuat) berdasarkan akun lama
-   (sebelum migrasi ke Firebase Authentication) yang cocok berdasarkan email -- supaya orang yang
-   sebelumnya sudah disetujui admin tidak perlu antre persetujuan lagi, cukup daftar ulang SEKALI pakai
-   email yang sama seperti biasa. Kalau tidak ada kecocokan sama sekali, berlaku aturan biasa: role
-   'user' & menunggu persetujuan admin. Bootstrap khusus: kalau di accountsV2 belum ada admin SAMA
-   SEKALI (kondisi pas baru migrasi) dan yang daftar ulang ini cocok dengan akun lama ber-role admin,
-   langsung dijadikan admin & aktif -- supaya sistem tidak sampai "terkunci" tanpa admin yang bisa
-   menyetujui siapa pun setelah migrasi. */
+/* Tentukan data akun BARU (uid Firebase Auth yang baru dibuat) saat pendaftaran.
+   PENTING (Sesi ketigapuluhdelapan -- perbaikan celah privilege-escalation): Security Rules sekarang
+   SENGAJA melarang siapa pun menuliskan role:'admin' atau approved:true untuk DIRINYA SENDIRI --
+   field itu cuma boleh diubah oleh akun yang rolenya SUDAH admin (lihat panel "Keamanan sistem").
+   Ini menutup celah di mana orang bisa memanggil Firebase langsung (lewat luar aplikasi) dan
+   mempromosikan dirinya sendiri jadi admin begitu saja. Konsekuensinya: SEMUA pendaftaran baru --
+   termasuk yang emailnya cocok dengan akun lama yang dulu sudah disetujui admin -- sekarang SELALU
+   dibuat sebagai role 'user' & menunggu persetujuan admin, TANPA kecuali "auto-aktif" seperti sesi
+   sebelumnya (Rules akan menolak kalau kode ini coba menuliskan approved:true/role:admin untuk diri
+   sendiri). Kecocokan dengan akun lama (legacy) di bawah ini cuma dipakai untuk mengisi nama &
+   referensi akses PO sebagai bahan pertimbangan admin saat approve, BUKAN lagi untuk auto-approve. */
 async function provisionAccountRecord(uid, email, nama){
   await Promise.all([accountsV2LoadedPromise, legacyAccountsLoadedPromise]);
   const legacy = findAccount(email);
-  const adaAdminAktif = Object.values(accountsByUid || {}).some(a => a && a.role === 'admin');
-  let role = 'user';
-  let approved = false;
-  if(legacy){
-    role = accountRole(legacy) === 'admin' ? 'admin' : 'user';
-    approved = accountApproved(legacy) === true;
-  }
-  if(!adaAdminAktif && legacy && accountRole(legacy) === 'admin'){
-    role = 'admin';
-    approved = true;
-  }
   const record = {
     email: normEmail(email),
     nama: nama || (legacy && legacy.nama) || '',
-    role: role,
-    approved: approved,
-    bisaKonfirmasiPO: legacy ? !!legacy.bisaKonfirmasiPO : false,
+    role: 'user',
+    approved: false,
+    bisaKonfirmasiPO: false,
     createdAt: new Date().toISOString(),
     migratedFromLegacy: !!legacy,
   };
@@ -8380,7 +8376,7 @@ function setAuthTab(tab){
   if(!isLogin){
     const sisa = MAX_ACCOUNTS - Object.keys(accountsByUid || {}).length;
     document.getElementById('registerSlotHint').textContent = sisa > 0
-      ? `Sisa kuota pendaftaran: ${sisa} dari ${MAX_ACCOUNTS} akun. Sudah pernah punya akun di sistem lama? Daftar ulang di sini pakai email yang sama -- kalau sebelumnya sudah disetujui admin, akun langsung aktif tanpa perlu antre lagi.`
+      ? `Sisa kuota pendaftaran: ${sisa} dari ${MAX_ACCOUNTS} akun. Sudah pernah punya akun di sistem lama? Daftar ulang di sini pakai email yang sama -- nama & akses lamanya akan dikenali sistem, tapi tetap perlu 1x persetujuan admin (langkah keamanan) sebelum bisa login.`
       : `Kuota ${MAX_ACCOUNTS} akun sudah penuh. Hubungi admin untuk menghapus akun lama.`;
   }
 }
@@ -8444,8 +8440,11 @@ document.getElementById('registerForm').addEventListener('submit', async functio
     // reset tab). Biarkan pengguna tetap di tab Daftar supaya sempat membaca pesannya, baru pindah
     // manual ke tab Masuk.
     errEl.style.color = 'var(--green-600)';
-    errEl.textContent = provisioned.approved
-      ? 'Pendaftaran berhasil! Akun ini dikenali dari akun kamu sebelumnya yang sudah disetujui admin, jadi langsung aktif -- silakan masuk.'
+    // Catatan: sejak Rules diperketat, TIDAK ADA lagi jalur "otomatis langsung aktif" -- lihat
+    // provisionAccountRecord(). Kecocokan dengan akun lama (migratedFromLegacy) cuma mengubah pesannya,
+    // bukan status approved-nya (yang sekarang selalu false untuk pendaftaran baru).
+    errEl.textContent = provisioned.migratedFromLegacy
+      ? 'Pendaftaran berhasil! Akun ini dikenali dari akun kamu sebelumnya -- tetap perlu 1x persetujuan admin dulu (langkah keamanan tambahan setelah sistem login diperkuat), setelah itu baru bisa login. Hubungi admin sistem ini.'
       : 'Pendaftaran berhasil! Akun kamu perlu disetujui admin dulu sebelum bisa login — hubungi admin sistem ini.';
   }catch(err){
     errEl.style.color = '';
