@@ -41,11 +41,17 @@
   .brand-name,.nav-group-head,.login-slogan{font-family:'Poppins','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;}
 
   /* ---------- LAYOUT ---------- */
-  .app{display:flex; min-height:100vh;}
+  /* Sesi keempatpuluhdua: .app dikunci tinggi persis 100vh (bukan cuma min-height lagi) supaya
+     sidebar & area konten utama masing-masing punya scrollbar SENDIRI yang independen, bukan
+     satu scrollbar halaman yang menggulung semuanya sekaligus (dulu, kalau menu sidebar panjang
+     -- mis. semua grup Administrasi/Daftar/Monitoring/Laporan dibuka -- bagian bawahnya kepotong
+     tanpa cara untuk digulung sendiri, karena cuma ada 1 scrollbar milik seluruh halaman). */
+  .app{display:flex; height:100vh; overflow:hidden;}
   .sidebar{
     width:240px; background:var(--navy-900); color:#cfd6e6; flex-shrink:0;
     display:flex; flex-direction:column; padding:20px 14px;
     position:relative; transition:width .2s ease, padding .2s ease;
+    height:100vh; overflow:hidden;
   }
   .brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px; border-bottom:1px solid var(--navy-700); margin-bottom:14px;}
   .brand-mark{
@@ -56,7 +62,15 @@
   .brand-name{color:#fff; font-weight:700; font-size:15px; letter-spacing:.01em;}
   .brand-sub{color:#8792a8; font-size:11px; margin-top:1px;}
 
-  .nav{display:flex; flex-direction:column; gap:2px; flex:1;}
+  .nav{
+    display:flex; flex-direction:column; gap:2px; flex:1; min-height:0;
+    overflow-y:auto; overflow-x:hidden; margin:0 -6px; padding:0 6px;
+    scrollbar-width:thin; scrollbar-color:var(--navy-600) transparent;
+  }
+  .nav::-webkit-scrollbar{width:6px;}
+  .nav::-webkit-scrollbar-track{background:transparent;}
+  .nav::-webkit-scrollbar-thumb{background:var(--navy-600); border-radius:6px;}
+  .nav::-webkit-scrollbar-thumb:hover{background:var(--navy-700);}
   .nav-item{
     display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:8px;
     color:#aeb6c8; text-decoration:none; font-size:13.5px; font-weight:500; cursor:pointer;
@@ -317,8 +331,9 @@
   .form-modal-close svg{width:18px; height:18px;}
   .form-modal-body{padding:20px 24px 24px;}
 
-  .main{flex:1; min-width:0; display:flex; flex-direction:column;}
+  .main{flex:1; min-width:0; height:100vh; display:flex; flex-direction:column; overflow:hidden;}
   .topbar{
+    flex-shrink:0;
     background:var(--card); border-bottom:1px solid var(--border);
     padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
     box-shadow:0 1px 2px rgba(15,27,48,.04);
@@ -341,7 +356,7 @@
     0%,100%{ opacity:1; box-shadow:0 0 0 0 rgba(31,122,84,.45); }
     50%{ opacity:.55; box-shadow:0 0 0 4px rgba(31,122,84,0); }
   }
-  .content{padding:24px 28px 40px; width:100%;}
+  .content{padding:24px 28px 40px; width:100%; flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;}
 
   .view{display:none;}
   .view.active{display:block;}
