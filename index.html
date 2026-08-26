@@ -273,9 +273,10 @@
   .pkb-title{text-align:center; font-weight:800; font-size:19px; letter-spacing:.05em; text-decoration:underline; margin:0 0 16px; text-transform:uppercase;}
   .pkb-table{width:100%; border-collapse:collapse;}
   .pkb-table td{border:1.4px solid #111; padding:7px 10px; font-size:12.5px; vertical-align:middle; line-height:1.5;}
-  .pkb-table td.pkb-lbl{font-weight:700; width:130px; color:#111;}
-  .pkb-table td.pkb-colon{width:16px; text-align:center; font-weight:700;}
-  .pkb-table td.pkb-val{font-weight:700;}
+  .pkb-table td.pkb-lbl{font-weight:700; font-size:15px; width:130px; color:#111;}
+  .pkb-table td.pkb-colon{width:16px; text-align:center; font-weight:700; font-size:15px;}
+  .pkb-table td.pkb-val{font-weight:400; font-size:13px;}
+  .pkb-table td.pkb-val.pkb-val-strong{font-weight:700;}
   .pkb-table tr.pkb-untuk td{color:#c0392b;}
   .pkb-table-gap{margin-top:12px;}
   .pkb-barang-head{border:1.4px solid #111; border-bottom:none; padding:7px 10px; font-weight:700; font-size:12.5px; margin-top:12px;}
@@ -1108,10 +1109,9 @@
                   <div id="jenisBarangRows"></div>
                   <datalist id="barangDatalist"></datalist>
                   <button type="button" class="btn btn-secondary" id="btnAddJenisBarang" style="margin-top:4px;">+ Tambah jenis barang</button>
-                  <p class="hint" style="margin:8px 0 0;">Daftar jenis barang di sini yang tampil di cetak PKB. Tonase per jenis &amp; total tonase otomatis akan menyusul di update berikutnya — untuk saat ini cukup daftar jenis barangnya saja. Catatan: field "Kota tarif" (untuk hitung Pendapatan otomatis dari Database Tarif) sudah tidak ditampilkan lagi di form sesuai permintaan — Pendapatan otomatis DO baru jadi tidak lagi terhitung dari Database Tarif.</p>
                 </div>
                 <div class="field">
-                  <label for="doNoCO">PO terkait (No CO) <span class="hint">(opsional, hanya PO yang sudah ACC)</span></label>
+                  <label for="doNoCO">PO terkait (No CO)</label>
                   <select id="doNoCO">
                     <option value="">- Tidak terkait PO -</option>
                   </select>
@@ -1147,7 +1147,7 @@
                     <label for="tujuanBongkar2">Tujuan bongkar</label>
                     <input type="text" id="tujuanBongkar2" list="customerDatalist" placeholder="cth. Pelabuhan Tanjung Priok">
                   </div>
-                  <div class="field">
+                  <div class="field" style="display:none;">
                     <label for="tonase2">Tonase Roll Assa (kg) <span class="hint">(wajib jika status langsung Selesai)</span></label>
                     <input type="number" id="tonase2" step="1" min="0" placeholder="cth. 4200">
                   </div>
@@ -4551,10 +4551,6 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     errEl.textContent = 'Tonase BK wajib diisi terlebih dahulu untuk status Selesai.';
     return;
   }
-  if(statusVal === 'selesai' && kirimRoll && (!tonase2Val || tonase2Val <= 0)){
-    errEl.textContent = 'Tonase Roll Assa wajib diisi terlebih dahulu untuk status Selesai.';
-    return;
-  }
   if(statusVal === 'selesai' && kirimOCC && (!tonase3Val || tonase3Val <= 0)){
     errEl.textContent = 'Tonase OCC wajib diisi terlebih dahulu untuk status Selesai.';
     return;
@@ -4832,7 +4828,7 @@ function buildPkbHtml(r){
         </table>
         <table class="pkb-table pkb-table-gap">
           <tbody>
-            <tr><td class="pkb-lbl">CUSTOMER</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(poTerkait ? (poTerkait.namaCustomer || '-') : '-')}</td></tr>
+            <tr><td class="pkb-lbl">CUSTOMER</td><td class="pkb-colon">:</td><td class="pkb-val pkb-val-strong">${esc(poTerkait ? (poTerkait.namaCustomer || '-') : '-')}</td></tr>
             <tr><td class="pkb-lbl">NO. CO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noCO) || r.noCOTerkait || '-')}</td></tr>
             <tr><td class="pkb-lbl">NO. PO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noPO) || '-')}</td></tr>
             <tr><td class="pkb-lbl">ANGKUTAN</td><td class="pkb-colon">:</td><td class="pkb-val">${angkutanVal}</td></tr>
