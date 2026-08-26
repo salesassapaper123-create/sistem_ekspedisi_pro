@@ -2658,13 +2658,13 @@ function syncOdometerFromCartrack(){
           <div class="panel-head">
             <div>
               <h2>Keamanan sistem <span class="hint">(WAJIB dilakukan sekali di Firebase Console)</span></h2>
-              <p>Login pakai Firebase Authentication sungguhan (Sesi ketigapuluhtujuh) + Security Rules diperketat lagi untuk menutup celah promosi-diri-jadi-admin (Sesi ketigapuluhdelapan) — langkah di bawah ini perlu dilakukan SEKALI di Firebase Console supaya perlindungannya benar-benar aktif</p>
+              <p>Login pakai Firebase Authentication sungguhan (Sesi ketigapuluhtujuh) + Security Rules diperketat untuk menutup celah promosi-diri-jadi-admin (Sesi ketigapuluhdelapan) + dukungan pembatasan akses data DO/PKB per-akun (Sesi ketigapuluhsembilan) — langkah di bawah ini perlu dilakukan SEKALI di Firebase Console supaya perlindungannya benar-benar aktif</p>
             </div>
           </div>
           <div class="panel-body">
             <p class="hint" style="margin:-4px 0 14px; line-height:1.7;">Sebelumnya sistem "login diam-diam" ke Firebase (anonymous) + cek password di browser — cukup untuk gerbang tampilan, tapi bukan keamanan data sungguhan. Sekarang password dicek di server Firebase, dan akses baca/tulis database dikunci lewat <b>Security Rules</b> di bawah. Tanpa 2 langkah ini diterapkan, database masih memakai aturan lama (kemungkinan lebih longgar) — jadi jangan dilewati.</p>
             <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--amber-600); background:#fff8ec;">
-              <b>Kalau sudah pernah pasang Rules versi sebelumnya (Sesi ketigapuluhtujuh):</b> tempel ulang kode di bawah ini & Publish lagi — versi ini memperbaiki celah keamanan yang baru ditemukan: sebelumnya, siapa pun yang login (bahkan yang belum disetujui admin) secara teknis bisa memanggil Firebase langsung dari luar aplikasi dan mengubah datanya sendiri jadi <span class="mono">role: "admin", approved: true</span> — langsung jadi admin penuh tanpa perlu persetujuan siapa pun. Versi baru ini mengunci 3 field itu (<span class="mono">role</span>, <span class="mono">approved</span>, <span class="mono">bisaKonfirmasiPO</span>) supaya HANYA akun yang rolenya sudah admin yang boleh mengubahnya — untuk akun sendiri maupun akun orang lain. Konsekuensinya: fitur "daftar ulang pakai email lama langsung aktif otomatis" tidak berlaku lagi mulai sekarang — SEMUA pendaftaran baru (termasuk yang cocok akun lama) tetap perlu 1x klik "Setujui" dari admin, sebagai jaminan bahwa tidak ada jalan pintas untuk melewati persetujuan itu.
+              <b>Kalau sudah pernah pasang Rules versi sebelumnya:</b> tempel ulang kode di bawah ini & Publish lagi — satu kode ini sudah mencakup SEMUA perbaikan sampai sesi terbaru sekaligus, jadi cukup tempel yang ini saja, tidak perlu cari versi-versi lama. Ringkasan yang berubah sejak versi pertama: (1) field <span class="mono">role</span>, <span class="mono">approved</span>, <span class="mono">bisaKonfirmasiPO</span> di akun mana pun HANYA bisa diubah oleh akun yang sudah admin (menutup celah promosi-diri-jadi-admin) — konsekuensinya, fitur "daftar ulang pakai email lama langsung aktif otomatis" tidak berlaku lagi, SEMUA pendaftaran baru tetap perlu 1x klik "Setujui" dari admin; (2) node <span class="mono">records</span> (data DO/PKB) sekarang punya aturan sendiri yang mendukung fitur "Batasi akses data DO/PKB" per-akun di panel Akun terdaftar di bawah — akun yang dicentang tidak akan bisa membaca/menulis data DO sama sekali, ditegakkan di server (bukan cuma disembunyikan di tampilan).
             </p>
             <div style="border-top:1px solid var(--border); padding-top:14px;">
               <label style="margin-bottom:8px; display:block;">Langkah 1 — aktifkan login Email/Password</label>
@@ -2673,19 +2673,23 @@ function syncOdometerFromCartrack(){
               </p>
               <label style="margin-bottom:8px; display:block;">Langkah 2 — pasang Security Rules</label>
               <p class="hint" style="line-height:1.7; margin-bottom:8px;">
-                Masih di Firebase Console &rarr; menu <b>Realtime Database</b> di sidebar kiri &rarr; tab <b>Rules</b> (atau <b>Security Rules</b>) &rarr; hapus semua isi kotak aturan yang ada &rarr; tempel kode di bawah ini &rarr; klik <b>Publish</b>. Efeknya: data (DO, kendaraan, PO, dll) cuma bisa dibaca/ditulis oleh akun yang sudah login DAN sudah disetujui admin (approved), dan field <span class="mono">role</span>/<span class="mono">approved</span>/<span class="mono">bisaKonfirmasiPO</span> di akun mana pun cuma bisa diubah oleh akun yang rolenya admin.
+                Masih di Firebase Console &rarr; menu <b>Realtime Database</b> di sidebar kiri &rarr; tab <b>Rules</b> (atau <b>Security Rules</b>) &rarr; hapus semua isi kotak aturan yang ada &rarr; tempel kode di bawah ini &rarr; klik <b>Publish</b>. Efeknya: data (DO, kendaraan, PO, dll) cuma bisa dibaca/ditulis oleh akun yang sudah login DAN sudah disetujui admin (approved), field <span class="mono">role</span>/<span class="mono">approved</span>/<span class="mono">bisaKonfirmasiPO</span>/<span class="mono">dataInputRestricted</span> di akun mana pun cuma bisa diubah oleh akun yang rolenya admin, dan akun yang ditandai <span class="mono">dataInputRestricted</span> tidak akan bisa membaca/menulis data DO/PKB sama sekali.
               </p>
-              <textarea id="fbRulesCode" readonly style="width:100%; min-height:260px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">{
+              <textarea id="fbRulesCode" readonly style="width:100%; min-height:300px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">{
   "rules": {
     "accountsV2": {
       ".read": "auth != null",
       "$uid": {
-        ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'user' && newData.child('approved').val() === false && newData.child('bisaKonfirmasiPO').val() === false) || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('approved').val() === data.child('approved').val() && newData.child('bisaKonfirmasiPO').val() === data.child('bisaKonfirmasiPO').val() && newData.child('email').val() === data.child('email').val()))"
+        ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'user' && newData.child('approved').val() === false && newData.child('bisaKonfirmasiPO').val() === false && newData.child('dataInputRestricted').val() === false) || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('approved').val() === data.child('approved').val() && newData.child('bisaKonfirmasiPO').val() === data.child('bisaKonfirmasiPO').val() && newData.child('dataInputRestricted').val() === data.child('dataInputRestricted').val() && newData.child('email').val() === data.child('email').val()))"
       }
     },
     "accounts": {
       ".read": "auth != null",
       ".write": false
+    },
+    "records": {
+      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))",
+      ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))"
     },
     "$other": {
       ".read": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true",
@@ -2694,7 +2698,7 @@ function syncOdometerFromCartrack(){
   }
 }</textarea>
               <button type="button" class="btn btn-secondary" id="btnCopyFbRules" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin aturan</button>
-              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan nama & akses dari akun lama untuk bahan pertimbangan admin.</p>
+              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan nama & akses dari akun lama untuk bahan pertimbangan admin. Node <span class="mono">records</span> punya aturan sendiri (terpisah dari <span class="mono">$other</span>) supaya bisa menambahkan syarat <span class="mono">dataInputRestricted</span> khusus untuk data ini — node lain (kendaraan, driver, PO, dll) TIDAK ikut terpengaruh fitur pembatasan ini, tetap memakai aturan <span class="mono">$other</span> seperti biasa.</p>
               <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Pemulihan darurat:</b> kalau suatu saat node <span class="mono">accountsV2</span> sampai kosong sama sekali tanpa satu pun akun admin (misalnya karena database ter-reset), Rules di atas TIDAK mengizinkan siapa pun mem-promosikan diri sendiri jadi admin lagi lewat aplikasi (itu memang sengaja, itulah yang diperbaiki di sini) — satu-satunya jalan adalah admin project Firebase menambahkan field <span class="mono">role: "admin"</span> dan <span class="mono">approved: true</span> secara manual lewat tab <b>Data</b> di Realtime Database (akses lewat Firebase Console selalu diizinkan, tidak terikat Rules ini).</p>
             </div>
           </div>
@@ -3126,6 +3130,11 @@ function attachAccountsV2Listener(){
         const a = accountsByUid[cu.uid];
         document.getElementById('userBadge').textContent = (a.nama || a.email || '?').charAt(0).toUpperCase();
       }
+      // Kalau admin mengubah flag "Batasi akses data DO/PKB" saat akun itu SEDANG login (perangkat lain
+      // atau tab lain), sidebar-nya ikut menyesuaikan langsung tanpa perlu reload.
+      if(cu && document.getElementById('appRoot') && document.getElementById('appRoot').style.display !== 'none'){
+        applyDataInputRestrictionToNav();
+      }
     });
   });
 }
@@ -3168,6 +3177,8 @@ async function provisionAccountRecord(uid, email, nama){
     role: 'user',
     approved: false,
     bisaKonfirmasiPO: false,
+    dataInputRestricted: false, // wajib eksplisit false -- Rules self-create menolak kalau field ini tidak ada sama sekali
+    hideAdministrasiMenu: false,
     createdAt: new Date().toISOString(),
     migratedFromLegacy: !!legacy,
   };
@@ -3257,6 +3268,22 @@ function attachFirebaseListenersInner(){
         updatePeringatanBadge();
       }
     }
+  }, err => {
+    // Firebase menolak baca node "records" -- normalnya hanya terjadi kalau akun ini baru saja dibatasi
+    // admin (dataInputRestricted, lihat applyDataInputRestrictionToNav) atau belum/tidak lagi approved.
+    // Jangan biarkan data lama nyangkut di layar -- kosongkan supaya konsisten dengan apa yang server izinkan.
+    console.warn('Akses ke data DO/PKB ditolak Firebase (kemungkinan akun ini sedang dibatasi admin):', err && err.message);
+    if(records.length > 0){
+      records = [];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      const v = currentViewName();
+      if(v === 'rekap') renderTable();
+      if(v === 'dashboard') renderDashboard();
+      if(v === 'peringatan') renderPeringatan();
+      if(v === 'po-monitoring') renderPOMonitoring();
+      updatePeringatanBadge();
+    }
+    applyDataInputRestrictionToNav();
   });
 
   fbDb.ref('kendaraan').on('value', snap => {
@@ -4387,6 +4414,55 @@ function isAdminUser(){
     // nanti otomatis dirender ulang dengan status yang benar setelah login lewat goTo('borongan').
     return false;
   }
+}
+/* Sesi ketigapuluhsembilan: admin bisa membatasi akun tertentu (per-akun, ditentukan bebas kapan saja
+   lewat panel Pengaturan > Akun terdaftar) supaya tidak bisa melihat data DO/PKB sama sekali -- baik
+   punya sendiri maupun punya orang lain. Penegakan SESUNGGUHNYA ada di Firebase Security Rules (node
+   "records" menolak baca/tulis kalau flag ini true) -- fungsi & penyembunyian menu di bawah ini HANYA
+   kosmetik/UX (supaya akun yang dibatasi tidak melihat menu yang toh datanya akan kosong/ditolak
+   server), BUKAN satu-satunya lapisan keamanan. Admin sendiri tidak pernah ikut terbatasi oleh flag
+   ini walau suatu saat ter-set (lihat Rules -- role admin selalu bisa akses node "records"). */
+function dataInputRestrictedForCurrentUser(){
+  try{
+    const acc = currentAccount();
+    return !!(acc && accountRole(acc) !== 'admin' && acc.dataInputRestricted === true);
+  }catch(e){
+    return false;
+  }
+}
+/* Sesi keempatpuluh: berbeda dari dataInputRestricted di atas (yang membatasi BACA/TULIS data DO/PKB,
+   ditegakkan di Firebase Rules) -- flag ini murni menyembunyikan seluruh grup menu "Administrasi" (7
+   form Input: PKB, Data Kendaraan, Driver, Legalitas, SO & PO, Customer, Barang) dari sidebar. Cocok
+   untuk akun yang memang tidak pernah perlu menginput data apa pun (mis. akun owner yang cuma mau lihat
+   laporan/rekap). SENGAJA cuma kosmetik (tidak ada perubahan Rules) -- akun ini biasanya tetap dipercaya
+   penuh untuk data yang sudah ada, cuma tidak perlu tombol Input-nya terlihat/mengganggu di sidebar. */
+function hideAdministrasiMenuForCurrentUser(){
+  try{
+    const acc = currentAccount();
+    return !!(acc && accountRole(acc) !== 'admin' && acc.hideAdministrasiMenu === true);
+  }catch(e){
+    return false;
+  }
+}
+function applyDataInputRestrictionToNav(){
+  const restricted = dataInputRestrictedForCurrentUser();
+  const viewsToHide = ['rekap', 'input', 'ritase', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor'];
+  viewsToHide.forEach(v => {
+    document.querySelectorAll(`.nav-item[data-view="${v}"]`).forEach(btn => { btn.style.display = restricted ? 'none' : ''; });
+  });
+
+  const hideAdministrasi = hideAdministrasiMenuForCurrentUser();
+  const administrasiGroup = document.querySelector('.nav-group[data-group="administrasi"]');
+  const administrasiViews = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
+  if(administrasiGroup) administrasiGroup.style.display = hideAdministrasi ? 'none' : '';
+
+  // Kalau akun ini sedang berada di salah satu halaman yang baru saja disembunyikan (mis. admin
+  // mengaktifkan pembatasan SAAT akun itu sedang membuka halaman itu), pindahkan ke Dashboard supaya
+  // tidak nyangkut di halaman yang menu-nya sudah hilang dari sidebar.
+  const activeView = document.querySelector('.view.active');
+  const activeName = activeView ? activeView.getAttribute('data-view') : '';
+  const shouldRedirect = (restricted && viewsToHide.includes(activeName)) || (hideAdministrasi && administrasiViews.includes(activeName));
+  if(shouldRedirect) goTo('dashboard');
 }
 /* Hak konfirmasi PO (ACC/Tolak) berbeda dari hak admin biasa — admin selalu bisa, tapi admin juga bisa
    memberi akses ini secara khusus ke akun non-admin tertentu (toggle "Bisa konfirmasi PO" di menu
@@ -8346,6 +8422,7 @@ function initApp(){
   if(acc){
     document.getElementById('userBadge').textContent = (acc.nama || acc.email).charAt(0).toUpperCase();
   }
+  applyDataInputRestrictionToNav();
   attachFirebaseListeners();
 }
 function showApp(){
@@ -8480,6 +8557,14 @@ function renderAccountList(){
         ${accountRole(a) !== 'admin' ? `<label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted); cursor:pointer;">
           <input type="checkbox" class="po-access-toggle" data-uid="${esc(a.uid)}" ${a.bisaKonfirmasiPO ? 'checked' : ''}>
           Bisa konfirmasi PO (ACC / tolak Sales Order)
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted); cursor:pointer;">
+          <input type="checkbox" class="data-input-toggle" data-uid="${esc(a.uid)}" ${a.dataInputRestricted ? 'checked' : ''}>
+          Batasi akses data DO/PKB (tidak bisa lihat Rekap Data DO, Input PKB, Ritase, Laporan &amp; Biaya Pengeluaran)
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted); cursor:pointer;">
+          <input type="checkbox" class="hide-administrasi-toggle" data-uid="${esc(a.uid)}" ${a.hideAdministrasiMenu ? 'checked' : ''}>
+          Sembunyikan grup menu Administrasi (semua form Input -- cocok untuk akun owner yang hanya perlu lihat laporan)
         </label>` : ''}
       </div>
       ${acc && a.uid === acc.uid
@@ -8507,6 +8592,20 @@ function renderAccountList(){
   wrap.querySelectorAll('.po-access-toggle').forEach(cb => cb.addEventListener('change', function(){
     fbUpdateAccountV2(this.dataset.uid, {bisaKonfirmasiPO: this.checked});
     showToast(this.checked ? 'Akses konfirmasi PO diberikan' : 'Akses konfirmasi PO dicabut', 'success');
+  }));
+  wrap.querySelectorAll('.data-input-toggle').forEach(cb => cb.addEventListener('change', function(){
+    fbUpdateAccountV2(this.dataset.uid, {dataInputRestricted: this.checked});
+    showToast(this.checked ? 'Akses data DO/PKB dibatasi untuk akun ini' : 'Akses data DO/PKB dibuka lagi untuk akun ini', 'success');
+    // Kalau akun yang sedang dibatasi/dibuka ini kebetulan sedang login di perangkat ini juga (jarang,
+    // tapi bisa terjadi kalau admin sedang menguji akunnya sendiri), sesuaikan sidebar-nya langsung.
+    const cu = firebase.auth().currentUser;
+    if(cu && cu.uid === this.dataset.uid) applyDataInputRestrictionToNav();
+  }));
+  wrap.querySelectorAll('.hide-administrasi-toggle').forEach(cb => cb.addEventListener('change', function(){
+    fbUpdateAccountV2(this.dataset.uid, {hideAdministrasiMenu: this.checked});
+    showToast(this.checked ? 'Menu Administrasi disembunyikan untuk akun ini' : 'Menu Administrasi ditampilkan lagi untuk akun ini', 'success');
+    const cu = firebase.auth().currentUser;
+    if(cu && cu.uid === this.dataset.uid) applyDataInputRestrictionToNav();
   }));
 }
 
@@ -8543,7 +8642,7 @@ document.getElementById('formAddAccount').addEventListener('submit', async funct
     const cred = await secondaryAuth().createUserWithEmailAndPassword(email, pass);
     await fbSetAccountV2(cred.user.uid, {
       email: normEmail(email), nama: nama, role: role, approved: true,
-      bisaKonfirmasiPO: false, createdAt: new Date().toISOString(), migratedFromLegacy: false,
+      bisaKonfirmasiPO: false, dataInputRestricted: false, hideAdministrasiMenu: false, createdAt: new Date().toISOString(), migratedFromLegacy: false,
     });
     await secondaryAuth().signOut(); // bersihkan sesi di app kedua (tidak berpengaruh ke sesi admin di app utama)
     this.reset();
