@@ -265,26 +265,22 @@
     font-family:'Courier New', Courier, monospace;
   }
   #suratTugasPrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
-  .st-doc-head{text-align:center; border-bottom:2px solid #111; padding-bottom:12px; margin-bottom:18px;}
-  .st-doc-head .st-brand{font-weight:700; font-size:15px; letter-spacing:.03em;}
-  .st-doc-head .st-sub{font-size:11px; color:#555; margin-top:3px; letter-spacing:.02em;}
-  .st-doc-title{text-align:center; font-weight:700; font-size:14px; text-decoration:underline; letter-spacing:.04em; margin:16px 0 5px;}
-  .st-doc-intro{font-size:12px; margin-bottom:14px; line-height:1.7; text-align:justify; margin-top:18px;}
-  .st-doc-table{width:100%; border-collapse:collapse; margin-bottom:16px;}
-  .st-doc-table td{padding:4px 6px; font-size:12px; vertical-align:top; border:none; line-height:1.6;}
-  .st-doc-table td.st-label{width:175px; color:#333;}
-  .st-doc-table td.st-colon{width:14px;}
-  .st-doc-table td.st-value{font-weight:700;}
-  .st-doc-route{
-    border:1px solid #111; padding:10px 14px; margin-bottom:12px;
-  }
-  .st-doc-route .st-route-title{font-weight:700; font-size:12px; margin-bottom:8px; text-decoration:underline;}
-  .st-doc-status-line{font-size:12px; margin:16px 0 20px; font-weight:700;}
-  .st-doc-note{font-size:11.5px; color:#333; line-height:1.7; border-top:1px dashed #999; padding-top:12px; margin-bottom:30px; text-align:justify;}
-  .st-doc-sign{display:flex; justify-content:space-between; gap:26px; font-size:12px; text-align:center; margin-top:12px;}
-  .st-doc-sign .st-sign-col{flex:1;}
-  .st-doc-sign .st-sign-space{height:68px;}
-  .st-doc-sign .st-sign-name{border-top:1px solid #111; padding-top:5px; font-weight:700;}
+  /* ---------- PKB (Perintah Kerja Borongan) — layout mengikuti contoh form fisik: kotak-kotak
+     berbatas garis (mirip form Excel/spreadsheet), bukan paragraf surat resmi seperti versi lama. ---------- */
+  .pkb-doc{}
+  .pkb-table{width:100%; border-collapse:collapse;}
+  .pkb-table td{border:1.4px solid #111; padding:6px 10px; font-size:12.5px; vertical-align:middle; line-height:1.5;}
+  .pkb-table td.pkb-lbl{font-weight:700; width:130px; color:#111;}
+  .pkb-table td.pkb-colon{width:16px; text-align:center; font-weight:700;}
+  .pkb-table td.pkb-val{font-weight:700;}
+  .pkb-table tr.pkb-untuk td{color:#c0392b;}
+  .pkb-table-gap{margin-top:14px;}
+  .pkb-barang-head{border:1.4px solid #111; border-bottom:none; padding:6px 10px; font-weight:700; font-size:12.5px; margin-top:14px;}
+  .pkb-barang-box{border:1.4px solid #111; min-height:150px; padding:8px 10px; font-size:12.5px; white-space:pre-wrap;}
+  .pkb-footer{width:100%; border-collapse:collapse;}
+  .pkb-footer td{border:1.4px solid #111; padding:12px 10px; text-align:center; font-size:12px; font-weight:700; width:50%;}
+  .pkb-footer .pkb-footer-note{font-style:italic; font-weight:400; font-size:11px;}
+  .pkb-footer .pkb-footer-sign{padding-top:34px;}
   @media print{
     body *{visibility:hidden;}
     #suratTugasPrintArea, #suratTugasPrintArea *{visibility:visible;}
@@ -770,7 +766,7 @@
         <div class="nav-group-items">
           <button class="nav-item nav-sub" data-view="input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h6"/></svg>
-            Input Surat Tugas
+            Input PKB
           </button>
           <button class="nav-item nav-sub" data-view="kendaraan-input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
@@ -1016,7 +1012,7 @@
         <div class="panel">
           <div class="panel-head">
             <div>
-              <h2 id="inputDOTitle">Input Surat Tugas</h2>
+              <h2 id="inputDOTitle">Input PKB</h2>
             </div>
           </div>
           <div class="panel-body">
@@ -1037,6 +1033,10 @@
                 <div class="field">
                   <label for="tanggal">Tanggal</label>
                   <input type="date" id="tanggal" required>
+                </div>
+                <div class="field">
+                  <label for="doNoPKB">No. PKB <span class="hint">(opsional, diisi manual)</span></label>
+                  <input type="text" id="doNoPKB" placeholder="cth. PKB-001/VIII/2026">
                 </div>
                 <div class="field">
                   <label for="nopol" id="nopolLabel">Nopol</label>
@@ -1087,6 +1087,11 @@
                   <label for="doKota">Kota tarif</label>
                   <input type="text" id="doKota" list="doKotaList" placeholder="cth. Bandung">
                   <datalist id="doKotaList"></datalist>
+                  <p class="hint" style="margin:6px 0 0;">Dipakai sistem untuk hitung Pendapatan otomatis dari Database Tarif — tidak tampil di cetak PKB.</p>
+                </div>
+                <div class="field">
+                  <label for="doJenisBarang">Jenis barang</label>
+                  <input type="text" id="doJenisBarang" placeholder="cth. Kertas HVS, Plastik, dll.">
                 </div>
                 <div class="field">
                   <label for="doNoCO">PO terkait (No CO) <span class="hint">(opsional, hanya PO yang sudah ACC)</span></label>
@@ -1572,7 +1577,7 @@
           <div class="panel-head">
             <div>
               <h2>Daftar customer</h2>
-              <p>Master data customer — dipakai sebagai saran dropdown di Input Surat Tugas &amp; Input SO/PO</p>
+              <p>Master data customer — dipakai sebagai saran dropdown di Input PKB &amp; Input SO/PO</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1587,7 +1592,7 @@
           <div class="panel-head">
             <div>
               <h2>Input customer</h2>
-              <p>Data yang disimpan di sini otomatis jadi saran dropdown di field tujuan (Surat Tugas) &amp; nama customer (Input SO/PO), supaya tidak salah ketik.</p>
+              <p>Data yang disimpan di sini otomatis jadi saran dropdown di field tujuan (Input PKB) &amp; nama customer (Input SO/PO), supaya tidak salah ketik.</p>
             </div>
           </div>
           <div class="panel-body">
@@ -2734,8 +2739,8 @@ function syncOdometerFromCartrack(){
   <div class="st-modal">
     <div class="st-modal-head no-print">
       <div>
-        <h3>Surat Tugas Pengiriman</h3>
-        <p>Perintah penugasan untuk driver — cetak atau simpan sebagai bukti serah tugas</p>
+        <h3>PKB (Perintah Kerja Borongan)</h3>
+        <p>Cetak atau download (Simpan sebagai PDF) sebagai bukti PKB untuk driver</p>
       </div>
       <button type="button" class="st-close-btn" id="stModalClose" title="Tutup">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -2745,7 +2750,7 @@ function syncOdometerFromCartrack(){
     <div class="btn-row no-print" style="padding:0 22px 20px;">
       <button type="button" class="btn btn-primary" id="stModalPrint">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
-        Cetak surat tugas
+        Cetak / Download PKB
       </button>
       <button type="button" class="btn btn-secondary" id="stModalCloseBtn">Tutup</button>
     </div>
@@ -3572,7 +3577,7 @@ function emptyState(msg){
 }
 
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input Surat Tugas', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer'};
+const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer'};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -4418,6 +4423,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
 
   const fieldsData = {
     tanggal: tanggal,
+    noPKB: document.getElementById('doNoPKB').value.trim(),
     nopol: document.getElementById('nopol').value.trim(),
     sopir: document.getElementById('sopir').value.trim(),
     kirimBK: kirimBK,
@@ -4428,6 +4434,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     vendorNama: vendorNamaVal,
     vendorRute: vendorRuteVal,
     kota: kotaVal,
+    jenisBarang: document.getElementById('doJenisBarang').value.trim(),
     poId: poIdVal,
     noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
     pendapatan: calcPendapatan(document.getElementById('jenisArmada').value, kotaVal, kirimBK ? tonase1Val : null, kirimRoll ? tonase2Val : null, kirimOCC ? tonase3Val : null),
@@ -4476,6 +4483,7 @@ function editRecordDO(id){
   editingId = id;
 
   document.getElementById('tanggal').value = rec.tanggal || '';
+  document.getElementById('doNoPKB').value = rec.noPKB || '';
   document.getElementById('nopol').value = rec.nopol || '';
   document.getElementById('sopir').value = rec.sopir || '';
   document.getElementById('cbBK').checked = recKirimBK(rec);
@@ -4483,6 +4491,7 @@ function editRecordDO(id){
   document.getElementById('cbOCC').checked = recKirimOCC(rec);
   document.getElementById('jenisArmada').value = rec.jenisArmada || 'tronton';
   document.getElementById('doKota').value = rec.kota || '';
+  document.getElementById('doJenisBarang').value = rec.jenisBarang || '';
   document.getElementById('uangJalan').value = rec.uangJalan || '';
   document.getElementById('biayaLain').value = rec.biayaLain || '';
   const jenisAngkutanRec = rec.jenisAngkutan === 'vendor' ? 'vendor' : 'organik';
@@ -4527,7 +4536,7 @@ function cancelEditDO(){
   toggleJenisSections();
   toggleAngkutanSections();
   populateDoNoCODropdown('');
-  document.getElementById('inputDOTitle').textContent = 'Input Surat Tugas';
+  document.getElementById('inputDOTitle').textContent = 'Input PKB';
   document.getElementById('btnSubmitDOLabel').textContent = 'Simpan DO';
   document.getElementById('btnCancelEdit').style.display = 'none';
 }
@@ -4629,92 +4638,57 @@ document.getElementById('tonaseModalSave').addEventListener('click', function(){
   closeTonaseModal();
 });
 
-/* ---------- SURAT TUGAS (perintah penugasan pengiriman untuk driver) ---------- */
-function buildSuratTugasHtml(r){
-  const todayStr = new Date().toLocaleDateString('id-ID', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
-  const meta = STATUS_META[normalizeStatus(r.status)] || STATUS_META.dijadwalkan;
-
-  let rutes = '';
-  if(recKirimBK(r)){
-    rutes += `<div class="st-doc-route">
-      <div class="st-route-title">Muatan BK</div>
-      <table class="st-doc-table"><tbody>
-        <tr><td class="st-label">Tujuan muat</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanMuat || '-')}</td></tr>
-        <tr><td class="st-label">Tujuan bongkar</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanBongkar || '-')}</td></tr>
-        <tr><td class="st-label">Tonase</td><td class="st-colon">:</td><td class="st-value">${r.tonase1 ? esc(String(r.tonase1)) + ' kg' : '-'}</td></tr>
-      </tbody></table>
-    </div>`;
-  }
-  if(recKirimRoll(r)){
-    rutes += `<div class="st-doc-route">
-      <div class="st-route-title">Muatan Roll Assa</div>
-      <table class="st-doc-table"><tbody>
-        <tr><td class="st-label">Tujuan muat</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanMuat2 || '-')}</td></tr>
-        <tr><td class="st-label">Tujuan bongkar</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanBongkar2 || '-')}</td></tr>
-        <tr><td class="st-label">Tonase</td><td class="st-colon">:</td><td class="st-value">${r.tonase2 ? esc(String(r.tonase2)) + ' kg' : '-'}</td></tr>
-      </tbody></table>
-    </div>`;
-  }
-  if(recKirimOCC(r)){
-    rutes += `<div class="st-doc-route">
-      <div class="st-route-title">Muatan OCC</div>
-      <table class="st-doc-table"><tbody>
-        <tr><td class="st-label">Tujuan muat</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanMuat3 || '-')}</td></tr>
-        <tr><td class="st-label">Tujuan bongkar</td><td class="st-colon">:</td><td class="st-value">${esc(r.tujuanBongkar3 || '-')}</td></tr>
-        <tr><td class="st-label">Tonase</td><td class="st-colon">:</td><td class="st-value">${r.tonase3 ? esc(String(r.tonase3)) + ' kg' : '-'}</td></tr>
-      </tbody></table>
-    </div>`;
-  }
+/* ---------- PKB / Perintah Kerja Borongan (dulu "Surat Tugas") ----------
+   Format cetak mengikuti contoh form PKB fisik yang dipakai perusahaan: TGL / UNTUK (nama sopir) /
+   PKB NO, lalu blok CUSTOMER / NO. CO / NO. PO / ANGKUTAN / NOPOL, lalu JENIS BARANG (kotak isian
+   bebas), dan footer tanda tangan DIBUAT / DISETUJUI (K/PO DAN DO) / EKSPEDISI. Berlaku SAMA untuk
+   Angkutan Organik maupun Vendor Luar — biaya (uang jalan/biaya lain-lain/tarif vendor) SENGAJA tidak
+   pernah dicetak di PKB manapun (datanya tetap tersimpan & dipakai di laporan pengeluaran seperti biasa,
+   cuma tidak ditampilkan di lembar PKB ini). */
+function buildPkbHtml(r){
+  const isVendor = r.jenisAngkutan === 'vendor';
+  const poTerkait = r.poId ? poList.find(p => String(p.id) === String(r.poId)) : (r.noCOTerkait ? poList.find(p => p.noCO === r.noCOTerkait) : null);
+  const angkutanVal = isVendor ? `${esc(r.vendorNama || '-')} (Vendor Luar)` : esc(armadaLabel(r.jenisArmada));
 
   return `
-    <div class="st-doc-head">
-      <div class="st-brand">EKSPEDISI &mdash; YOUR TRUSTED SOLUTION PARTNER</div>
-      <div class="st-sub">Divisi Operasional &amp; Armada</div>
-    </div>
-    <div class="st-doc-title">SURAT TUGAS PENGIRIMAN</div>
-    <div class="st-doc-intro">
-      Dengan ini menugaskan driver di bawah untuk melaksanakan pengiriman barang sesuai rincian berikut. Surat tugas ini merangkap sebagai bukti serah terima tugas dari admin/dispatcher kepada driver.
-    </div>
-    <table class="st-doc-table"><tbody>
-      <tr><td class="st-label">Tanggal tugas</td><td class="st-colon">:</td><td class="st-value">${fmtDate(r.tanggal)}</td></tr>
-      <tr><td class="st-label">Nama driver</td><td class="st-colon">:</td><td class="st-value">${esc(r.sopir || '-')}</td></tr>
-      <tr><td class="st-label">Nopol kendaraan</td><td class="st-colon">:</td><td class="st-value">${esc(r.nopol || '-')}</td></tr>
-      <tr><td class="st-label">Jenis armada</td><td class="st-colon">:</td><td class="st-value">${esc(armadaLabel(r.jenisArmada))}</td></tr>
-      ${r.jenisAngkutan === 'vendor' ? `
-      <tr><td class="st-label">Jenis angkutan</td><td class="st-colon">:</td><td class="st-value">Vendor Luar${r.vendorNama ? ' &mdash; ' + esc(r.vendorNama) : ''}</td></tr>
-      ${r.vendorRute ? `<tr><td class="st-label">Rute vendor</td><td class="st-colon">:</td><td class="st-value">${esc(r.vendorRute)}</td></tr>` : ''}
-      ` : `
-      <tr><td class="st-label">Kota tujuan</td><td class="st-colon">:</td><td class="st-value">${esc(r.kota || '-')}</td></tr>
-      `}
-      <tr><td class="st-label">Jenis pengiriman</td><td class="st-colon">:</td><td class="st-value">${esc(jenisLabel(r))}</td></tr>
-      ${r.jenisAngkutan === 'vendor' ? '' : `
-      <tr><td class="st-label">Uang jalan driver</td><td class="st-colon">:</td><td class="st-value">${rupiah(Number(r.uangJalan) || 0)}</td></tr>
-      <tr><td class="st-label">Biaya lain-lain</td><td class="st-colon">:</td><td class="st-value">${rupiah(Number(r.biayaLain) || 0)}</td></tr>
-      `}
-    </tbody></table>
-    ${rutes}
-    <div class="st-doc-status-line">Status pengiriman saat surat ini dicetak: <b>${esc(meta.label)}</b></div>
-    <div class="st-doc-note">
-      Driver wajib mengonfirmasi setiap perubahan status pengiriman (Dijadwalkan &rarr; Dalam Perjalanan &rarr; Sampai Tujuan &rarr; Selesai) kepada admin/dispatcher, serta menjaga keamanan muatan sampai proses bongkar selesai.
-    </div>
-    <div class="st-doc-sign">
-      <div class="st-sign-col">
-        <div>Dibuat di kantor, ${esc(todayStr)}</div>
-        <div class="st-sign-space"></div>
-        <div class="st-sign-name">Admin / Dispatcher</div>
-      </div>
-      <div class="st-sign-col">
-        <div>Diterima oleh,</div>
-        <div class="st-sign-space"></div>
-        <div class="st-sign-name">${esc(r.sopir || 'Driver')}</div>
-      </div>
+    <div class="pkb-doc">
+      <table class="pkb-table">
+        <tbody>
+          <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
+          <tr class="pkb-untuk"><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.sopir || '-')}</td></tr>
+          <tr><td class="pkb-lbl">PKB NO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noPKB || '-')}</td></tr>
+        </tbody>
+      </table>
+      <table class="pkb-table pkb-table-gap">
+        <tbody>
+          <tr><td class="pkb-lbl">CUSTOMER</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(poTerkait ? (poTerkait.namaCustomer || '-') : '-')}</td></tr>
+          <tr><td class="pkb-lbl">NO. CO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noCO) || r.noCOTerkait || '-')}</td></tr>
+          <tr><td class="pkb-lbl">NO. PO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noPO) || '-')}</td></tr>
+          <tr><td class="pkb-lbl">ANGKUTAN</td><td class="pkb-colon">:</td><td class="pkb-val">${angkutanVal}</td></tr>
+          <tr><td class="pkb-lbl">NOPOL</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.nopol || '-')}</td></tr>
+        </tbody>
+      </table>
+      <div class="pkb-barang-head">JENIS BARANG :</div>
+      <div class="pkb-barang-box">${esc(r.jenisBarang || '')}</div>
+      <table class="pkb-footer pkb-table-gap">
+        <tbody>
+          <tr>
+            <td class="pkb-footer-head">DIBUAT</td>
+            <td class="pkb-footer-head">DISETUJUI<br><span class="pkb-footer-note">K/PO DAN DO</span></td>
+          </tr>
+          <tr>
+            <td class="pkb-footer-sign">EKSPEDISI</td>
+            <td class="pkb-footer-sign">(&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;.)</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   `;
 }
 function openSuratTugasModal(id){
   const r = records.find(x => x.id === id);
   if(!r) return;
-  document.getElementById('suratTugasPrintArea').innerHTML = buildSuratTugasHtml(r);
+  document.getElementById('suratTugasPrintArea').innerHTML = buildPkbHtml(r);
   document.getElementById('stModalOverlay').style.display = 'flex';
 }
 function closeSuratTugasModal(){
@@ -6605,7 +6579,7 @@ function renderTable(){
         <button class="icon-btn toggle" data-id="${r.id}" title="Maju ke status berikutnya (${esc((STATUS_META[nextStatus(r.status)] || {}).label || '')})">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
         </button>` : ''}
-        <button class="icon-btn surat" data-id="${r.id}" title="Cetak surat tugas">
+        <button class="icon-btn surat" data-id="${r.id}" title="Cetak PKB">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         </button>
         ${admin ? `<button class="icon-btn del" data-id="${r.id}" title="Hapus">
