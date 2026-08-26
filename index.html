@@ -51,7 +51,12 @@
     width:240px; background:var(--navy-900); color:#cfd6e6; flex-shrink:0;
     display:flex; flex-direction:column; padding:20px 14px;
     position:relative; transition:width .2s ease, padding .2s ease;
-    height:100vh; overflow:hidden;
+    height:100vh;
+    /* Catatan: TIDAK pakai overflow:hidden di sini (sesi keempatpuluhdua sempat begitu) --
+       itu ikut memotong separuh tombol .sidebar-toggle yang memang sengaja "nongol" keluar
+       tepi sidebar (right:-13px, lihat definisinya di bawah), jadi kelihatan terpotong/tidak
+       rapi. Penahan scroll halaman tetap dijamin oleh .app{overflow:hidden} + .nav{min-height:0;
+       overflow-y:auto} di bawah -- sidebar sendiri tidak perlu overflow:hidden untuk itu. */
   }
   .brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px; border-bottom:1px solid var(--navy-700); margin-bottom:14px;}
   .brand-mark{
