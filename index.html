@@ -1105,10 +1105,11 @@
                   <datalist id="doKotaList"></datalist>
                 </div>
                 <div class="field full" style="grid-column:1 / -1;">
-                  <label>Jenis barang <span class="hint">(bisa lebih dari satu jenis dalam 1 PKB — pilih dari saran Master Data Barang atau ketik bebas)</span></label>
+                  <label>Jenis barang &amp; tonase <span class="hint">(bisa lebih dari satu jenis dalam 1 PKB — isi tonase per jenis, total otomatis terhitung)</span></label>
                   <div id="jenisBarangRows"></div>
                   <datalist id="barangDatalist"></datalist>
                   <button type="button" class="btn btn-secondary" id="btnAddJenisBarang" style="margin-top:4px;">+ Tambah jenis barang</button>
+                  <div id="totalTonaseBarang" style="margin-top:8px; font-weight:700; font-size:13px;">Total tonase: 0 kg</div>
                 </div>
                 <div class="field">
                   <label for="doNoCO">PO terkait (No CO)</label>
@@ -3933,26 +3934,44 @@ document.getElementById('raOrganik').addEventListener('change', toggleAngkutanSe
 document.getElementById('raVendor').addEventListener('change', toggleAngkutanSections);
 
 /* ---------- JENIS BARANG (baris dinamis, boleh lebih dari satu per PKB) ----------
-   Setiap baris = 1 input teks bebas + saran datalist dari Master Data Barang (#barangDatalist).
-   Tonase per baris & total otomatis SENGAJA belum dibuat (menyusul di update berikutnya sesuai
-   permintaan user) — untuk sekarang baris ini cuma menampung daftar nama jenis barangnya saja. */
-function addJenisBarangRow(value){
+   Setiap baris = 1 input teks bebas (nama, saran datalist dari Master Data Barang) + 1 input
+   angka (tonase per jenis barang, kg). Total tonase dihitung otomatis (live) dari jumlah semua
+   baris, dan saat submit dijadikan sumber untuk field Tonase BK/Roll/OCC (kalau tepat satu jenis
+   pengiriman yang dicentang) — lihat totalTonaseBarangVal di handler submit formDO. */
+function addJenisBarangRow(nama, tonase){
   const container = document.getElementById('jenisBarangRows');
   const row = document.createElement('div');
   row.className = 'jb-row';
   row.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
-  row.innerHTML = `<input type="text" class="jb-row-input" list="barangDatalist" placeholder="cth. Kertas HVS Bekas" style="flex:1;" value="${esc(value || '')}">
+  const tonaseStr = (tonase === null || tonase === undefined || tonase === '') ? '' : esc(String(tonase));
+  row.innerHTML = `<input type="text" class="jb-row-input" list="barangDatalist" placeholder="cth. Kertas HVS Bekas" style="flex:2;" value="${esc(nama || '')}">
+    <input type="number" class="jb-row-tonase" step="1" min="0" placeholder="Tonase (kg)" style="flex:1; max-width:150px;" value="${tonaseStr}">
     <button type="button" class="btn btn-secondary jb-row-remove" style="padding:6px 12px;" title="Hapus baris ini">&times;</button>`;
   container.appendChild(row);
 }
-function resetJenisBarangRows(values){
+function resetJenisBarangRows(items){
   const container = document.getElementById('jenisBarangRows');
   container.innerHTML = '';
-  const list = (values && values.length) ? values : [''];
-  list.forEach(v => addJenisBarangRow(v));
+  let list = (items && items.length) ? items : [{nama:'', tonase:''}];
+  list = list.map(it => typeof it === 'string' ? {nama: it, tonase: ''} : it);
+  list.forEach(it => addJenisBarangRow(it.nama, it.tonase));
+  updateTotalTonaseBarang();
+}
+function collectJenisBarangDetail(){
+  return [...document.querySelectorAll('#jenisBarangRows .jb-row')].map(row => {
+    const nama = row.querySelector('.jb-row-input').value.trim();
+    const tonaseRaw = row.querySelector('.jb-row-tonase').value;
+    const tonase = tonaseRaw === '' ? null : parseFloat(tonaseRaw);
+    return { nama: nama, tonase: tonase };
+  }).filter(it => it.nama);
 }
 function collectJenisBarangList(){
-  return [...document.querySelectorAll('#jenisBarangRows .jb-row-input')].map(el => el.value.trim()).filter(Boolean);
+  return collectJenisBarangDetail().map(it => it.nama);
+}
+function updateTotalTonaseBarang(){
+  const total = collectJenisBarangDetail().reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+  const el = document.getElementById('totalTonaseBarang');
+  if(el) el.textContent = 'Total tonase: ' + total.toLocaleString('id-ID') + ' kg';
 }
 document.getElementById('jenisBarangRows').addEventListener('click', function(e){
   const btn = e.target.closest('.jb-row-remove');
@@ -3960,13 +3979,20 @@ document.getElementById('jenisBarangRows').addEventListener('click', function(e)
   const rows = this.querySelectorAll('.jb-row');
   if(rows.length <= 1){
     // baris terakhir: cukup dikosongkan, jangan sampai baris habis semua
-    btn.closest('.jb-row').querySelector('.jb-row-input').value = '';
+    const r = btn.closest('.jb-row');
+    r.querySelector('.jb-row-input').value = '';
+    r.querySelector('.jb-row-tonase').value = '';
+    updateTotalTonaseBarang();
     return;
   }
   btn.closest('.jb-row').remove();
+  updateTotalTonaseBarang();
+});
+document.getElementById('jenisBarangRows').addEventListener('input', function(e){
+  if(e.target.classList.contains('jb-row-tonase')) updateTotalTonaseBarang();
 });
 document.getElementById('btnAddJenisBarang').addEventListener('click', function(){
-  addJenisBarangRow('');
+  addJenisBarangRow('', '');
 });
 resetJenisBarangRows([]);
 
@@ -4531,9 +4557,22 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   const tonase1Raw = document.getElementById('tonase1').value;
   const tonase2Raw = document.getElementById('tonase2').value;
   const tonase3Raw = document.getElementById('tonase3').value;
-  const tonase1Val = tonase1Raw === '' ? null : parseFloat(tonase1Raw);
-  const tonase2Val = tonase2Raw === '' ? null : parseFloat(tonase2Raw);
-  const tonase3Val = tonase3Raw === '' ? null : parseFloat(tonase3Raw);
+  let tonase1Val = tonase1Raw === '' ? null : parseFloat(tonase1Raw);
+  let tonase2Val = tonase2Raw === '' ? null : parseFloat(tonase2Raw);
+  let tonase3Val = tonase3Raw === '' ? null : parseFloat(tonase3Raw);
+
+  /* Tonase per jenis barang: kalau diisi & tepat satu jenis pengiriman yang dicentang, totalnya
+     otomatis jadi sumber Tonase BK/Roll/OCC (menggantikan isian manual field itu) — dipilih user
+     lewat pertanyaan konfirmasi. Kalau lebih dari satu jenis pengiriman dicentang, tidak bisa
+     dipastikan totalnya milik yang mana, jadi field tonase1/2/3 tetap diisi manual seperti biasa. */
+  const jenisBarangDetailVal = collectJenisBarangDetail();
+  const totalTonaseBarangVal = jenisBarangDetailVal.reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+  const jenisTerpilihCount = [kirimBK, kirimRoll, kirimOCC].filter(Boolean).length;
+  if(totalTonaseBarangVal > 0 && jenisTerpilihCount === 1){
+    if(kirimBK) tonase1Val = totalTonaseBarangVal;
+    if(kirimRoll) tonase2Val = totalTonaseBarangVal;
+    if(kirimOCC) tonase3Val = totalTonaseBarangVal;
+  }
 
   if(kirimBK && (!tujuanMuatVal || !tujuanBongkarVal)){
     errEl.textContent = 'Tujuan muat dan tujuan bongkar (BK) wajib diisi.';
@@ -4571,7 +4610,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   const poIdVal = document.getElementById('doNoCO').value || null;
   const poTerkait = poIdVal ? poList.find(p => String(p.id) === String(poIdVal)) : null;
   const kotaVal = isVendorVal ? '' : document.getElementById('doKota').value.trim();
-  const jenisBarangListVal = collectJenisBarangList();
+  const jenisBarangListVal = jenisBarangDetailVal.map(it => it.nama);
 
   const fieldsData = {
     tanggal: tanggal,
@@ -4586,6 +4625,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     vendorNama: vendorNamaVal,
     vendorRute: vendorRuteVal,
     kota: kotaVal,
+    jenisBarangDetail: jenisBarangDetailVal,
     jenisBarangList: jenisBarangListVal,
     jenisBarang: jenisBarangListVal.join(', '),
     poId: poIdVal,
@@ -4644,7 +4684,11 @@ function editRecordDO(id){
   document.getElementById('cbOCC').checked = recKirimOCC(rec);
   document.getElementById('jenisArmada').value = rec.jenisArmada || 'tronton';
   document.getElementById('doKota').value = rec.kota || '';
-  resetJenisBarangRows(rec.jenisBarangList && rec.jenisBarangList.length ? rec.jenisBarangList : (rec.jenisBarang ? [rec.jenisBarang] : []));
+  resetJenisBarangRows(
+    rec.jenisBarangDetail && rec.jenisBarangDetail.length ? rec.jenisBarangDetail :
+    (rec.jenisBarangList && rec.jenisBarangList.length ? rec.jenisBarangList :
+    (rec.jenisBarang ? [rec.jenisBarang] : []))
+  );
   document.getElementById('uangJalan').value = rec.uangJalan || '';
   document.getElementById('biayaLain').value = rec.biayaLain || '';
   const jenisAngkutanRec = rec.jenisAngkutan === 'vendor' ? 'vendor' : 'organik';
@@ -4807,12 +4851,17 @@ function buildPkbHtml(r){
   const poTerkait = r.poId ? poList.find(p => String(p.id) === String(r.poId)) : (r.noCOTerkait ? poList.find(p => p.noCO === r.noCOTerkait) : null);
   const angkutanVal = isVendor ? `${esc(r.vendorNama || '-')} (Vendor Luar)` : esc(armadaLabel(r.jenisArmada));
   const untukVal = r.tujuanMuat || r.tujuanMuat2 || r.tujuanMuat3 || '-';
-  /* Daftar jenis barang: pakai jenisBarangList (baris dinamis, format baru) kalau ada; kalau tidak,
-     fallback ke jenisBarang (string tunggal, format lama) supaya PKB dari DO lama tetap tercetak
-     benar. Tonase per jenis & total belum ditampilkan (menyusul, sesuai permintaan user). */
-  const barangListVal = (r.jenisBarangList && r.jenisBarangList.length) ? r.jenisBarangList : (r.jenisBarang ? [r.jenisBarang] : []);
-  const barangBoxHtml = barangListVal.length
-    ? barangListVal.map((b, i) => `<div>${i + 1}. ${esc(b)}</div>`).join('')
+  /* Daftar jenis barang: pakai jenisBarangDetail (nama + tonase per baris, format terbaru) kalau
+     ada; kalau tidak, fallback berjenjang ke jenisBarangList (nama saja) lalu jenisBarang (string
+     tunggal, format paling lama) supaya PKB dari DO lama tetap tercetak benar. Tonase per jenis
+     ditampilkan di sebelah nama barangnya, plus total keseluruhan di baris terakhir kalau ada. */
+  const barangDetailVal = (r.jenisBarangDetail && r.jenisBarangDetail.length)
+    ? r.jenisBarangDetail
+    : ((r.jenisBarangList && r.jenisBarangList.length) ? r.jenisBarangList.map(nama => ({nama: nama, tonase: null})) : (r.jenisBarang ? [{nama: r.jenisBarang, tonase: null}] : []));
+  const totalTonaseBarangVal = barangDetailVal.reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+  const barangBoxHtml = barangDetailVal.length
+    ? barangDetailVal.map((b, i) => `<div>${i + 1}. ${esc(b.nama)}${(b.tonase !== null && b.tonase !== undefined && b.tonase !== '') ? ` &mdash; ${Number(b.tonase).toLocaleString('id-ID')} kg` : ''}</div>`).join('')
+      + (totalTonaseBarangVal > 0 ? `<div style="margin-top:8px; font-weight:700; border-top:1px solid #111; padding-top:6px;">TOTAL TONASE: ${totalTonaseBarangVal.toLocaleString('id-ID')} kg</div>` : '')
     : '';
 
   return `
