@@ -1344,11 +1344,8 @@
           </div>
           <div class="panel-body">
             <form id="formPOInput">
+              <p class="hint" style="margin:0 0 14px;">No. CO belum diisi di sini — nomornya otomatis dibuatkan sistem (format 3 digit-tahun, cth. 123-26) begitu SO/PO ini di-ACC lewat menu Konfirmasi PO.</p>
               <div class="grid2">
-                <div class="field">
-                  <label for="poNoCO">No. CO</label>
-                  <input type="text" id="poNoCO" placeholder="cth. CO-0001" required style="text-transform:uppercase;">
-                </div>
                 <div class="field">
                   <label for="poTanggalCO">Tanggal CO</label>
                   <input type="date" id="poTanggalCO" required>
@@ -3339,6 +3336,21 @@ function loadMaintenance(){ try{ const l = JSON.parse(localStorage.getItem(MAINT
 function saveMaintenance(){ localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList)); fbPush('maintenance', maintenanceList); }
 function loadPO(){ try{ const l = JSON.parse(localStorage.getItem(PO_KEY)) || []; ensureIds(l, 'po'); return l; }catch(e){ return []; } }
 function savePO(){ localStorage.setItem(PO_KEY, JSON.stringify(poList)); fbPush('po', poList); }
+/* No. CO dibuat OTOMATIS oleh sistem saat SO/PO di-ACC (bukan diketik manual saat input) — format
+   "NNN-YY": NNN = nomor urut 3 digit (mulai 001, terus bertambah, tidak dipakai ulang sekalipun ada
+   yang tumpang tindih tahun), YY = 2 digit akhir tahun saat di-ACC (cth. 123-26 untuk urutan ke-123
+   di tahun 2026). Nomor urut dihitung dari No. CO lain yang sudah ada di tahun yang sama supaya
+   selalu lanjut, tidak mengulang dari 1 tiap tahun kalau memang belum waktunya. */
+function generateNextNoCO(){
+  const yy = String(new Date().getFullYear()).slice(-2);
+  const existingNums = poList
+    .map(p => p.noCO || '')
+    .filter(noCO => noCO.endsWith('-' + yy))
+    .map(noCO => parseInt(noCO.split('-')[0], 10))
+    .filter(n => !isNaN(n));
+  const next = existingNums.length ? Math.max(...existingNums) + 1 : 1;
+  return String(next).padStart(3, '0') + '-' + yy;
+}
 function loadHpp(){ try{ return JSON.parse(localStorage.getItem(HPP_KEY)) || {}; }catch(e){ return {}; } }
 function saveHpp(){ localStorage.setItem(HPP_KEY, JSON.stringify(hppAsumsi)); }
 
@@ -5907,6 +5919,7 @@ function renderPO(){
       if(confirm(`Konfirmasi (ACC) order PO ${item.noPO || item.noCO || ''}?`)){
         item.status = 'dikonfirmasi';
         item.catatanTolak = '';
+        if(!item.noCO) item.noCO = generateNextNoCO(); // hanya generate kalau belum punya (data lama yang sudah diisi manual tidak ditimpa)
         const acc = currentAccount();
         item.dikonfirmasiOleh = acc ? acc.email : '';
         item.tanggalKonfirmasi = new Date().toISOString();
@@ -6157,7 +6170,7 @@ document.getElementById('formPOInput').addEventListener('submit', async function
   const acc = currentAccount();
   poList.push({
     id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-    noCO: document.getElementById('poNoCO').value.trim().toUpperCase(),
+    noCO: '', /* belum diisi -- otomatis dibuat sistem (format NNN-YY) saat SO/PO ini di-ACC */
     tanggalCO: document.getElementById('poTanggalCO').value,
     noPO: document.getElementById('poNoPO').value.trim().toUpperCase(),
     namaCustomer: document.getElementById('poNamaCustomer').value.trim(),
