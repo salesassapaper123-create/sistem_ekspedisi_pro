@@ -265,22 +265,25 @@
     font-family:'Courier New', Courier, monospace;
   }
   #suratTugasPrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
-  /* ---------- PKB (Perintah Kerja Borongan) — layout mengikuti contoh form fisik: kotak-kotak
-     berbatas garis (mirip form Excel/spreadsheet), bukan paragraf surat resmi seperti versi lama. ---------- */
+  /* ---------- PKB (Perintah Kerja Borongan) — layout mengikuti contoh form fisik: satu kartu/kotak
+     utuh berbingkai ganda (.pkb-outer) berisi judul besar + kotak-kotak berbatas garis (mirip form
+     Excel/spreadsheet), bukan paragraf surat resmi seperti versi lama. ---------- */
   .pkb-doc{}
+  .pkb-outer{border:4px double #111; padding:16px 18px 20px;}
+  .pkb-title{text-align:center; font-weight:800; font-size:19px; letter-spacing:.05em; text-decoration:underline; margin:0 0 16px; text-transform:uppercase;}
   .pkb-table{width:100%; border-collapse:collapse;}
-  .pkb-table td{border:1.4px solid #111; padding:6px 10px; font-size:12.5px; vertical-align:middle; line-height:1.5;}
+  .pkb-table td{border:1.4px solid #111; padding:7px 10px; font-size:12.5px; vertical-align:middle; line-height:1.5;}
   .pkb-table td.pkb-lbl{font-weight:700; width:130px; color:#111;}
   .pkb-table td.pkb-colon{width:16px; text-align:center; font-weight:700;}
   .pkb-table td.pkb-val{font-weight:700;}
   .pkb-table tr.pkb-untuk td{color:#c0392b;}
-  .pkb-table-gap{margin-top:14px;}
-  .pkb-barang-head{border:1.4px solid #111; border-bottom:none; padding:6px 10px; font-weight:700; font-size:12.5px; margin-top:14px;}
+  .pkb-table-gap{margin-top:12px;}
+  .pkb-barang-head{border:1.4px solid #111; border-bottom:none; padding:7px 10px; font-weight:700; font-size:12.5px; margin-top:12px;}
   .pkb-barang-box{border:1.4px solid #111; min-height:150px; padding:8px 10px; font-size:12.5px; white-space:pre-wrap;}
   .pkb-footer{width:100%; border-collapse:collapse;}
-  .pkb-footer td{border:1.4px solid #111; padding:12px 10px; text-align:center; font-size:12px; font-weight:700; width:50%;}
+  .pkb-footer td{border:1.4px solid #111; padding:14px 10px; text-align:center; font-size:12px; font-weight:700; width:50%;}
   .pkb-footer .pkb-footer-note{font-style:italic; font-weight:400; font-size:11px;}
-  .pkb-footer .pkb-footer-sign{padding-top:34px;}
+  .pkb-footer .pkb-footer-sign{padding-top:36px;}
   @media print{
     body *{visibility:hidden;}
     #suratTugasPrintArea, #suratTugasPrintArea *{visibility:visible;}
@@ -756,6 +759,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
         Dashboard
       </button>
+      <button class="nav-item" data-view="rekap">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        Rekap Data DO
+      </button>
 
       <div class="nav-group" data-group="administrasi">
         <button type="button" class="nav-group-head" data-group-toggle="administrasi">
@@ -1083,15 +1090,15 @@
                     <option value="lainnya">Lainnya</option>
                   </select>
                 </div>
-                <div class="field" id="doKotaBlock">
+                <div class="field" id="doKotaBlock" style="display:none;">
                   <label for="doKota">Kota tarif</label>
                   <input type="text" id="doKota" list="doKotaList" placeholder="cth. Bandung">
                   <datalist id="doKotaList"></datalist>
-                  <p class="hint" style="margin:6px 0 0;">Dipakai sistem untuk hitung Pendapatan otomatis dari Database Tarif — tidak tampil di cetak PKB.</p>
                 </div>
                 <div class="field">
                   <label for="doJenisBarang">Jenis barang</label>
                   <input type="text" id="doJenisBarang" placeholder="cth. Kertas HVS, Plastik, dll.">
+                  <p class="hint" style="margin:6px 0 0;">Field ini yang tampil di cetak PKB. Catatan: field "Kota tarif" (untuk hitung Pendapatan otomatis dari Database Tarif) sudah tidak ditampilkan lagi di form sesuai permintaan — Pendapatan otomatis DO baru jadi tidak lagi terhitung dari Database Tarif.</p>
                 </div>
                 <div class="field">
                   <label for="doNoCO">PO terkait (No CO) <span class="hint">(opsional, hanya PO yang sudah ACC)</span></label>
@@ -3792,13 +3799,16 @@ document.getElementById('doVendorRute').addEventListener('input', function(){
   }
 });
 /* Tampilkan field yang relevan sesuai jenis angkutan yang dipilih:
-   - Organik: form seperti biasa (Kota tarif, Uang jalan driver manual, Biaya lain-lain).
-   - Vendor luar: Kota tarif & Biaya lain-lain disembunyikan (tidak relevan), field "Uang jalan
-     driver" berubah jadi "Tarif ongkos vendor" yang diisi dari dropdown rute Ongkos Borongan. */
+   - Organik: form seperti biasa (Jenis barang, Uang jalan driver manual, Biaya lain-lain).
+   - Vendor luar: Biaya lain-lain disembunyikan (tidak relevan), field "Uang jalan driver" berubah
+     jadi "Tarif ongkos vendor" yang diisi dari dropdown rute Ongkos Borongan.
+   Catatan: "Kota tarif" (#doKotaBlock) SENGAJA selalu disembunyikan untuk kedua jenis angkutan —
+   field input-nya tetap ada di DOM (supaya calcPendapatan/data lama tidak error) tapi tidak lagi
+   ditampilkan di form sesuai permintaan user; diganti dengan field "Jenis barang" yang tampil di PKB. */
 function toggleAngkutanSections(){
   const isVendor = currentJenisAngkutan() === 'vendor';
   document.getElementById('vendorRuteBlock').style.display = isVendor ? '' : 'none';
-  document.getElementById('doKotaBlock').style.display = isVendor ? 'none' : '';
+  document.getElementById('doKotaBlock').style.display = 'none';
   document.getElementById('biayaLainBlock').style.display = isVendor ? 'none' : '';
   document.getElementById('uangJalanLabel').textContent = isVendor ? 'Tarif ongkos vendor (Rp)' : 'Uang jalan driver (Rp)';
   document.getElementById('nopolLabel').textContent = isVendor ? 'Nopol (armada vendor)' : 'Nopol';
@@ -4639,9 +4649,11 @@ document.getElementById('tonaseModalSave').addEventListener('click', function(){
 });
 
 /* ---------- PKB / Perintah Kerja Borongan (dulu "Surat Tugas") ----------
-   Format cetak mengikuti contoh form PKB fisik yang dipakai perusahaan: TGL / UNTUK (nama sopir) /
-   PKB NO, lalu blok CUSTOMER / NO. CO / NO. PO / ANGKUTAN / NOPOL, lalu JENIS BARANG (kotak isian
-   bebas), dan footer tanda tangan DIBUAT / DISETUJUI (K/PO DAN DO) / EKSPEDISI. Berlaku SAMA untuk
+   Format cetak mengikuti contoh form PKB fisik yang dipakai perusahaan: judul besar "PERINTAH KELUAR
+   BARANG", lalu TGL / UNTUK (diisi dari Tujuan Muat, sesuai contoh foto) / PKB NO, lalu blok
+   CUSTOMER / NO. CO / NO. PO / ANGKUTAN / NOPOL, lalu JENIS BARANG (kotak isian bebas), dan footer
+   tanda tangan DIBUAT / DISETUJUI (K/PO DAN DO) / EKSPEDISI — semuanya dibingkai satu bingkai luar
+   supaya terlihat seperti satu kartu/kotak utuh, bukan potongan-potongan terpisah. Berlaku SAMA untuk
    Angkutan Organik maupun Vendor Luar — biaya (uang jalan/biaya lain-lain/tarif vendor) SENGAJA tidak
    pernah dicetak di PKB manapun (datanya tetap tersimpan & dipakai di laporan pengeluaran seperti biasa,
    cuma tidak ditampilkan di lembar PKB ini). */
@@ -4649,39 +4661,43 @@ function buildPkbHtml(r){
   const isVendor = r.jenisAngkutan === 'vendor';
   const poTerkait = r.poId ? poList.find(p => String(p.id) === String(r.poId)) : (r.noCOTerkait ? poList.find(p => p.noCO === r.noCOTerkait) : null);
   const angkutanVal = isVendor ? `${esc(r.vendorNama || '-')} (Vendor Luar)` : esc(armadaLabel(r.jenisArmada));
+  const untukVal = r.tujuanMuat || r.tujuanMuat2 || r.tujuanMuat3 || '-';
 
   return `
     <div class="pkb-doc">
-      <table class="pkb-table">
-        <tbody>
-          <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
-          <tr class="pkb-untuk"><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.sopir || '-')}</td></tr>
-          <tr><td class="pkb-lbl">PKB NO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noPKB || '-')}</td></tr>
-        </tbody>
-      </table>
-      <table class="pkb-table pkb-table-gap">
-        <tbody>
-          <tr><td class="pkb-lbl">CUSTOMER</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(poTerkait ? (poTerkait.namaCustomer || '-') : '-')}</td></tr>
-          <tr><td class="pkb-lbl">NO. CO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noCO) || r.noCOTerkait || '-')}</td></tr>
-          <tr><td class="pkb-lbl">NO. PO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noPO) || '-')}</td></tr>
-          <tr><td class="pkb-lbl">ANGKUTAN</td><td class="pkb-colon">:</td><td class="pkb-val">${angkutanVal}</td></tr>
-          <tr><td class="pkb-lbl">NOPOL</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.nopol || '-')}</td></tr>
-        </tbody>
-      </table>
-      <div class="pkb-barang-head">JENIS BARANG :</div>
-      <div class="pkb-barang-box">${esc(r.jenisBarang || '')}</div>
-      <table class="pkb-footer pkb-table-gap">
-        <tbody>
-          <tr>
-            <td class="pkb-footer-head">DIBUAT</td>
-            <td class="pkb-footer-head">DISETUJUI<br><span class="pkb-footer-note">K/PO DAN DO</span></td>
-          </tr>
-          <tr>
-            <td class="pkb-footer-sign">EKSPEDISI</td>
-            <td class="pkb-footer-sign">(&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;.)</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="pkb-outer">
+        <div class="pkb-title">PERINTAH KELUAR BARANG</div>
+        <table class="pkb-table">
+          <tbody>
+            <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
+            <tr class="pkb-untuk"><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(untukVal)}</td></tr>
+            <tr><td class="pkb-lbl">PKB NO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noPKB || '-')}</td></tr>
+          </tbody>
+        </table>
+        <table class="pkb-table pkb-table-gap">
+          <tbody>
+            <tr><td class="pkb-lbl">CUSTOMER</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(poTerkait ? (poTerkait.namaCustomer || '-') : '-')}</td></tr>
+            <tr><td class="pkb-lbl">NO. CO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noCO) || r.noCOTerkait || '-')}</td></tr>
+            <tr><td class="pkb-lbl">NO. PO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noPO) || '-')}</td></tr>
+            <tr><td class="pkb-lbl">ANGKUTAN</td><td class="pkb-colon">:</td><td class="pkb-val">${angkutanVal}</td></tr>
+            <tr><td class="pkb-lbl">NOPOL</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.nopol || '-')}</td></tr>
+          </tbody>
+        </table>
+        <div class="pkb-barang-head">JENIS BARANG :</div>
+        <div class="pkb-barang-box">${esc(r.jenisBarang || '')}</div>
+        <table class="pkb-footer pkb-table-gap">
+          <tbody>
+            <tr>
+              <td class="pkb-footer-head">DIBUAT</td>
+              <td class="pkb-footer-head">DISETUJUI<br><span class="pkb-footer-note">K/PO DAN DO</span></td>
+            </tr>
+            <tr>
+              <td class="pkb-footer-sign">EKSPEDISI</td>
+              <td class="pkb-footer-sign">(&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;.)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }
