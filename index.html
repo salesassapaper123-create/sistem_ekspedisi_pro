@@ -715,7 +715,7 @@
       <div class="field">
         <label for="regPass">Password</label>
         <div class="pw-wrap">
-          <input type="password" id="regPass" autocomplete="new-password" required minlength="4">
+          <input type="password" id="regPass" autocomplete="new-password" required minlength="6">
           <button type="button" class="pw-toggle" onclick="togglePw('regPass', this)" aria-label="Tampilkan password" title="Tampilkan password">
             <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
             <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-3.08 2.72A9.12 9.12 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 4.22-5.94M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
@@ -725,7 +725,7 @@
       <div class="field">
         <label for="regConfirmPass">Konfirmasi password</label>
         <div class="pw-wrap">
-          <input type="password" id="regConfirmPass" autocomplete="new-password" required minlength="4">
+          <input type="password" id="regConfirmPass" autocomplete="new-password" required minlength="6">
           <button type="button" class="pw-toggle" onclick="togglePw('regConfirmPass', this)" aria-label="Tampilkan password" title="Tampilkan password">
             <svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
             <svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-3.08 2.72A9.12 9.12 0 0 1 12 20c-7 0-11-8-11-8a18.5 18.5 0 0 1 4.22-5.94M1 1l22 22"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/></svg>
@@ -734,7 +734,7 @@
       </div>
       <div class="login-error" id="registerError"></div>
       <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">Daftar &amp; masuk</button>
-      <div class="login-hint" id="registerSlotHint">Maksimal 5 akun terdaftar di perangkat ini.</div>
+      <div class="login-hint" id="registerSlotHint">Maksimal 5 akun terdaftar.</div>
     </form>
   </div>
 </div>
@@ -2318,8 +2318,8 @@
                 <input type="text" id="currentNama">
               </div>
               <div class="field" style="margin-bottom:14px;">
-                <label for="currentUser">Email</label>
-                <input type="email" id="currentUser" required>
+                <label for="currentUser">Email <span class="hint">(tidak bisa diubah sendiri -- hubungi admin kalau perlu ganti email login)</span></label>
+                <input type="email" id="currentUser" required disabled>
               </div>
               <div class="field" style="margin-bottom:14px;">
                 <label for="oldPass">Password saat ini</label>
@@ -2327,11 +2327,11 @@
               </div>
               <div class="field" style="margin-bottom:14px;">
                 <label for="newPass">Password baru <span class="hint">(kosongkan jika tidak ganti)</span></label>
-                <input type="password" id="newPass" minlength="4">
+                <input type="password" id="newPass" minlength="6">
               </div>
               <div class="field" style="margin-bottom:14px;">
                 <label for="confirmPass">Konfirmasi password baru</label>
-                <input type="password" id="confirmPass" minlength="4">
+                <input type="password" id="confirmPass" minlength="6">
               </div>
               <div class="login-error" id="passError" style="text-align:left;"></div>
               <div class="login-error" id="passSuccess" style="text-align:left; color:var(--green-600);"></div>
@@ -2657,6 +2657,48 @@ function syncOdometerFromCartrack(){
         <div class="panel">
           <div class="panel-head">
             <div>
+              <h2>Keamanan sistem <span class="hint">(WAJIB dilakukan sekali di Firebase Console)</span></h2>
+              <p>Login sekarang pakai Firebase Authentication sungguhan (Sesi ketigapuluhtujuh) — dua langkah di bawah ini perlu dilakukan SEKALI di Firebase Console supaya perlindungannya benar-benar aktif</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <p class="hint" style="margin:-4px 0 14px; line-height:1.7;">Sebelumnya sistem "login diam-diam" ke Firebase (anonymous) + cek password di browser — cukup untuk gerbang tampilan, tapi bukan keamanan data sungguhan. Sekarang password dicek di server Firebase, dan akses baca/tulis database dikunci lewat <b>Security Rules</b> di bawah. Tanpa 2 langkah ini diterapkan, database masih memakai aturan lama (kemungkinan lebih longgar) — jadi jangan dilewati.</p>
+            <div style="border-top:1px solid var(--border); padding-top:14px;">
+              <label style="margin-bottom:8px; display:block;">Langkah 1 — aktifkan login Email/Password</label>
+              <p class="hint" style="line-height:1.7; margin-bottom:14px;">
+                Buka <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a> &rarr; project <span class="mono">ekspedisi-jaya</span> &rarr; menu <b>Authentication</b> di sidebar kiri &rarr; tab <b>Sign-in method</b> &rarr; klik <b>Email/Password</b> &rarr; aktifkan (Enable) &rarr; Save. Kalau sebelumnya provider <b>Anonymous</b> juga aktif di daftar yang sama, boleh dimatikan sekarang (sudah tidak dipakai sistem ini lagi).
+              </p>
+              <label style="margin-bottom:8px; display:block;">Langkah 2 — pasang Security Rules</label>
+              <p class="hint" style="line-height:1.7; margin-bottom:8px;">
+                Masih di Firebase Console &rarr; menu <b>Realtime Database</b> di sidebar kiri &rarr; tab <b>Rules</b> &rarr; hapus semua isi kotak aturan yang ada &rarr; tempel kode di bawah ini &rarr; klik <b>Publish</b>. Efeknya: data (DO, kendaraan, PO, dll) cuma bisa dibaca/ditulis oleh akun yang sudah login DAN sudah disetujui admin (approved) — pengunjung yang cuma tahu alamat Firebase dari luar aplikasi ini tidak akan bisa akses apa pun lagi.
+              </p>
+              <textarea id="fbRulesCode" readonly style="width:100%; min-height:200px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">{
+  "rules": {
+    "accountsV2": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && (auth.uid === $uid || root.child('accountsV2').child(auth.uid).child('role').val() === 'admin')"
+      }
+    },
+    "accounts": {
+      ".read": "auth != null",
+      ".write": false
+    },
+    "$other": {
+      ".read": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true",
+      ".write": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true"
+    }
+  }
+}</textarea>
+              <button type="button" class="btn btn-secondary" id="btnCopyFbRules" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin aturan</button>
+              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang sekali pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan akun lama yang sudah pernah disetujui.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
               <h2>Akun terdaftar <span id="accountCountLbl" class="hint">(0/5)</span></h2>
               <p>Kelola akun yang bisa login ke sistem ini — maksimal 5 akun</p>
             </div>
@@ -2682,7 +2724,7 @@ function syncOdometerFromCartrack(){
               </div>
               <div class="field" style="margin-bottom:14px;">
                 <label for="newAccPass">Password</label>
-                <input type="password" id="newAccPass" required minlength="4">
+                <input type="password" id="newAccPass" required minlength="6">
               </div>
               <div class="field" style="margin-bottom:14px;">
                 <label for="newAccRole">Hak akses <span class="hint">(atur apa yang boleh dilihat akun ini)</span></label>
@@ -2829,22 +2871,60 @@ let fbListenersAttached = false;
 let fbAuthReady = false;
 let fbAuthReadyResolve = null;
 const fbAuthReadyPromise = new Promise(resolve => { fbAuthReadyResolve = resolve; });
+/* ---------- AUTENTIKASI ---------- (Sesi ketigapuluhtujuh)
+   Sebelumnya sistem ini pakai "login diam-diam" (anonymous auth) ke Firebase + sistem akun buatan
+   sendiri (email/password dicek & di-hash SENDIRI di browser, disimpan di node 'accounts'). Itu
+   TIDAK aman untuk pemakaian jangka panjang: siapa pun yang tahu firebaseConfig di atas (yang memang
+   ikut ter-publish di source code website ini, wajar untuk semua web app berbasis Firebase) bisa
+   ikut "login diam-diam" dan akses database langsung dari luar aplikasi -- form login yang lama cuma
+   jadi gerbang tampilan, bukan gerbang keamanan sungguhan.
+   Sekarang login memakai Firebase Authentication (Email/Password) yang SESUNGGUHNYA -- proses cek
+   password terjadi di server Firebase, bukan di browser pengguna, dan Security Rules di Firebase
+   Console (lihat catatan di README) mengunci akses baca/tulis database hanya untuk akun yang benar-
+   benar sudah login DAN sudah disetujui admin (field 'approved' di node 'accountsV2/<uid>').
+   Anonymous auth TIDAK dipakai lagi sama sekali. */
 try{
   firebase.initializeApp(firebaseConfig);
   fbDb = firebase.database();
-  // Masuk secara anonim ke Firebase — supaya database hanya bisa diakses lewat aplikasi ini (yang otomatis "login diam-diam" ke Firebase),
-  // bukan oleh sembarang orang yang cuma tahu alamat databaseURL-nya dari luar aplikasi.
-  firebase.auth().signInAnonymously().catch(err => {
-    console.warn('Firebase anonymous sign-in gagal, sinkron real-time mungkin tidak berfungsi:', err);
-  });
   firebase.auth().onAuthStateChanged(user => {
     if(user && !fbAuthReady){
       fbAuthReady = true;
       fbAuthReadyResolve();
     }
+    handleAuthStateChange(user);
   });
 }catch(err){
   console.warn('Firebase gagal diinisialisasi, sistem tetap jalan pakai penyimpanan lokal saja:', err);
+}
+/* App Firebase KEDUA (namespace terpisah, sesi auth-nya independen dari app utama) -- dipakai HANYA
+   saat admin membuat akun baru untuk orang lain langsung dari panel Pengaturan. createUserWithEmail-
+   AndPassword() otomatis login sebagai akun yang baru dibuat itu -- kalau dijalankan lewat app utama,
+   admin yang sedang login akan ikut "terlempar" jadi akun baru itu. Dengan app kedua ini, sesi login
+   admin di app utama tidak terganggu sama sekali. */
+let fbSecondaryApp = null;
+function secondaryAuth(){
+  if(!fbSecondaryApp){
+    fbSecondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
+  }
+  return fbSecondaryApp.auth();
+}
+/* Terjemahkan kode error Firebase Auth ke pesan Bahasa Indonesia yang mudah dipahami pengguna. */
+function mapFirebaseAuthError(err){
+  const code = err && err.code;
+  const pesan = {
+    'auth/wrong-password': 'Email atau password salah.',
+    'auth/user-not-found': 'Email atau password salah.',
+    'auth/invalid-credential': 'Email atau password salah.',
+    'auth/invalid-login-credentials': 'Email atau password salah.',
+    'auth/invalid-email': 'Format email tidak valid.',
+    'auth/too-many-requests': 'Terlalu banyak percobaan gagal. Coba lagi beberapa saat lagi.',
+    'auth/network-request-failed': 'Gagal terhubung ke server. Cek koneksi internet.',
+    'auth/email-already-in-use': 'Email ini sudah terdaftar. Silakan masuk lewat tab "Masuk".',
+    'auth/weak-password': 'Password minimal 6 karakter.',
+    'auth/requires-recent-login': 'Sesi login terlalu lama untuk mengubah data ini -- silakan keluar lalu masuk kembali, baru coba lagi.',
+    'auth/user-disabled': 'Akun ini dinonaktifkan. Hubungi admin.',
+  };
+  return (code && pesan[code]) || (err && err.message) || 'Terjadi kesalahan, coba lagi.';
 }
 
 /* Menyimpan jumlah penulisan (write) yang sedang berjalan per path (mis. 'kendaraan', 'driver', dst).
@@ -2998,38 +3078,141 @@ function fbHasSyncedBefore(path){
 function fbMarkSynced(path){
   try{ localStorage.setItem('ekspedisi_pro_fb_synced_' + path, '1'); }catch(e){}
 }
+/* ---------- Akun (Firebase Authentication + node 'accountsV2') ---------- (Sesi ketigapuluhtujuh)
+   Node 'accounts' (LAMA, array email+password-hash buatan sendiri) TIDAK ditulis lagi mulai sekarang
+   -- dibiarkan apa adanya di Firebase sebagai bahan pencocokan SEKALI SAJA saat seseorang yang sudah
+   pernah jadi akun lama itu daftar ulang lewat sistem baru (lihat provisionAccountRecord), supaya
+   tidak perlu antre persetujuan admin lagi kalau memang sebelumnya sudah disetujui. Node baru
+   'accountsV2' (dikunci per uid Firebase Authentication) adalah satu-satunya sumber akun yang aktif
+   dipakai sistem mulai sekarang. */
 let fbAccountsListenerAttached = false;
 function attachFirebaseAccountsListener(){
-  if(!fbDb || fbAccountsListenerAttached) return;
+  // Sinkron BACA SAJA dari node 'accounts' lama -- untuk pencocokan migrasi akun, bukan untuk ditampilkan di UI manapun lagi.
+  if(!fbDb || fbAccountsListenerAttached){ legacyAccountsLoadedResolve && legacyAccountsLoadedResolve(); return; }
   fbAccountsListenerAttached = true;
   fbAuthReadyPromise.then(() => {
     fbDb.ref('accounts').on('value', snap => {
-      if(fbPendingWrites['accounts']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
       const val = snap.val();
       const arr = fbToArray(val);
-      const sudahPernahSinkron = fbHasSyncedBefore('accounts');
-      fbMarkSynced('accounts');
-      if(arr && arr.length > 0){
-        const filtered = fbFilterTombstoned('accounts', arr, item => normEmail(item && item.email));
-        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(filtered));
-        if(document.getElementById('accountListWrap') && document.querySelector('.view.active[data-view="pengaturan"]')){
-          renderAccountList();
-        }
-      }else if(val == null){
-        if(!sudahPernahSinkron){
-          const local = loadAccounts();
-          if(local.length > 0) fbPush('accounts', local); // Firebase masih kosong -> unggah data lokal sebagai data awal
-        }else{
-          localStorage.setItem(ACCOUNTS_KEY, JSON.stringify([]));
-          if(document.getElementById('accountListWrap') && document.querySelector('.view.active[data-view="pengaturan"]')){
-            renderAccountList();
-          }
-        }
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(arr && arr.length > 0 ? arr : []));
+      if(legacyAccountsLoadedResolve){ legacyAccountsLoadedResolve(); legacyAccountsLoadedResolve = null; }
+    });
+  });
+}
+let legacyAccountsLoadedResolve = null;
+const legacyAccountsLoadedPromise = new Promise(resolve => { legacyAccountsLoadedResolve = resolve; });
+attachFirebaseAccountsListener();
+
+/* accountsV2: akun yang AKTIF dipakai sistem (uid Firebase Auth -> {email, nama, role, approved, bisaKonfirmasiPO}) */
+let accountsByUid = {};
+let accountsV2LoadedResolve = null;
+const accountsV2LoadedPromise = new Promise(resolve => { accountsV2LoadedResolve = resolve; });
+function attachAccountsV2Listener(){
+  if(!fbDb){ if(accountsV2LoadedResolve){ accountsV2LoadedResolve(); accountsV2LoadedResolve = null; } return; }
+  fbAuthReadyPromise.then(() => {
+    fbDb.ref('accountsV2').on('value', snap => {
+      accountsByUid = snap.val() || {};
+      if(accountsV2LoadedResolve){ accountsV2LoadedResolve(); accountsV2LoadedResolve = null; }
+      if(document.getElementById('accountListWrap') && document.querySelector('.view.active[data-view="pengaturan"]')){
+        renderAccountList();
+      }
+      // Kalau data akun sendiri yang sedang login berubah (mis. baru saja di-ACC admin lain di perangkat lain), perbarui badge nama tanpa perlu reload
+      const cu = firebase.auth().currentUser;
+      if(cu && accountsByUid[cu.uid] && document.getElementById('userBadge')){
+        const a = accountsByUid[cu.uid];
+        document.getElementById('userBadge').textContent = (a.nama || a.email || '?').charAt(0).toUpperCase();
       }
     });
   });
 }
-attachFirebaseAccountsListener();
+attachAccountsV2Listener();
+function fbSetAccountV2(uid, record){
+  if(!fbDb) return Promise.resolve();
+  return fbAuthReadyPromise.then(() => fbDb.ref('accountsV2/' + uid).set(record)).catch(err => {
+    console.warn('Gagal menyimpan akun ke Firebase:', err);
+  });
+}
+function fbUpdateAccountV2(uid, patch){
+  if(!fbDb) return Promise.resolve();
+  return fbAuthReadyPromise.then(() => fbDb.ref('accountsV2/' + uid).update(patch)).catch(err => {
+    console.warn('Gagal memperbarui akun di Firebase:', err);
+  });
+}
+function fbDeleteAccountV2(uid){
+  if(!fbDb) return Promise.resolve();
+  return fbAuthReadyPromise.then(() => fbDb.ref('accountsV2/' + uid).remove()).catch(err => {
+    console.warn('Gagal menghapus akun di Firebase:', err);
+  });
+}
+/* Tentukan role/approved untuk akun BARU (uid Firebase Auth yang baru dibuat) berdasarkan akun lama
+   (sebelum migrasi ke Firebase Authentication) yang cocok berdasarkan email -- supaya orang yang
+   sebelumnya sudah disetujui admin tidak perlu antre persetujuan lagi, cukup daftar ulang SEKALI pakai
+   email yang sama seperti biasa. Kalau tidak ada kecocokan sama sekali, berlaku aturan biasa: role
+   'user' & menunggu persetujuan admin. Bootstrap khusus: kalau di accountsV2 belum ada admin SAMA
+   SEKALI (kondisi pas baru migrasi) dan yang daftar ulang ini cocok dengan akun lama ber-role admin,
+   langsung dijadikan admin & aktif -- supaya sistem tidak sampai "terkunci" tanpa admin yang bisa
+   menyetujui siapa pun setelah migrasi. */
+async function provisionAccountRecord(uid, email, nama){
+  await Promise.all([accountsV2LoadedPromise, legacyAccountsLoadedPromise]);
+  const legacy = findAccount(email);
+  const adaAdminAktif = Object.values(accountsByUid || {}).some(a => a && a.role === 'admin');
+  let role = 'user';
+  let approved = false;
+  if(legacy){
+    role = accountRole(legacy) === 'admin' ? 'admin' : 'user';
+    approved = accountApproved(legacy) === true;
+  }
+  if(!adaAdminAktif && legacy && accountRole(legacy) === 'admin'){
+    role = 'admin';
+    approved = true;
+  }
+  const record = {
+    email: normEmail(email),
+    nama: nama || (legacy && legacy.nama) || '',
+    role: role,
+    approved: approved,
+    bisaKonfirmasiPO: legacy ? !!legacy.bisaKonfirmasiPO : false,
+    createdAt: new Date().toISOString(),
+    migratedFromLegacy: !!legacy,
+  };
+  accountsByUid[uid] = record; // update cache lokal juga, jangan tunggu listener 'value' berikutnya
+  await fbSetAccountV2(uid, record);
+  return record;
+}
+/* Dipanggil setiap ada perubahan status login Firebase Auth (login baru, sesi lama dipulihkan saat
+   refresh, atau logout). Alur register (createUserWithEmailAndPassword) IKUT memicu event ini karena
+   Firebase otomatis login-kan akun yang baru dibuat -- suppressAuthStateHandler dipakai supaya alur
+   register bisa menangani sendiri (tulis accountsV2 lalu logout dengan pesannya sendiri) tanpa
+   "diserobot" logika di bawah ini.
+   PENTING soal timing: onAuthStateChanged Firebase selalu terpicu ASINKRON (bukan langsung saat itu
+   juga) -- jadi TIDAK boleh mengandalkan urutan try/finally di kode register untuk tahu kapan aman
+   mematikan suppressAuthStateHandler (transisi "logout" dari signOut() di alur register bisa saja
+   baru benar-benar terpicu SETELAH blok finally-nya selesai, ketimbang sebelum). Makanya flag ini
+   di-clear SENDIRI oleh handler ini persis saat ia melihat transisi "user=null" yang sedang ditunggu
+   -- bukan oleh kode register secara langsung -- supaya selalu benar terlepas dari urutan asli. */
+let suppressAuthStateHandler = false;
+async function handleAuthStateChange(user){
+  if(suppressAuthStateHandler){
+    if(!user) suppressAuthStateHandler = false; // konsumsi transisi logout yang kita picu sendiri di alur register, lalu berhenti menekan
+    return;
+  }
+  if(!user){ showLogin(); return; }
+  await accountsV2LoadedPromise;
+  const rec = accountsByUid[user.uid];
+  if(!rec || rec.approved !== true){
+    // signOut() di bawah ini SENDIRI memicu transisi logout yang akan memanggil handleAuthStateChange
+    // ini lagi (async) -- tanpa suppressAuthStateHandler, panggilan kedua itu akan masuk ke cabang
+    // `if(!user){ showLogin(); return; }` di atas dan menghapus lagi pesan yang baru saja diisi di
+    // bawah. Set suppress dulu supaya transisi itu "dikonsumsi" (lihat cabang paling atas) alih-alih diproses ulang.
+    suppressAuthStateHandler = true;
+    await firebase.auth().signOut();
+    showLogin(rec
+      ? 'Akun kamu masih menunggu persetujuan admin. Hubungi admin untuk mengaktifkan akun ini.'
+      : 'Sesi login tidak valid lagi, silakan masuk kembali.');
+    return;
+  }
+  showApp();
+}
 
 /* Dipasang sekali setelah login — begitu ada perubahan data dari PERANGKAT LAIN, otomatis update & render di sini juga */
 function attachFirebaseListeners(){
@@ -5659,6 +5842,18 @@ document.getElementById('btnCopyWaScript').addEventListener('click', function(){
     showToast('Kode Apps Script disalin', 'success');
   }
 });
+document.getElementById('btnCopyFbRules').addEventListener('click', function(){
+  const ta = document.getElementById('fbRulesCode');
+  ta.select();
+  ta.setSelectionRange(0, 999999);
+  try{
+    document.execCommand('copy');
+    showToast('Security Rules disalin', 'success');
+  }catch(e){
+    navigator.clipboard && navigator.clipboard.writeText(ta.value);
+    showToast('Security Rules disalin', 'success');
+  }
+});
 (function initWaSettings(){
   const savedNomor = localStorage.getItem(WA_NOMOR_KEY);
   if(savedNomor) document.getElementById('waNomorAdmin').value = savedNomor;
@@ -8101,9 +8296,8 @@ function exportLaporanSisaPoPdf(){
 document.getElementById('btnLapSisaPoExportPdf').addEventListener('click', exportLaporanSisaPoPdf);
 document.getElementById('btnLapSisaPoPrint').addEventListener('click', exportLaporanSisaPoPdf);
 
-/* ---------- LOGIN / AUTH (multi akun berbasis email, maks 5 akun) ---------- */
-const ACCOUNTS_KEY = 'ekspedisi_pro_accounts';
-const SESSION_KEY = 'ekspedisi_pro_session';
+/* ---------- LOGIN / AUTH (Firebase Authentication Email/Password, maks 5 akun) ---------- (Sesi ketigapuluhtujuh) */
+const ACCOUNTS_KEY = 'ekspedisi_pro_accounts_legacy'; // cache lokal node 'accounts' LAMA -- baca-saja, cuma untuk pencocokan migrasi
 const MAX_ACCOUNTS = 5;
 function togglePw(inputId, btn){
   const input = document.getElementById(inputId);
@@ -8116,59 +8310,29 @@ function togglePw(inputId, btn){
   btn.setAttribute('title', label);
 }
 
-const DEFAULT_ACCOUNT = {email:'admin@ekspedisipro.id', password:'admin123', nama:'Admin', role:'admin'};
-
-/* ---------- Hash password (SHA-256 + salt per akun) ----------
-   Password TIDAK lagi disimpan plain text. Field lama `password` (plain text) otomatis
-   dimigrasikan ke `passwordHash`+`passwordSalt` saat akun tsb berhasil login berikutnya. */
-async function sha256Hex(text){
-  const enc = new TextEncoder().encode(text);
-  const digest = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-function randomSaltHex(len){
-  const bytes = crypto.getRandomValues(new Uint8Array(len || 16));
-  return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-async function hashPasswordWithSalt(password, salt){
-  return sha256Hex(salt + ':' + password);
-}
-/* Set/ganti password akun -> selalu tersimpan sebagai hash, hapus field password plain text lama kalau ada */
-async function setAccountPassword(acc, newPassword){
-  const salt = randomSaltHex();
-  acc.passwordSalt = salt;
-  acc.passwordHash = await hashPasswordWithSalt(newPassword, salt);
-  delete acc.password;
-}
-/* Cek password akun: pakai hash kalau sudah dimigrasi, fallback ke plain text lama kalau belum */
-async function verifyPassword(inputPass, acc){
-  if(acc && acc.passwordHash && acc.passwordSalt){
-    const h = await hashPasswordWithSalt(inputPass, acc.passwordSalt);
-    return h === acc.passwordHash;
-  }
-  return !!acc && inputPass === acc.password;
-}
-
+/* loadAccounts()/findAccount() di bawah ini HANYA membaca cache node 'accounts' LAMA (dari sebelum
+   migrasi ke Firebase Authentication) -- dipakai satu-satunya untuk provisionAccountRecord() mencocokkan
+   akun yang daftar ulang lewat sistem baru. Tidak pernah ditulis lagi (tidak ada saveAccounts()). */
 function loadAccounts(){
-  let list;
-  try{ list = JSON.parse(localStorage.getItem(ACCOUNTS_KEY)); }catch(e){ list = null; }
-  if(!Array.isArray(list) || list.length === 0){
-    list = [DEFAULT_ACCOUNT];
-    saveAccounts(list);
-  }
-  return list;
+  try{
+    const list = JSON.parse(localStorage.getItem(ACCOUNTS_KEY));
+    return Array.isArray(list) ? list : [];
+  }catch(e){ return []; }
 }
-function saveAccounts(list){ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list)); fbPush('accounts', list); }
 function normEmail(v){ return String(v || '').trim().toLowerCase(); }
 function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
 function findAccount(email){
   const list = loadAccounts();
   return list.find(a => normEmail(a.email) === normEmail(email));
 }
+/* Akun yang sedang login sekarang -- diturunkan dari Firebase Auth (firebase.auth().currentUser) +
+   data profilnya di accountsByUid (node 'accountsV2'), BUKAN dari sessionStorage lagi. */
 function currentAccount(){
-  const email = sessionStorage.getItem(SESSION_KEY);
-  if(!email) return null;
-  return findAccount(email);
+  const user = firebase.auth().currentUser;
+  if(!user) return null;
+  const rec = accountsByUid[user.uid];
+  if(!rec) return null;
+  return Object.assign({uid: user.uid}, rec);
 }
 
 function initApp(){
@@ -8196,9 +8360,9 @@ function showApp(){
 function showLogin(msg){
   document.getElementById('appRoot').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('loginError').textContent = msg || '';
   document.getElementById('loginForm').reset();
-  setAuthTab('login');
+  setAuthTab('login'); // catatan: ini mengosongkan #loginError -- panggil SEBELUM mengisi pesan di bawah, bukan sesudah
+  document.getElementById('loginError').textContent = msg || '';
 }
 
 /* ---------- Tab Masuk / Daftar di layar login ---------- */
@@ -8214,9 +8378,9 @@ function setAuthTab(tab){
   document.getElementById('loginError').textContent = '';
   document.getElementById('registerError').textContent = '';
   if(!isLogin){
-    const sisa = MAX_ACCOUNTS - loadAccounts().length;
+    const sisa = MAX_ACCOUNTS - Object.keys(accountsByUid || {}).length;
     document.getElementById('registerSlotHint').textContent = sisa > 0
-      ? `Sisa kuota pendaftaran: ${sisa} dari ${MAX_ACCOUNTS} akun.`
+      ? `Sisa kuota pendaftaran: ${sisa} dari ${MAX_ACCOUNTS} akun. Sudah pernah punya akun di sistem lama? Daftar ulang di sini pakai email yang sama -- kalau sebelumnya sudah disetujui admin, akun langsung aktif tanpa perlu antre lagi.`
       : `Kuota ${MAX_ACCOUNTS} akun sudah penuh. Hubungi admin untuk menghapus akun lama.`;
   }
 }
@@ -8225,25 +8389,21 @@ document.getElementById('tabRegister').addEventListener('click', () => setAuthTa
 
 document.getElementById('loginForm').addEventListener('submit', async function(e){
   e.preventDefault();
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
-  const acc = findAccount(email);
-  const ok = await verifyPassword(pass, acc);
-  if(ok){
-    if(acc.approved === false){
-      document.getElementById('loginError').textContent = 'Akun kamu masih menunggu persetujuan admin. Hubungi admin untuk mengaktifkan akun ini.';
-      return;
-    }
-    if(acc.password){
-      /* Migrasi otomatis: akun ini masih pakai password plain text lama -> hash sekarang, transparan buat user */
-      const list = loadAccounts();
-      const target = list.find(a => normEmail(a.email) === normEmail(acc.email));
-      if(target){ await setAccountPassword(target, pass); saveAccounts(list); }
-    }
-    sessionStorage.setItem(SESSION_KEY, normEmail(acc.email));
-    showApp();
-  }else{
-    document.getElementById('loginError').textContent = 'Email atau password salah.';
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try{
+    // Login sesungguhnya terjadi di server Firebase -- bukan dicek di browser lagi. Kalau berhasil,
+    // pengecekan "sudah disetujui admin atau belum" & tampilkan app ditangani terpusat oleh
+    // handleAuthStateChange() (dipicu otomatis oleh onAuthStateChanged begitu login sukses).
+    await firebase.auth().signInWithEmailAndPassword(email, pass);
+  }catch(err){
+    errEl.textContent = mapFirebaseAuthError(err);
+  }finally{
+    btn.disabled = false;
   }
 });
 
@@ -8258,23 +8418,47 @@ document.getElementById('registerForm').addEventListener('submit', async functio
   const confirmPass = document.getElementById('regConfirmPass').value;
 
   if(!isValidEmail(email)){ errEl.textContent = 'Format email tidak valid.'; return; }
+  if(pass.length < 6){ errEl.textContent = 'Password minimal 6 karakter.'; return; }
   if(pass !== confirmPass){ errEl.textContent = 'Konfirmasi password tidak cocok.'; return; }
 
-  const accounts = loadAccounts();
-  if(accounts.length >= MAX_ACCOUNTS){
-    errEl.textContent = `Kuota maksimal ${MAX_ACCOUNTS} akun sudah tercapai.`; return;
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try{
+    const cred = await firebase.auth().createUserWithEmailAndPassword(email, pass);
+    // Baru mulai menekan handleAuthStateChange SETELAH akun berhasil dibuat (yang otomatis login-kan
+    // Firebase sebagai akun baru itu) -- supaya kegagalan createUserWithEmailAndPassword sendiri (mis.
+    // email sudah dipakai) tidak pernah butuh "dikonsumsi" oleh transisi logout yang sebenarnya tidak
+    // akan pernah terjadi (lihat catatan timing di definisi handleAuthStateChange).
+    suppressAuthStateHandler = true;
+    await accountsV2LoadedPromise;
+    if(Object.keys(accountsByUid || {}).length >= MAX_ACCOUNTS){
+      await cred.user.delete().catch(() => {}); // ini memicu transisi logout yang otomatis dikonsumsi handleAuthStateChange
+      errEl.textContent = `Kuota maksimal ${MAX_ACCOUNTS} akun sudah tercapai.`;
+      return;
+    }
+    const provisioned = await provisionAccountRecord(cred.user.uid, email, nama);
+    await firebase.auth().signOut(); // ini juga memicu transisi logout yang otomatis dikonsumsi handleAuthStateChange
+    this.reset();
+    // Catatan: JANGAN panggil setAuthTab('login') di sini -- itu akan langsung menghapus pesan sukses
+    // yang baru saja diisi di bawah ini (setAuthTab mengosongkan #registerError sebagai bagian dari
+    // reset tab). Biarkan pengguna tetap di tab Daftar supaya sempat membaca pesannya, baru pindah
+    // manual ke tab Masuk.
+    errEl.style.color = 'var(--green-600)';
+    errEl.textContent = provisioned.approved
+      ? 'Pendaftaran berhasil! Akun ini dikenali dari akun kamu sebelumnya yang sudah disetujui admin, jadi langsung aktif -- silakan masuk.'
+      : 'Pendaftaran berhasil! Akun kamu perlu disetujui admin dulu sebelum bisa login — hubungi admin sistem ini.';
+  }catch(err){
+    errEl.style.color = '';
+    errEl.textContent = mapFirebaseAuthError(err);
+    if(firebase.auth().currentUser){
+      // Gagal di tengah jalan (bukan di createUser sendiri) sementara akun barunya terlanjur login --
+      // bersihkan sesi yang nyangkut ini & pastikan tidak macet menekan handleAuthStateChange selamanya.
+      suppressAuthStateHandler = false;
+      firebase.auth().signOut().catch(() => {});
+    }
+  }finally{
+    btn.disabled = false;
   }
-  if(accounts.some(a => normEmail(a.email) === normEmail(email))){
-    errEl.textContent = 'Email ini sudah terdaftar. Silakan masuk.'; return;
-  }
-
-  const newAcc = {email: email.trim(), nama: nama, role: 'user', approved: false};
-  await setAccountPassword(newAcc, pass);
-  accounts.push(newAcc);
-  saveAccounts(accounts);
-  this.reset();
-  errEl.style.color = 'var(--green-600)';
-  errEl.textContent = 'Pendaftaran berhasil! Akun kamu perlu disetujui admin dulu sebelum bisa login — hubungi admin sistem ini.';
 });
 
 /* ---------- Pengaturan: profil akun aktif ---------- */
@@ -8283,7 +8467,8 @@ function accountApproved(a){ return a.approved !== false; }
 
 function renderAccountList(){
   const wrap = document.getElementById('accountListWrap');
-  const accounts = loadAccounts();
+  const uids = Object.keys(accountsByUid || {});
+  const accounts = uids.map(uid => Object.assign({uid: uid}, accountsByUid[uid]));
   const acc = currentAccount();
   document.getElementById('accountCountLbl').textContent = `(${accounts.length}/${MAX_ACCOUNTS})`;
   const pendingCount = accounts.filter(a => !accountApproved(a)).length;
@@ -8294,48 +8479,35 @@ function renderAccountList(){
         <div class="em">${esc(a.email)} ${!accountApproved(a) ? '<span class="badge badge-legal-warn" style="margin-left:6px;"><span class="badge-dot"></span>Menunggu persetujuan</span>' : ''}</div>
         <div class="nm">${esc(a.nama || 'Tanpa nama')} — ${accountRole(a) === 'admin' ? 'Admin (akses penuh)' : 'Terbatas (profil &amp; password saja)'}</div>
         ${accountRole(a) !== 'admin' ? `<label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted); cursor:pointer;">
-          <input type="checkbox" class="po-access-toggle" data-email="${esc(a.email)}" ${a.bisaKonfirmasiPO ? 'checked' : ''}>
+          <input type="checkbox" class="po-access-toggle" data-uid="${esc(a.uid)}" ${a.bisaKonfirmasiPO ? 'checked' : ''}>
           Bisa konfirmasi PO (ACC / tolak Sales Order)
         </label>` : ''}
       </div>
-      ${acc && normEmail(a.email) === normEmail(acc.email)
+      ${acc && a.uid === acc.uid
         ? '<span class="account-badge-you">AKUN INI</span>'
         : `<div style="display:flex; gap:6px;">
-             ${!accountApproved(a) ? `<button type="button" class="btn btn-primary approve" data-email="${esc(a.email)}" style="padding:6px 12px; font-size:11.5px;">Setujui</button>` : ''}
-             <button type="button" class="icon-btn del" data-email="${esc(a.email)}" title="Hapus akun">
+             ${!accountApproved(a) ? `<button type="button" class="btn btn-primary approve" data-uid="${esc(a.uid)}" data-email="${esc(a.email)}" style="padding:6px 12px; font-size:11.5px;">Setujui</button>` : ''}
+             <button type="button" class="icon-btn del" data-uid="${esc(a.uid)}" data-email="${esc(a.email)}" title="Cabut akses akun ini">
                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
              </button>
            </div>`}
     </div>`).join('');
   document.getElementById('btnShowAddAccount').style.display = accounts.length >= MAX_ACCOUNTS ? 'none' : '';
   wrap.querySelectorAll('.approve').forEach(btn => btn.addEventListener('click', function(){
-    let list = loadAccounts();
-    const target = list.find(a => normEmail(a.email) === normEmail(this.dataset.email));
-    if(target){
-      target.approved = true;
-      saveAccounts(list);
-      renderAccountList();
-      showToast(`Akun ${this.dataset.email} disetujui, sekarang bisa login`, 'success');
-    }
+    fbUpdateAccountV2(this.dataset.uid, {approved: true});
+    showToast(`Akun ${this.dataset.email} disetujui, sekarang bisa login`, 'success');
   }));
   wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
     const targetEmail = this.dataset.email;
-    if(confirm(`Hapus akun ${targetEmail}?`)){
-      let list = loadAccounts().filter(a => normEmail(a.email) !== normEmail(targetEmail));
-      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
-      fbRemoveFromList('accounts', item => normEmail(item && item.email) === normEmail(targetEmail), normEmail(targetEmail));
-      renderAccountList();
-      showToast('Akun berhasil dihapus', 'danger');
+    const targetUid = this.dataset.uid;
+    if(confirm(`Cabut akses akun ${targetEmail}? Akun ini tidak akan bisa lagi membuka data sistem (kredensial login-nya sendiri tidak otomatis terhapus dari Firebase Authentication -- kalau perlu dihapus total, hapus manual lewat Firebase Console > Authentication).`)){
+      fbDeleteAccountV2(targetUid);
+      showToast('Akses akun berhasil dicabut', 'danger');
     }
   }));
   wrap.querySelectorAll('.po-access-toggle').forEach(cb => cb.addEventListener('change', function(){
-    let list = loadAccounts();
-    const target = list.find(a => normEmail(a.email) === normEmail(this.dataset.email));
-    if(target){
-      target.bisaKonfirmasiPO = this.checked;
-      saveAccounts(list);
-      showToast(this.checked ? `${this.dataset.email} sekarang bisa konfirmasi PO` : `Akses konfirmasi PO ${this.dataset.email} dicabut`, 'success');
-    }
+    fbUpdateAccountV2(this.dataset.uid, {bisaKonfirmasiPO: this.checked});
+    showToast(this.checked ? 'Akses konfirmasi PO diberikan' : 'Akses konfirmasi PO dicabut', 'success');
   }));
 }
 
@@ -8349,6 +8521,9 @@ document.getElementById('btnCancelAddAccount').addEventListener('click', functio
   document.getElementById('formAddAccount').reset();
   document.getElementById('btnShowAddAccount').style.display = '';
 });
+/* Admin menambah akun baru untuk orang lain langsung dari sini -- pakai app Firebase KEDUA
+   (secondaryAuth(), lihat blok inisialisasi Firebase di atas) supaya sesi login admin yang sedang
+   aktif di app utama TIDAK ikut tergantikan oleh akun baru yang baru dibuat. */
 document.getElementById('formAddAccount').addEventListener('submit', async function(e){
   e.preventDefault();
   const errEl = document.getElementById('addAccountError');
@@ -8359,19 +8534,28 @@ document.getElementById('formAddAccount').addEventListener('submit', async funct
   const role = document.getElementById('newAccRole').value === 'admin' ? 'admin' : 'user';
 
   if(!isValidEmail(email)){ errEl.textContent = 'Format email tidak valid.'; return; }
-  const accounts = loadAccounts();
-  if(accounts.length >= MAX_ACCOUNTS){ errEl.textContent = `Kuota maksimal ${MAX_ACCOUNTS} akun sudah tercapai.`; return; }
-  if(accounts.some(a => normEmail(a.email) === normEmail(email))){ errEl.textContent = 'Email ini sudah terdaftar.'; return; }
+  if(pass.length < 6){ errEl.textContent = 'Password minimal 6 karakter.'; return; }
+  if(Object.keys(accountsByUid || {}).length >= MAX_ACCOUNTS){ errEl.textContent = `Kuota maksimal ${MAX_ACCOUNTS} akun sudah tercapai.`; return; }
+  if(Object.values(accountsByUid || {}).some(a => normEmail(a.email) === normEmail(email))){ errEl.textContent = 'Email ini sudah terdaftar.'; return; }
 
-  const newAcc = {email: email.trim(), nama: nama, role: role, approved: true};
-  await setAccountPassword(newAcc, pass);
-  accounts.push(newAcc);
-  saveAccounts(accounts);
-  this.reset();
-  this.style.display = 'none';
-  document.getElementById('btnShowAddAccount').style.display = '';
-  renderAccountList();
-  showToast('Akun berhasil ditambahkan', 'success');
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try{
+    const cred = await secondaryAuth().createUserWithEmailAndPassword(email, pass);
+    await fbSetAccountV2(cred.user.uid, {
+      email: normEmail(email), nama: nama, role: role, approved: true,
+      bisaKonfirmasiPO: false, createdAt: new Date().toISOString(), migratedFromLegacy: false,
+    });
+    await secondaryAuth().signOut(); // bersihkan sesi di app kedua (tidak berpengaruh ke sesi admin di app utama)
+    this.reset();
+    this.style.display = 'none';
+    document.getElementById('btnShowAddAccount').style.display = '';
+    showToast('Akun berhasil ditambahkan', 'success');
+  }catch(err){
+    errEl.textContent = mapFirebaseAuthError(err);
+  }finally{
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('formPassword').addEventListener('submit', async function(e){
@@ -8380,54 +8564,59 @@ document.getElementById('formPassword').addEventListener('submit', async functio
   const errEl = document.getElementById('passError');
   const okEl = document.getElementById('passSuccess');
   errEl.textContent = ''; okEl.textContent = '';
-  if(!acc){ errEl.textContent = 'Sesi tidak ditemukan, silakan masuk kembali.'; return; }
+  const user = firebase.auth().currentUser;
+  if(!acc || !user){ errEl.textContent = 'Sesi tidak ditemukan, silakan masuk kembali.'; return; }
 
   const inputNama = document.getElementById('currentNama').value.trim();
-  const inputEmail = document.getElementById('currentUser').value.trim();
   const oldPass = document.getElementById('oldPass').value;
   const newPass = document.getElementById('newPass').value;
   const confirmPass = document.getElementById('confirmPass').value;
 
-  const oldPassOk = await verifyPassword(oldPass, acc);
-  if(!oldPassOk){ errEl.textContent = 'Password saat ini tidak sesuai.'; return; }
-  if(!isValidEmail(inputEmail)){ errEl.textContent = 'Format email tidak valid.'; return; }
-  const accounts = loadAccounts();
-  const target = accounts.find(a => normEmail(a.email) === normEmail(acc.email));
-  if(!target){ errEl.textContent = 'Akun tidak ditemukan, silakan masuk kembali.'; return; }
-  if(normEmail(inputEmail) !== normEmail(acc.email) && accounts.some(a => normEmail(a.email) === normEmail(inputEmail))){
-    errEl.textContent = 'Email tersebut sudah dipakai akun lain.'; return;
-  }
+  if(newPass && newPass.length < 6){ errEl.textContent = 'Password baru minimal 6 karakter.'; return; }
   if(newPass && newPass !== confirmPass){ errEl.textContent = 'Konfirmasi password baru tidak cocok.'; return; }
 
-  target.nama = inputNama;
-  target.email = inputEmail;
-  if(newPass){ await setAccountPassword(target, newPass); }
-  else if(target.password){ await setAccountPassword(target, oldPass); } /* migrasi otomatis kalau masih plain text lama */
-  saveAccounts(accounts);
-  sessionStorage.setItem(SESSION_KEY, normEmail(inputEmail));
-  document.getElementById('userBadge').textContent = (inputNama || inputEmail).charAt(0).toUpperCase();
-  okEl.textContent = 'Profil berhasil diperbarui.';
-  document.getElementById('oldPass').value = '';
-  document.getElementById('newPass').value = '';
-  document.getElementById('confirmPass').value = '';
-  renderAccountList();
-  showToast('Profil berhasil diperbarui', 'success');
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  try{
+    /* Password saat ini WAJIB diverifikasi ulang lewat Firebase (reauthenticate) sebelum boleh ganti
+       password -- ini standar keamanan Firebase Auth, bukan cuma validasi tampilan seperti sistem lama. */
+    const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPass);
+    await user.reauthenticateWithCredential(credential);
+  }catch(err){
+    errEl.textContent = 'Password saat ini tidak sesuai.';
+    btn.disabled = false;
+    return;
+  }
+  try{
+    if(newPass) await user.updatePassword(newPass);
+    await fbUpdateAccountV2(user.uid, {nama: inputNama});
+    document.getElementById('userBadge').textContent = (inputNama || acc.email).charAt(0).toUpperCase();
+    okEl.textContent = 'Profil berhasil diperbarui.';
+    document.getElementById('oldPass').value = '';
+    document.getElementById('newPass').value = '';
+    document.getElementById('confirmPass').value = '';
+    showToast('Profil berhasil diperbarui', 'success');
+  }catch(err){
+    errEl.textContent = mapFirebaseAuthError(err);
+  }finally{
+    btn.disabled = false;
+  }
 });
 
 document.getElementById('btnLogout').addEventListener('click', function(){
   if(confirm('Keluar dari sistem?')){
-    sessionStorage.removeItem(SESSION_KEY);
-    showLogin();
+    firebase.auth().signOut();
+    // handleAuthStateChange() otomatis menampilkan layar login begitu status logout terdeteksi
   }
 });
 
-/* init: tampilkan app langsung jika sesi login masih aktif di tab ini */
-if(sessionStorage.getItem(SESSION_KEY) && findAccount(sessionStorage.getItem(SESSION_KEY))){
-  showApp();
-}else{
-  sessionStorage.removeItem(SESSION_KEY);
-  showLogin();
-}
+/* init: TIDAK lagi mengecek sessionStorage secara manual di sini -- firebase.auth().onAuthStateChanged
+   (dipasang di blok inisialisasi Firebase paling atas) otomatis memanggil handleAuthStateChange() saat
+   halaman pertama dimuat, baik itu belum ada sesi sama sekali (tampilkan layar login) maupun sesi lama
+   berhasil dipulihkan otomatis oleh Firebase (tampilkan app langsung, setelah dicek masih 'approved').
+   Kalau Firebase gagal diinisialisasi sama sekali (mis. tidak ada koneksi internet & belum pernah ada
+   sesi tersimpan), tetap tampilkan layar login sebagai default yang aman. */
+if(!fbDb){ showLogin(); }
 </script>
 </body>
 </html>
