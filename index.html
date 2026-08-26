@@ -12,14 +12,23 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <style>
   :root{
-    --navy-900:#0f1b30; --navy-800:#16233d; --navy-700:#1f3054; --navy-600:#2b3f68;
-    --orange-500:#e8730a; --orange-100:#fdead6; --orange-700:#a8540a;
+    /* Sesi keempatpuluhlima: palet disesuaikan mengikuti referensi warna aplikasi Accurate Online
+       yang dikirim user (halaman "Menu Accurate") -- warna diambil LANGSUNG dari sample pixel
+       screenshot itu (bukan kira-kira), supaya benar-benar akurat ke referensinya:
+       - Navy sidebar digeser tipis ke arah navy Accurate (awalnya sudah dekat, cuma dihaluskan).
+       - Aksen utama (dulu oranye) diganti biru khas Accurate (warna kartu modul "Buku Besar" di
+         referensi) -- nama variabel CSS-nya sengaja TETAP "--accent-*" (bukan lagi "--orange-*")
+         supaya ke depannya tidak membingungkan (variabel bernama "orange" tapi isinya biru).
+       - --blue-500 (dipakai di 1 kartu statistik Dashboard) disamakan huenya dengan aksen baru
+         supaya semua "biru" di aplikasi konsisten satu keluarga warna, bukan dua biru yang beda. */
+    --navy-900:#1a2740; --navy-800:#21304b; --navy-700:#2c3c5c; --navy-600:#384a6e;
+    --accent-500:#2f80c6; --accent-100:#e6f2fc; --accent-700:#225d93;
     --bg:#f5f6f8; --card:#ffffff; --border:#e4e6eb; --border-strong:#d3d7e0;
     --text:#151a24; --text-muted:#6b7280; --text-faint:#9aa0ab;
     --green-600:#1f7a54; --green-100:#e3f5ec;
     --amber-600:#b9740a; --amber-100:#fdf1dc;
     --red-600:#c0392b; --red-100:#fceceb;
-    --blue-500:#2f6fed;
+    --blue-500:#2f80c6;
     --radius:10px; --radius-lg:14px;
   }
   *{box-sizing:border-box;}
@@ -60,7 +69,7 @@
   }
   .brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px; border-bottom:1px solid var(--navy-700); margin-bottom:14px;}
   .brand-mark{
-    width:34px; height:34px; border-radius:9px; background:var(--orange-500);
+    width:34px; height:34px; border-radius:9px; background:var(--accent-500);
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
   .brand-mark svg{width:19px; height:19px; stroke:#fff;}
@@ -85,7 +94,7 @@
   .nav-item svg{width:17px; height:17px; stroke:currentColor; flex-shrink:0;}
   .nav-item:hover{background:var(--navy-800); color:#fff;}
   .nav-item.active{background:var(--navy-700); color:#fff;}
-  .nav-item.active svg{stroke:var(--orange-500);}
+  .nav-item.active svg{stroke:var(--accent-500);}
 
   /* ---------- GRUP MENU SIDEBAR (Administrasi / Daftar / Monitoring / Laporan) ---------- */
   .nav-group{display:flex; flex-direction:column;}
@@ -164,13 +173,13 @@
     border:1px solid rgba(255,255,255,.22);
   }
   .login-mark{
-    width:48px; height:48px; border-radius:12px; background:var(--orange-500);
+    width:48px; height:48px; border-radius:12px; background:var(--accent-500);
     display:flex; align-items:center; justify-content:center; margin:0 auto 14px;
-    box-shadow:0 8px 20px rgba(232,115,10,.45);
+    box-shadow:0 8px 20px rgba(47,128,198,.45);
   }
   .login-mark svg{width:24px; height:24px;}
   .login-card h1{font-size:19px; margin:0 0 4px; color:#fff; letter-spacing:.01em;}
-  .login-card .login-slogan{color:var(--orange-500); font-size:11px; font-weight:600; letter-spacing:.08em; margin:0 0 14px;}
+  .login-card .login-slogan{color:var(--accent-500); font-size:11px; font-weight:600; letter-spacing:.08em; margin:0 0 14px;}
   .login-card p{color:rgba(255,255,255,.72); font-size:12.5px; margin:0 0 22px;}
   .login-card .field{text-align:left; margin-bottom:14px;}
   .login-card .field label{color:rgba(255,255,255,.85);}
@@ -180,8 +189,8 @@
   }
   .login-card input::placeholder{color:rgba(255,255,255,.4);}
   .login-card input:focus{
-    outline:none; border-color:var(--orange-500); background:rgba(255,255,255,.14);
-    box-shadow:0 0 0 3px rgba(232,115,10,.25);
+    outline:none; border-color:var(--accent-500); background:rgba(255,255,255,.14);
+    box-shadow:0 0 0 3px rgba(47,128,198,.25);
   }
   .pw-wrap{position:relative;}
   .pw-wrap input{padding-right:40px;}
@@ -405,7 +414,7 @@
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
     transition:background .15s ease, color .15s ease; white-space:nowrap;
   }
-  .settings-tab:hover{background:var(--orange-100); color:var(--orange-700);}
+  .settings-tab:hover{background:var(--accent-100); color:var(--accent-700);}
   .settings-tab.active{background:var(--navy-900); color:#fff;}
   .panel[data-settings-panel]{display:none;}
   .panel[data-settings-panel].settings-panel-active{display:block;}
@@ -419,7 +428,7 @@
     width:100%; padding:10px 12px; border:1px solid var(--border-strong); border-radius:8px;
     font-size:13.5px; background:#fff; color:var(--text); font-family:inherit;
   }
-  input:focus, select:focus{outline:none; border-color:var(--orange-500); box-shadow:0 0 0 3px var(--orange-100);}
+  input:focus, select:focus{outline:none; border-color:var(--accent-500); box-shadow:0 0 0 3px var(--accent-100);}
   .plate-preview{
     margin-top:8px; display:inline-flex; align-items:center; gap:8px; padding:6px 12px;
     border:2px solid var(--navy-800); border-radius:6px; font-family:'IBM Plex Mono',monospace;
@@ -431,8 +440,8 @@
     transition:background .15s ease, box-shadow .15s ease, border-color .15s ease;
   }
   .btn svg{width:15px; height:15px;}
-  .btn-primary{background:var(--orange-500); color:#fff; box-shadow:0 1px 2px rgba(232,115,10,.3);}
-  .btn-primary:hover{background:var(--orange-700); box-shadow:0 2px 6px rgba(232,115,10,.35);}
+  .btn-primary{background:var(--accent-500); color:#fff; box-shadow:0 1px 2px rgba(47,128,198,.3);}
+  .btn-primary:hover{background:var(--accent-700); box-shadow:0 2px 6px rgba(47,128,198,.35);}
   .btn-secondary{background:#fff; border:1px solid var(--border-strong); color:var(--text);}
   .btn-secondary:hover{background:#f3f4f6; border-color:var(--text-faint);}
   .btn-row{display:flex; gap:10px; margin-top:18px;}
@@ -464,7 +473,7 @@
   .badge-progress{background:var(--amber-100); color:var(--amber-600);}
   .badge-done{background:var(--green-100); color:var(--green-600);}
   .badge-scheduled{background:#e6ecfb; color:var(--navy-700);}
-  .badge-transit{background:var(--orange-100); color:var(--orange-700);}
+  .badge-transit{background:var(--accent-100); color:var(--accent-700);}
   .badge-arrived{background:#dcf1f7; color:#0f6e8c;}
   .badge-legal-safe{background:var(--green-100); color:var(--green-600);}
   .badge-legal-warn{background:var(--amber-100); color:var(--amber-600);}
@@ -486,8 +495,8 @@
     border:none; background:none; cursor:pointer; padding:4px 8px; border-radius:6px;
     font-size:13px; color:var(--text); font-family:inherit;
   }
-  .tonase-cell-btn:hover{background:var(--orange-100);}
-  .tonase-cell-btn .tonase-empty{color:var(--orange-700); font-weight:600; font-size:12.5px;}
+  .tonase-cell-btn:hover{background:var(--accent-100);}
+  .tonase-cell-btn .tonase-empty{color:var(--accent-700); font-weight:600; font-size:12.5px;}
   .empty-state{padding:36px 20px; text-align:center; color:var(--text-muted); font-size:13px;}
   .empty-state svg{width:32px; height:32px; stroke:var(--text-faint); margin-bottom:8px;}
 
@@ -528,7 +537,7 @@
     cursor:pointer; border-bottom:2px solid transparent; letter-spacing:.02em;
   }
   .dash-tab:hover{color:var(--navy-700);}
-  .dash-tab.active{color:var(--navy-700); border-bottom-color:var(--orange-500);}
+  .dash-tab.active{color:var(--navy-700); border-bottom-color:var(--accent-500);}
 
   .dash-kpi-value{display:flex; align-items:center; justify-content:space-between; gap:14px; flex:1;}
   .dash-kpi-pct{font-size:32px; font-weight:800; line-height:1; white-space:nowrap;}
@@ -580,10 +589,10 @@
   .top-chart-label{display:flex; align-items:center; gap:8px; min-width:0;}
   .top-chart-track{background:#eef0f3; border-radius:4px; height:16px; overflow:hidden;}
   .top-chart-bar{
-    background:var(--orange-500); height:100%; border-radius:0 4px 4px 0; min-width:4px;
+    background:var(--accent-500); height:100%; border-radius:0 4px 4px 0; min-width:4px;
     transition:width .3s ease, background .15s ease;
   }
-  .top-chart-row:hover .top-chart-bar{background:var(--orange-700);}
+  .top-chart-row:hover .top-chart-bar{background:var(--accent-700);}
   .top-chart-value{text-align:right; font-weight:700; font-size:13px; color:var(--text);}
 
   /* ---------- TOAST NOTIFICATION ---------- */
@@ -695,7 +704,7 @@
   /* ---------- MONITORING SERVICE BERKALA (KM) — meniru persis tampilan Google Sheet "MONITORING SERVICE BERKALA" ---------- */
   .sv-table{ width:100%; border-collapse:collapse; border:1px solid var(--border-strong); }
   .sv-table th, .sv-table td{ border:1px solid var(--border-strong); padding:7px 9px; font-size:12px; text-align:center; }
-  .sv-table th{ background:var(--orange-500); color:#fff; font-weight:800; font-size:11px; text-transform:uppercase; }
+  .sv-table th{ background:var(--accent-500); color:#fff; font-weight:800; font-size:11px; text-transform:uppercase; }
   .sv-table td.sv-num{ text-align:right; font-family:'IBM Plex Mono',monospace; }
   .sv-table td.sv-left{ text-align:left; }
   .sv-table tbody tr:hover td{ filter:brightness(0.97); cursor:pointer; }
@@ -978,7 +987,7 @@
             <div class="lbl">Total DO bulan ini</div>
           </div>
           <div class="stat-card">
-            <div class="icon" style="background:var(--orange-500)">
+            <div class="icon" style="background:var(--accent-500)">
               <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
             </div>
             <div class="num" id="statProses">0</div>
@@ -3916,7 +3925,7 @@ function jenisLabel(r){
 }
 function jenisBadge(r){
   const parts = [];
-  if(recKirimBK(r)) parts.push('<span class="badge" style="background:var(--orange-100); color:var(--orange-700);">BK</span>');
+  if(recKirimBK(r)) parts.push('<span class="badge" style="background:var(--accent-100); color:var(--accent-700);">BK</span>');
   if(recKirimRoll(r)) parts.push('<span class="badge" style="background:#e6ecfb; color:var(--navy-700);">Roll</span>');
   if(recKirimOCC(r)) parts.push('<span class="badge" style="background:#dcf1f7; color:#0f6e8c;">OCC</span>');
   return parts.join(' ') || '-';
@@ -7076,7 +7085,7 @@ function renderDonutArmadaCard(){
   const label = pct === null
     ? 'Belum ada DO untuk armada ini'
     : `${esc(String(selesai))} dari ${esc(String(total))} DO selesai`;
-  renderDonutCard('donutArmadaWrap', pct, label, pct !== null && pct >= 70 ? 'var(--green-600)' : 'var(--orange-500)');
+  renderDonutCard('donutArmadaWrap', pct, label, pct !== null && pct >= 70 ? 'var(--green-600)' : 'var(--accent-500)');
 }
 
 /* ---- Donut: pangsa DO per kota tujuan (tab dinamis mengikuti top 3 kota) ---- */
