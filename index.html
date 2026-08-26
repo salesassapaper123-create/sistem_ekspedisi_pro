@@ -361,7 +361,11 @@
     0%,100%{ opacity:1; box-shadow:0 0 0 0 rgba(31,122,84,.45); }
     50%{ opacity:.55; box-shadow:0 0 0 4px rgba(31,122,84,0); }
   }
-  .content{padding:24px 28px 40px; width:100%; flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;}
+  /* overflow-x:auto (bukan hidden) -- tabel lebar (mis. Rekap Data DO, kolom-kolomnya banyak &
+     tidak punya pembungkus overflow-x sendiri) butuh scrollbar horizontal SENDIRI di sini supaya
+     tetap bisa digulung ke kanan/kiri, sekarang setelah halaman (.app/.content) tidak lagi bisa
+     digulung sebagai satu kesatuan lewat scrollbar level-browser seperti sebelumnya. */
+  .content{padding:24px 28px 40px; width:100%; flex:1; min-height:0; overflow-y:auto; overflow-x:auto;}
 
   .view{display:none;}
   .view.active{display:block;}
@@ -387,7 +391,11 @@
   .panel-head{padding:18px 20px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;}
   .panel-head h2{font-size:15px; font-weight:700; margin:0;}
   .panel-head p{color:var(--text-muted); font-size:12.5px; margin:2px 0 0;}
-  .panel-body{padding:20px;}
+  /* overflow-x:auto -- .panel di atas sengaja overflow:hidden (biar sudut membulatnya rapi),
+     tapi itu artinya tabel lebar (kolom banyak, mis. Rekap Data DO) yang lebih lebar dari panel
+     akan KEPOTONG TANPA scrollbar sama sekali kalau panel-body-nya sendiri tidak diberi scroll
+     horizontal sendiri. Dengan ini, tabel lebar dapat scrollbar sendiri di dalam panel-nya. */
+  .panel-body{padding:20px; overflow-x:auto;}
 
   /* ---------- SIDEBAR TAB PENGATURAN ---------- */
   .settings-tabs{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px; padding:5px; background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:0 1px 3px rgba(15,27,48,.05), 0 1px 2px rgba(15,27,48,.04);}
