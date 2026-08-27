@@ -1483,6 +1483,10 @@
               <h2>Konfirmasi PO</h2>
               <p>Daftar SO/PO yang masuk — order yang belum dikonfirmasi perlu ditinjau dan di-ACC atau ditolak.</p>
             </div>
+            <button type="button" class="btn btn-secondary" id="btnHapusSemuaPO" style="display:none; border-color:var(--red-600); color:var(--red-600);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
+              Hapus Semua Data
+            </button>
           </div>
           <div class="panel-body">
             <div id="poImportWrap" style="display:none; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border);">
@@ -6750,6 +6754,8 @@ function renderPO(){
   const bisaKonfirmasi = canConfirmPO();
   const importWrap = document.getElementById('poImportWrap');
   if(importWrap) importWrap.style.display = bisaKonfirmasi ? '' : 'none';
+  const btnHapusSemuaPO = document.getElementById('btnHapusSemuaPO');
+  if(btnHapusSemuaPO) btnHapusSemuaPO.style.display = (admin && poList.length > 0) ? '' : 'none';
   updatePoBadge();
   if(poList.length === 0){
     wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
@@ -9479,6 +9485,31 @@ function renderAccountList(){
     if(cu && cu.uid === this.dataset.uid) applyDataInputRestrictionToNav();
   }));
 }
+
+/* Hapus SEMUA data master Konfirmasi PO sekaligus (bukan satu per satu) -- khusus admin. Menghapus
+   poList lokal, localStorage, dan node 'po' di Firebase Realtime Database secara penuh, supaya tidak
+   ada sisa data yang muncul lagi lewat sinkronisasi real-time dari perangkat/sesi lain. */
+const btnHapusSemuaPO = document.getElementById('btnHapusSemuaPO');
+if(btnHapusSemuaPO) btnHapusSemuaPO.addEventListener('click', function(){
+  if(!isAdminUser()) return;
+  const jumlah = poList.length;
+  if(jumlah === 0) return;
+  if(confirm(`Hapus SEMUA data Konfirmasi PO (${jumlah} baris)? Tindakan ini akan menghapus seluruh riwayat SO/PO secara permanen dan TIDAK BISA dibatalkan.`)){
+    if(confirm('Konfirmasi sekali lagi: benar-benar hapus semua data PO?')){
+      poList = [];
+      localStorage.setItem(PO_KEY, JSON.stringify(poList));
+      if(fbDb){
+        fbDb.ref('po').set(null).catch(err => {
+          showToast('Gagal menghapus data di server: ' + (err && err.message ? err.message : 'error tidak diketahui'), 'danger');
+        });
+      }
+      renderPO();
+      renderPOMonitoring();
+      updatePeringatanBadge();
+      showToast('Semua data Konfirmasi PO berhasil dihapus', 'danger');
+    }
+  }
+});
 
 document.getElementById('btnShowAddAccount').addEventListener('click', function(){
   document.getElementById('formAddAccount').style.display = '';
