@@ -1481,7 +1481,7 @@
           <div class="panel-head">
             <div>
               <h2>Konfirmasi PO</h2>
-              <p>Daftar SO/PO yang masuk — order yang belum dikonfirmasi perlu ditinjau dan di-ACC atau ditolak.</p>
+              <p id="poDescText">Daftar SO/PO yang masuk — order yang belum dikonfirmasi perlu ditinjau dan di-ACC atau ditolak.</p>
             </div>
             <button type="button" class="btn btn-secondary" id="btnHapusSemuaPO" style="display:none; border-color:var(--red-600); color:var(--red-600);">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
@@ -6753,7 +6753,9 @@ function renderPO(){
   const admin = isAdminUser();
   const bisaKonfirmasi = canConfirmPO();
   const importWrap = document.getElementById('poImportWrap');
-  if(importWrap) importWrap.style.display = bisaKonfirmasi ? '' : 'none';
+  if(importWrap) importWrap.style.display = admin ? '' : 'none';
+  const poDescText = document.getElementById('poDescText');
+  if(poDescText) poDescText.style.display = admin ? '' : 'none';
   const btnHapusSemuaPO = document.getElementById('btnHapusSemuaPO');
   if(btnHapusSemuaPO) btnHapusSemuaPO.style.display = (admin && poList.length > 0) ? '' : 'none';
   updatePoBadge();
