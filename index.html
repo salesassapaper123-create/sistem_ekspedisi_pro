@@ -1119,6 +1119,27 @@
                   <datalist id="doVendorRuteList"></datalist>
                   <p class="hint" style="margin:6px 0 0;">Vendor: <b id="doVendorNamaShow">-</b> &mdash; pilih saran rute dari Ongkos Borongan untuk isi otomatis nama vendor &amp; tarif ongkos (bisa diubah manual). Boleh juga ketik bebas nama tujuan/customer kalau tidak ada di daftar.</p>
                 </div>
+                <div class="field" id="vendorKetBlock" style="display:none;">
+                  <label for="doVendorKet">Keterangan</label>
+                  <select id="doVendorKet">
+                    <option value="">— pilih —</option>
+                    <option value="franco">Franco</option>
+                    <option value="loco">Loco</option>
+                  </select>
+                  <p class="hint" style="margin:6px 0 0;">Franco = ongkos angkutan ditanggung/dibayar ke vendor (wajib isi tarif). Loco = ongkos angkutan tidak ditanggung (tarif tidak perlu diisi).</p>
+                </div>
+                <div class="field" id="vendorJenisTarifBlock" style="display:none;">
+                  <label for="doVendorJenisTarif">Jenis tarif vendor</label>
+                  <select id="doVendorJenisTarif">
+                    <option value="plat">Tarif plat (borongan)</option>
+                    <option value="perkg">Per KG</option>
+                  </select>
+                </div>
+                <div class="field" id="vendorTarifPerKgBlock" style="display:none;">
+                  <label for="doVendorTarifPerKg">Tarif per KG (Rp/kg)</label>
+                  <input type="number" id="doVendorTarifPerKg" min="0" step="1" placeholder="cth. 350">
+                  <p class="hint" style="margin:6px 0 0;">Total ongkos otomatis dihitung: tarif per kg &times; total tonase barang di bawah.</p>
+                </div>
                 <div class="field" id="uangJalanBlock">
                   <label for="uangJalan" id="uangJalanLabel">Uang jalan driver (Rp)</label>
                   <input type="number" id="uangJalan" min="0" step="1000" placeholder="cth. 250000">
@@ -4531,17 +4552,17 @@ document.getElementById('doVendorRute').addEventListener('input', function(){
 });
 /* Tampilkan field yang relevan sesuai jenis angkutan yang dipilih:
    - Organik: form seperti biasa (Jenis barang, Uang jalan driver manual, Biaya lain-lain).
-   - Vendor luar: Biaya lain-lain disembunyikan (tidak relevan), field "Uang jalan driver" berubah
-     jadi "Tarif ongkos vendor" yang diisi dari dropdown rute Ongkos Borongan.
+   - Vendor luar: Biaya lain-lain disembunyikan (tidak relevan), muncul field "Keterangan"
+     (Franco/Loco) — lihat updateVendorKetUI() untuk field lanjutannya.
    Catatan: "Kota tarif" (#doKotaBlock) SENGAJA selalu disembunyikan untuk kedua jenis angkutan —
    field input-nya tetap ada di DOM (supaya calcPendapatan/data lama tidak error) tapi tidak lagi
    ditampilkan di form sesuai permintaan user; diganti dengan field "Jenis barang" yang tampil di PKB. */
 function toggleAngkutanSections(){
   const isVendor = currentJenisAngkutan() === 'vendor';
   document.getElementById('vendorRuteBlock').style.display = isVendor ? '' : 'none';
+  document.getElementById('vendorKetBlock').style.display = isVendor ? '' : 'none';
   document.getElementById('doKotaBlock').style.display = 'none';
   document.getElementById('biayaLainBlock').style.display = isVendor ? 'none' : '';
-  document.getElementById('uangJalanLabel').textContent = isVendor ? 'Tarif ongkos vendor (Rp)' : 'Uang jalan driver (Rp)';
   document.getElementById('nopolLabel').textContent = isVendor ? 'Nopol (armada vendor)' : 'Nopol';
   document.getElementById('sopirLabel').textContent = isVendor ? 'Nama sopir vendor' : 'Nama sopir';
   if(isVendor){
@@ -4551,10 +4572,70 @@ function toggleAngkutanSections(){
   }else{
     document.getElementById('doVendorRute').value = '';
     document.getElementById('doVendorNamaShow').textContent = '-';
+    document.getElementById('doVendorKet').value = '';
+    document.getElementById('doVendorJenisTarif').value = 'plat';
+    document.getElementById('doVendorTarifPerKg').value = '';
+    document.getElementById('uangJalan').readOnly = false;
+    document.getElementById('uangJalanLabel').textContent = 'Uang jalan driver (Rp)';
   }
+  updateVendorKetUI();
 }
 document.getElementById('raOrganik').addEventListener('change', toggleAngkutanSections);
 document.getElementById('raVendor').addEventListener('change', toggleAngkutanSections);
+
+/* ---------- KETERANGAN VENDOR LUAR: FRANCO / LOCO + JENIS TARIF (PER KG / PLAT) ----------
+   Franco = ongkos angkutan vendor ditanggung/dibayar Ekspedisi Jaya -> tarif WAJIB diisi.
+   Loco   = ongkos angkutan vendor TIDAK ditanggung Ekspedisi Jaya -> field tarif disembunyikan,
+            tidak perlu (dan tidak boleh) diisi.
+   Untuk Franco, tarifnya bisa berupa 2 jenis: "Tarif plat" (nominal borongan, diisi manual seperti
+   sebelumnya / auto-isi dari saran rute Ongkos Borongan) atau "Per KG" (user isi harga per kilogram,
+   total ongkosnya dihitung otomatis = tarif per kg × total tonase dari "Jenis Barang & Tonase" di
+   bawah -- field #uangJalan jadi read-only supaya tidak diubah manual saat mode ini aktif). */
+function updateVendorKetUI(){
+  const isVendor = currentJenisAngkutan() === 'vendor';
+  const ketVal = document.getElementById('doVendorKet').value;
+  const isFranco = isVendor && ketVal === 'franco';
+  const isLoco = isVendor && ketVal === 'loco';
+  const jenisTarifVal = document.getElementById('doVendorJenisTarif').value || 'plat';
+  const isPerKg = isFranco && jenisTarifVal === 'perkg';
+
+  document.getElementById('vendorJenisTarifBlock').style.display = isFranco ? '' : 'none';
+  document.getElementById('vendorTarifPerKgBlock').style.display = isPerKg ? '' : 'none';
+
+  if(!isVendor){
+    document.getElementById('uangJalanBlock').style.display = '';
+    document.getElementById('uangJalan').readOnly = false;
+    return;
+  }
+
+  if(isLoco){
+    document.getElementById('uangJalanBlock').style.display = 'none';
+    document.getElementById('uangJalan').value = '';
+    document.getElementById('uangJalan').readOnly = false;
+  }else if(isPerKg){
+    document.getElementById('uangJalanBlock').style.display = '';
+    document.getElementById('uangJalanLabel').textContent = 'Total tarif ongkos vendor (Rp) — otomatis';
+    document.getElementById('uangJalan').readOnly = true;
+    recalcVendorTarifPerKg();
+  }else if(isFranco){
+    document.getElementById('uangJalanBlock').style.display = '';
+    document.getElementById('uangJalanLabel').textContent = 'Tarif ongkos vendor (Rp)';
+    document.getElementById('uangJalan').readOnly = false;
+  }else{
+    // Vendor Luar dipilih tapi Franco/Loco belum ditentukan -- sembunyikan dulu field tarif.
+    document.getElementById('uangJalanBlock').style.display = 'none';
+  }
+}
+function recalcVendorTarifPerKg(){
+  const tarifPerKg = document.getElementById('doVendorTarifPerKg').value === '' ? 0 : parseFloat(document.getElementById('doVendorTarifPerKg').value);
+  const totalTonase = collectJenisBarangDetail().reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+  document.getElementById('uangJalan').value = (tarifPerKg && totalTonase) ? Math.round(tarifPerKg * totalTonase) : '';
+}
+document.getElementById('doVendorKet').addEventListener('change', updateVendorKetUI);
+document.getElementById('doVendorJenisTarif').addEventListener('change', updateVendorKetUI);
+document.getElementById('doVendorTarifPerKg').addEventListener('input', function(){
+  if(document.getElementById('doVendorJenisTarif').value === 'perkg') recalcVendorTarifPerKg();
+});
 
 /* ---------- JENIS BARANG (baris dinamis, boleh lebih dari satu per PKB) ----------
    Setiap baris = 1 input teks bebas (nama, saran datalist dari Master Data Barang) + 1 input
@@ -4595,6 +4676,11 @@ function updateTotalTonaseBarang(){
   const total = collectJenisBarangDetail().reduce((s, it) => s + (Number(it.tonase) || 0), 0);
   const el = document.getElementById('totalTonaseBarang');
   if(el) el.textContent = 'Total tonase: ' + total.toLocaleString('id-ID') + ' kg';
+  // Vendor Luar Franco + tarif Per KG: total tonase berubah -> total ongkos ikut dihitung ulang otomatis.
+  if(document.getElementById('doVendorKet') && document.getElementById('doVendorKet').value === 'franco'
+     && document.getElementById('doVendorJenisTarif').value === 'perkg'){
+    recalcVendorTarifPerKg();
+  }
 }
 document.getElementById('jenisBarangRows').addEventListener('click', function(e){
   const btn = e.target.closest('.jb-row-remove');
@@ -5269,10 +5355,36 @@ document.getElementById('formDO').addEventListener('submit', function(e){
 
   const jenisAngkutanVal = currentJenisAngkutan();
   const isVendorVal = jenisAngkutanVal === 'vendor';
-  const uangJalanValRaw = document.getElementById('uangJalan').value === '' ? 0 : parseFloat(document.getElementById('uangJalan').value);
-  if(isVendorVal && (!uangJalanValRaw || uangJalanValRaw <= 0)){
-    errEl.textContent = 'Tarif ongkos vendor wajib diisi (pilih rute dari Ongkos Borongan, atau isi manual).';
+  const vendorKetVal = isVendorVal ? document.getElementById('doVendorKet').value : '';
+  if(isVendorVal && !vendorKetVal){
+    errEl.textContent = 'Keterangan Franco/Loco wajib dipilih untuk vendor luar.';
     return;
+  }
+  const isFrancoVal = vendorKetVal === 'franco';
+  const isLocoVal = vendorKetVal === 'loco';
+  const vendorJenisTarifVal = isFrancoVal ? (document.getElementById('doVendorJenisTarif').value || 'plat') : '';
+  const vendorTarifPerKgVal = (isFrancoVal && vendorJenisTarifVal === 'perkg') ? (document.getElementById('doVendorTarifPerKg').value === '' ? 0 : parseFloat(document.getElementById('doVendorTarifPerKg').value)) : null;
+
+  let uangJalanValRaw;
+  if(isLocoVal){
+    /* Loco: ongkos angkutan tidak ditanggung Ekspedisi Jaya, jadi tidak ada tarif yang disimpan. */
+    uangJalanValRaw = 0;
+  }else if(isFrancoVal && vendorJenisTarifVal === 'perkg'){
+    if(!vendorTarifPerKgVal || vendorTarifPerKgVal <= 0){
+      errEl.textContent = 'Tarif per KG wajib diisi untuk vendor luar Franco dengan jenis tarif Per KG.';
+      return;
+    }
+    if(!totalTonaseBarangVal || totalTonaseBarangVal <= 0){
+      errEl.textContent = 'Isi tonase pada Jenis Barang & Tonase terlebih dahulu supaya total tarif per KG bisa dihitung.';
+      return;
+    }
+    uangJalanValRaw = Math.round(vendorTarifPerKgVal * totalTonaseBarangVal);
+  }else{
+    uangJalanValRaw = document.getElementById('uangJalan').value === '' ? 0 : parseFloat(document.getElementById('uangJalan').value);
+    if(isFrancoVal && (!uangJalanValRaw || uangJalanValRaw <= 0)){
+      errEl.textContent = 'Tarif ongkos vendor wajib diisi (pilih rute dari Ongkos Borongan, atau isi manual).';
+      return;
+    }
   }
   const vendorRuteTextVal = isVendorVal ? document.getElementById('doVendorRute').value.trim() : '';
   const vendorMatch = isVendorVal ? vendorRuteLookup[vendorRuteTextVal] : null;
@@ -5296,6 +5408,9 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     jenisAngkutan: jenisAngkutanVal,
     vendorNama: vendorNamaVal,
     vendorRute: vendorRuteVal,
+    vendorKet: vendorKetVal,
+    vendorJenisTarif: vendorJenisTarifVal,
+    vendorTarifPerKg: vendorTarifPerKgVal,
     kota: kotaVal,
     jenisBarangDetail: jenisBarangDetailVal,
     jenisBarangList: jenisBarangListVal,
@@ -5375,6 +5490,12 @@ function editRecordDO(id){
       return v.vendor === rec.vendorNama && v.rute === rec.vendorRute;
     });
     document.getElementById('doVendorRute').value = matchLabel || rec.vendorRute || '';
+    /* rec.vendorKet kosong = data lama sebelum fitur Franco/Loco ada -> dianggap Franco (tarif plat),
+       supaya field tarif yang sudah tersimpan tetap kelihatan & bisa diedit seperti sebelumnya. */
+    document.getElementById('doVendorKet').value = rec.vendorKet || 'franco';
+    document.getElementById('doVendorJenisTarif').value = rec.vendorJenisTarif || 'plat';
+    document.getElementById('doVendorTarifPerKg').value = rec.vendorTarifPerKg || '';
+    updateVendorKetUI();
   }
   document.getElementById('tujuanMuat').value = rec.tujuanMuat || '';
   document.getElementById('tujuanBongkar').value = rec.tujuanBongkar || '';
@@ -5521,7 +5642,8 @@ document.getElementById('tonaseModalSave').addEventListener('click', function(){
 function buildPkbHtml(r){
   const isVendor = r.jenisAngkutan === 'vendor';
   const poTerkait = r.poId ? poList.find(p => String(p.id) === String(r.poId)) : (r.noCOTerkait ? poList.find(p => p.noCO === r.noCOTerkait) : null);
-  const angkutanVal = isVendor ? `${esc(r.vendorNama || '-')} (Vendor Luar)` : esc(armadaLabel(r.jenisArmada));
+  const vendorKetLabelVal = r.vendorKet === 'loco' ? 'Loco' : (r.vendorKet === 'franco' ? 'Franco' : '');
+  const angkutanVal = isVendor ? `${esc(r.vendorNama || '-')} (Vendor Luar${vendorKetLabelVal ? ' - ' + vendorKetLabelVal : ''})` : esc(armadaLabel(r.jenisArmada));
   const untukVal = r.tujuanMuat || r.tujuanMuat2 || r.tujuanMuat3 || '-';
   /* Daftar jenis barang: pakai jenisBarangDetail (nama + tonase per baris, format terbaru) kalau
      ada; kalau tidak, fallback berjenjang ke jenisBarangList (nama saja) lalu jenisBarang (string
@@ -7975,16 +8097,18 @@ function generateBiayaPengeluaranVendor(){
     rWrap.innerHTML = emptyState('Tidak ada pengiriman via vendor luar pada periode ini.');
   }else{
     const sorted = doBulan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
-    rWrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Sopir</th><th>Vendor</th><th>Rute</th><th>Tarif ongkos</th></tr></thead><tbody>${sorted.map(r => `
+    rWrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Sopir</th><th>Vendor</th><th>Rute</th><th>Ket.</th><th>Jenis tarif</th><th>Tarif ongkos</th></tr></thead><tbody>${sorted.map(r => `
       <tr>
         <td>${fmtDate(r.tanggal)}</td>
         <td><span class="plate-cell">${esc(r.nopol || '-')}</span></td>
         <td class="sv-left">${esc(r.sopir || '-')}</td>
         <td class="sv-left">${esc(r.vendorNama || '-')}</td>
         <td class="sv-left">${esc(r.vendorRute || '-')}</td>
+        <td>${r.vendorKet === 'loco' ? 'Loco' : (r.vendorKet === 'franco' ? 'Franco' : '-')}</td>
+        <td class="sv-left">${r.vendorJenisTarif === 'perkg' ? `Per KG${r.vendorTarifPerKg ? ` (${rupiah(Number(r.vendorTarifPerKg))}/kg)` : ''}` : (r.vendorKet === 'loco' ? '-' : 'Plat')}</td>
         <td class="mono sv-num">${rupiah(Number(r.uangJalan) || 0)}</td>
       </tr>`).join('')}</tbody>
-      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="5" class="sv-left">TOTAL</td><td class="mono sv-num">${rupiah(totalTarifVendor)}</td></tr></tfoot></table>`;
+      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="7" class="sv-left">TOTAL</td><td class="mono sv-num">${rupiah(totalTarifVendor)}</td></tr></tfoot></table>`;
   }
 }
 function initBiayaPengeluaranVendorView(){
