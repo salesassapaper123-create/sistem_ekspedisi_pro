@@ -10,6 +10,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root{
     /* Sesi keempatpuluhlima: palet disesuaikan mengikuti referensi warna aplikasi Accurate Online
@@ -1736,6 +1737,22 @@
                 <button type="submit" class="btn btn-primary">Simpan barang</button>
               </div>
             </form>
+            <div style="margin-top:22px; padding-top:18px; border-top:1px solid var(--border);">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:8px;">
+                <div>
+                  <div style="font-weight:700; font-size:13px;">Impor banyak barang sekaligus dari Excel</div>
+                  <p style="color:var(--text-muted); font-size:12px; margin:2px 0 0; text-transform:none;">File .xlsx / .xls — nama barang dibaca dari kolom pertama (baris judul/header, mis. "Nama Barang", otomatis dilewati kalau ada). Hasil impor otomatis tersimpan ke Firebase juga, sama seperti input manual.</p>
+                </div>
+                <div>
+                  <button type="button" class="btn btn-secondary" id="btnImportBarangExcel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                    Pilih file Excel
+                  </button>
+                  <input type="file" id="importBarangExcelInput" accept=".xlsx,.xls" style="display:none;">
+                </div>
+              </div>
+              <div id="importBarangResult" style="font-size:12px; color:var(--text-muted); text-transform:none;"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -3708,11 +3725,325 @@ function updateCustomerDatalist(){
 /* ---------- MASTER DATA BARANG (dikelola langsung di aplikasi, tersinkron via Firebase) ----------
    Daftar jenis barang yang biasa diangkut — dipakai sebagai saran dropdown (datalist, boleh ketik
    bebas) di baris-baris "Jenis barang" pada Input PKB, supaya penulisan jenis barang konsisten.
-   Polanya identik dengan Master Data Customer di atas. Belum ada data awal (default kosong) karena
-   user belum mengunggah daftar barangnya — admin tambah sendiri lewat menu Administrasi > Input Barang,
-   atau minta diimpor sekali kalau nanti ada file daftar barangnya. */
+   Polanya identik dengan Master Data Customer di atas. Data awal di bawah ini hasil import dari
+   file UKURAN_ROLL.xlsx milik user (27 Agustus 2026) — digabung dari sheet "Sheet1" & "r", sudah
+   dibersihkan dari duplikat/format spasi yang beda-beda (mis. "ML68 - 70" vs "ML68-70"), jadi 310
+   kode ukuran roll unik. Ini hanya dipakai sebagai DEFAULT kalau localStorage masih kosong (install
+   baru) — kalau user sudah pernah pakai aplikasi ini sebelumnya, datanya tetap ambil dari
+   localStorage/Firebase yang sudah tersimpan, bukan dari default ini. */
 const BARANG_KEY = 'ekspedisi_pro_barang';
-function barangDefaultData(){ return []; }
+function barangDefaultData(){ return [
+    {nama: 'MF110-100'},
+    {nama: 'MF110-105'},
+    {nama: 'MF110-110'},
+    {nama: 'MF110-115'},
+    {nama: 'MF110-120'},
+    {nama: 'MF110-125'},
+    {nama: 'MF110-130'},
+    {nama: 'MF110-135'},
+    {nama: 'MF110-140'},
+    {nama: 'MF110-145'},
+    {nama: 'MF110-150'},
+    {nama: 'MF110-155'},
+    {nama: 'MF110-160'},
+    {nama: 'MF110-165'},
+    {nama: 'MF110-180'},
+    {nama: 'MF110-190'},
+    {nama: 'MF110-75'},
+    {nama: 'MF110-85'},
+    {nama: 'MF110-95'},
+    {nama: 'MF115-160'},
+    {nama: 'MF115-165'},
+    {nama: 'MF115-180'},
+    {nama: 'MF115-185'},
+    {nama: 'MF115-200'},
+    {nama: 'MF115-205'},
+    {nama: 'MF120-180'},
+    {nama: 'MF120-185'},
+    {nama: 'MF120-190'},
+    {nama: 'MF120-195'},
+    {nama: 'MF120-200'},
+    {nama: 'MF120-205'},
+    {nama: 'MF120-210'},
+    {nama: 'MF120-215'},
+    {nama: 'MF120-220'},
+    {nama: 'MF150-100'},
+    {nama: 'MF150-109'},
+    {nama: 'MF150-110'},
+    {nama: 'MF150-50'},
+    {nama: 'MF80-120'},
+    {nama: 'MF80-130'},
+    {nama: 'MF80-140'},
+    {nama: 'MF80-148'},
+    {nama: 'MF80-150'},
+    {nama: 'MF80-155'},
+    {nama: 'MF80-158'},
+    {nama: 'MF80-160'},
+    {nama: 'MF80-165'},
+    {nama: 'MF80-168'},
+    {nama: 'MF80-170'},
+    {nama: 'MF80-175'},
+    {nama: 'MF80-179'},
+    {nama: 'MF80-180'},
+    {nama: 'MF80-185'},
+    {nama: 'MF80-189'},
+    {nama: 'MF80-190'},
+    {nama: 'MF80-195'},
+    {nama: 'MF80-199'},
+    {nama: 'MF80-200'},
+    {nama: 'MF80-205'},
+    {nama: 'MF80-209'},
+    {nama: 'MF80-210'},
+    {nama: 'MF80-215'},
+    {nama: 'MF80-219'},
+    {nama: 'MF80-220'},
+    {nama: 'MF80-230'},
+    {nama: 'MF80-240'},
+    {nama: 'MF85-115'},
+    {nama: 'MF85-120'},
+    {nama: 'MF85-130'},
+    {nama: 'MF85-135'},
+    {nama: 'MF85-140'},
+    {nama: 'MF85-145'},
+    {nama: 'MF85-148'},
+    {nama: 'MF85-150'},
+    {nama: 'MF85-155'},
+    {nama: 'MF85-158'},
+    {nama: 'MF85-160'},
+    {nama: 'MF85-165'},
+    {nama: 'MF85-170'},
+    {nama: 'MF85-175'},
+    {nama: 'MF85-179'},
+    {nama: 'MF85-180'},
+    {nama: 'MF85-185'},
+    {nama: 'MF85-189'},
+    {nama: 'MF85-190'},
+    {nama: 'MF85-195'},
+    {nama: 'MF85-200'},
+    {nama: 'MF85-205'},
+    {nama: 'MF85-209'},
+    {nama: 'MF85-210'},
+    {nama: 'MF85-215'},
+    {nama: 'MF85-219'},
+    {nama: 'MF85-220'},
+    {nama: 'MF85-230'},
+    {nama: 'MF85-240'},
+    {nama: 'MF90-145'},
+    {nama: 'MF90-155'},
+    {nama: 'MF90-165'},
+    {nama: 'MF90-179FT'},
+    {nama: 'MF90-180'},
+    {nama: 'MF90-189FT'},
+    {nama: 'MF90-190'},
+    {nama: 'MF90-200'},
+    {nama: 'MF90-210'},
+    {nama: 'MF90-220'},
+    {nama: 'MF90-230'},
+    {nama: 'MF90-240'},
+    {nama: 'MF90-245'},
+    {nama: 'MF90-250'},
+    {nama: 'ML105-100'},
+    {nama: 'ML105-103'},
+    {nama: 'ML105-108'},
+    {nama: 'ML105-113'},
+    {nama: 'ML105-118'},
+    {nama: 'ML105-123'},
+    {nama: 'ML105-128'},
+    {nama: 'ML105-130'},
+    {nama: 'ML105-133'},
+    {nama: 'ML105-139'},
+    {nama: 'ML105-140'},
+    {nama: 'ML105-144'},
+    {nama: 'ML105-149'},
+    {nama: 'ML105-154'},
+    {nama: 'ML105-159'},
+    {nama: 'ML105-164'},
+    {nama: 'ML105-164 EXP'},
+    {nama: 'ML105-169'},
+    {nama: 'ML105-170'},
+    {nama: 'ML105-174'},
+    {nama: 'ML105-180'},
+    {nama: 'ML105-184'},
+    {nama: 'ML105-98'},
+    {nama: 'ML110-100'},
+    {nama: 'ML110-105'},
+    {nama: 'ML110-110'},
+    {nama: 'ML110-115'},
+    {nama: 'ML110-120'},
+    {nama: 'ML110-125'},
+    {nama: 'ML110-130'},
+    {nama: 'ML110-135'},
+    {nama: 'ML110-140'},
+    {nama: 'ML110-145'},
+    {nama: 'ML110-150'},
+    {nama: 'ML110-155'},
+    {nama: 'ML110-220'},
+    {nama: 'ML110-75'},
+    {nama: 'ML110-80'},
+    {nama: 'ML110-85'},
+    {nama: 'ML110-90'},
+    {nama: 'ML110-95'},
+    {nama: 'ML120-115'},
+    {nama: 'ML120-120'},
+    {nama: 'ML120-125'},
+    {nama: 'ML120-140'},
+    {nama: 'ML120-145'},
+    {nama: 'ML120-150'},
+    {nama: 'ML120-155'},
+    {nama: 'ML120-160'},
+    {nama: 'ML120-220'},
+    {nama: 'ML125-138'},
+    {nama: 'ML125-225'},
+    {nama: 'ML150-100'},
+    {nama: 'ML150-120'},
+    {nama: 'ML150-125'},
+    {nama: 'ML150-160'},
+    {nama: 'ML66-100'},
+    {nama: 'ML66-101'},
+    {nama: 'ML66-104'},
+    {nama: 'ML66-105'},
+    {nama: 'ML66-108'},
+    {nama: 'ML66-109'},
+    {nama: 'ML66-110'},
+    {nama: 'ML66-111'},
+    {nama: 'ML66-112'},
+    {nama: 'ML66-114'},
+    {nama: 'ML66-118'},
+    {nama: 'ML66-119'},
+    {nama: 'ML66-123'},
+    {nama: 'ML66-130'},
+    {nama: 'ML66-132'},
+    {nama: 'ML66-135'},
+    {nama: 'ML66-136'},
+    {nama: 'ML66-140'},
+    {nama: 'ML66-146'},
+    {nama: 'ML66-148'},
+    {nama: 'ML66-150'},
+    {nama: 'ML66-168'},
+    {nama: 'ML66-170'},
+    {nama: 'ML66-175'},
+    {nama: 'ML66-180'},
+    {nama: 'ML66-183'},
+    {nama: 'ML66-185'},
+    {nama: 'ML66-190'},
+    {nama: 'ML66-192'},
+    {nama: 'ML66-195'},
+    {nama: 'ML66-200'},
+    {nama: 'ML66-60'},
+    {nama: 'ML66-70'},
+    {nama: 'ML66-80'},
+    {nama: 'ML66-90'},
+    {nama: 'ML67-117'},
+    {nama: 'ML67-120'},
+    {nama: 'ML67-125'},
+    {nama: 'ML67-126'},
+    {nama: 'ML68-100'},
+    {nama: 'ML68-101'},
+    {nama: 'ML68-102'},
+    {nama: 'ML68-104'},
+    {nama: 'ML68-105'},
+    {nama: 'ML68-106'},
+    {nama: 'ML68-108'},
+    {nama: 'ML68-109'},
+    {nama: 'ML68-110'},
+    {nama: 'ML68-111'},
+    {nama: 'ML68-112'},
+    {nama: 'ML68-114'},
+    {nama: 'ML68-115'},
+    {nama: 'ML68-117'},
+    {nama: 'ML68-118'},
+    {nama: 'ML68-119'},
+    {nama: 'ML68-120'},
+    {nama: 'ML68-121'},
+    {nama: 'ML68-123'},
+    {nama: 'ML68-124'},
+    {nama: 'ML68-125'},
+    {nama: 'ML68-126'},
+    {nama: 'ML68-127'},
+    {nama: 'ML68-129'},
+    {nama: 'ML68-130'},
+    {nama: 'ML68-135'},
+    {nama: 'ML68-136'},
+    {nama: 'ML68-140'},
+    {nama: 'ML68-146'},
+    {nama: 'ML68-148'},
+    {nama: 'ML68-150'},
+    {nama: 'ML68-158'},
+    {nama: 'ML68-165'},
+    {nama: 'ML68-168'},
+    {nama: 'ML68-170'},
+    {nama: 'ML68-175'},
+    {nama: 'ML68-180'},
+    {nama: 'ML68-183'},
+    {nama: 'ML68-185'},
+    {nama: 'ML68-190'},
+    {nama: 'ML68-192'},
+    {nama: 'ML68-195'},
+    {nama: 'ML68-197'},
+    {nama: 'ML68-200'},
+    {nama: 'ML68-220'},
+    {nama: 'ML68-225'},
+    {nama: 'ML68-70'},
+    {nama: 'ML68-80'},
+    {nama: 'ML68-81'},
+    {nama: 'ML68-84'},
+    {nama: 'ML68-90'},
+    {nama: 'ML70-100'},
+    {nama: 'ML70-101'},
+    {nama: 'ML70-104'},
+    {nama: 'ML70-105'},
+    {nama: 'ML70-108'},
+    {nama: 'ML70-109'},
+    {nama: 'ML70-110'},
+    {nama: 'ML70-111'},
+    {nama: 'ML70-112'},
+    {nama: 'ML70-114'},
+    {nama: 'ML70-117'},
+    {nama: 'ML70-118'},
+    {nama: 'ML70-119'},
+    {nama: 'ML70-120'},
+    {nama: 'ML70-123'},
+    {nama: 'ML70-124'},
+    {nama: 'ML70-125'},
+    {nama: 'ML70-127'},
+    {nama: 'ML70-130'},
+    {nama: 'ML70-132'},
+    {nama: 'ML70-135'},
+    {nama: 'ML70-140'},
+    {nama: 'ML70-146'},
+    {nama: 'ML70-148'},
+    {nama: 'ML70-150'},
+    {nama: 'ML70-158'},
+    {nama: 'ML70-165'},
+    {nama: 'ML70-168'},
+    {nama: 'ML70-170'},
+    {nama: 'ML70-175'},
+    {nama: 'ML70-180'},
+    {nama: 'ML70-183'},
+    {nama: 'ML70-185'},
+    {nama: 'ML70-190'},
+    {nama: 'ML70-195'},
+    {nama: 'ML70-200'},
+    {nama: 'ML70-220'},
+    {nama: 'ML70-225'},
+    {nama: 'ML70-60'},
+    {nama: 'ML70-70'},
+    {nama: 'ML70-80'},
+    {nama: 'ML70-90'},
+    {nama: 'ML72-120'},
+    {nama: 'ML72-130'},
+    {nama: 'ML75-100'},
+    {nama: 'ML75-112'},
+    {nama: 'ML75-120'},
+    {nama: 'ML75-130'},
+    {nama: 'ML75-135'},
+    {nama: 'ML75-183'},
+    {nama: 'ML75-90'},
+    {nama: 'ML85-112'},
+    {nama: 'ML85-180'},
+    {nama: 'ML85-182'},
+    {nama: 'ML85-71'},
+  ]; }
 function loadBarang(){
   try{
     const raw = localStorage.getItem(BARANG_KEY);
@@ -5568,6 +5899,70 @@ document.getElementById('formBarangInput').addEventListener('submit', function(e
   renderBarang();
   this.reset();
   showToast('Data barang berhasil disimpan, cek menu Daftar > Data Barang', 'success');
+});
+
+/* ---------- IMPOR DATA BARANG DARI EXCEL ----------
+   Pakai SheetJS (XLSX, dimuat via CDN di <head>) untuk membaca file .xlsx/.xls di browser (client-side,
+   tidak upload ke server manapun). Nama barang diambil dari KOLOM PERTAMA setiap baris; baris pertama
+   otomatis dianggap header (dilewati) kalau isinya cocok pola "nama..." (mis. "Nama Barang", "Nama").
+   Duplikat dicek case-insensitive baik terhadap data yang sudah ada maupun sesama baris di file yang
+   sama, supaya tidak dobel. Hasil akhir disimpan lewat saveBarang() yang sama dengan input manual --
+   jadi otomatis ikut ke Firebase juga, bukan cuma localStorage. */
+document.getElementById('btnImportBarangExcel').addEventListener('click', function(){
+  document.getElementById('importBarangExcelInput').click();
+});
+document.getElementById('importBarangExcelInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const resultEl = document.getElementById('importBarangResult');
+  resultEl.textContent = 'Memproses file...';
+  const reader = new FileReader();
+  reader.onload = function(evt){
+    try{
+      const wb = XLSX.read(new Uint8Array(evt.target.result), {type: 'array'});
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
+
+      const existingNames = new Set(barangList.map(b => (b.nama || '').trim().toLowerCase()));
+      const seenInFile = new Set();
+      let added = 0, duplikat = 0, kosong = 0;
+
+      rows.forEach((row, idx) => {
+        let nama = (row && row[0] !== undefined ? String(row[0]) : '').trim();
+        if(idx === 0 && /^nama\b/i.test(nama)){ return; } // lewati baris header kalau ada
+        if(!nama){ kosong++; return; }
+        const key = nama.toLowerCase();
+        if(existingNames.has(key) || seenInFile.has(key)){ duplikat++; return; }
+        seenInFile.add(key);
+        barangList.push({
+          id: Date.now().toString(36) + Math.random().toString(36).slice(2,6) + added,
+          nama: nama,
+        });
+        added++;
+      });
+
+      if(added > 0){
+        saveBarang();
+        renderBarang();
+      }
+      const ket = [];
+      if(added) ket.push(`${added} barang baru ditambahkan`);
+      if(duplikat) ket.push(`${duplikat} dilewati (sudah ada/dobel)`);
+      if(kosong) ket.push(`${kosong} baris kosong dilewati`);
+      resultEl.textContent = ket.length ? ket.join(', ') + '.' : 'Tidak ada data yang bisa dibaca dari file ini.';
+      if(added > 0){
+        showToast(`${added} barang berhasil diimpor dari Excel, cek menu Daftar > Data Barang`, 'success');
+      }else{
+        showToast('Tidak ada barang baru yang ditambahkan (kosong atau semua sudah terdaftar)', 'danger');
+      }
+    }catch(err){
+      resultEl.textContent = 'Gagal membaca file. Pastikan formatnya .xlsx atau .xls yang valid.';
+      showToast('Gagal membaca file Excel', 'danger');
+    }finally{
+      e.target.value = '';
+    }
+  };
+  reader.readAsArrayBuffer(file);
 });
 
 /* ---------- MONITORING LEGALITAS KENDARAAN (KIR & PAJAK) ---------- */
