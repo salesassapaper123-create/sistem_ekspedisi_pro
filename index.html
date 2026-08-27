@@ -1485,6 +1485,26 @@
             </div>
           </div>
           <div class="panel-body">
+            <div id="poImportWrap" style="display:none; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border);">
+              <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:8px;">
+                <div style="min-width:240px;">
+                  <div style="font-weight:700; font-size:13px;">Impor data historis dari Excel (Master Sisa PO)</div>
+                  <p style="color:var(--text-muted); font-size:12px; margin:2px 0 0; text-transform:none;">Untuk mendata SO/PO lama yang sudah pernah terjadi — termasuk yang PO-nya sudah habis (status CLOSED) — supaya tetap terdata di sini. Baris yang diimpor langsung berstatus <b>Dikonfirmasi (ACC)</b> dan <b>tidak</b> mengirim notifikasi WhatsApp PO baru. Baris dengan No. PO &amp; tanggal yang sama dengan data yang sudah ada otomatis dilewati (tidak dobel).</p>
+                </div>
+                <div style="display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap;">
+                  <div class="field" style="margin:0;">
+                    <label for="poImportTanggalMulai" style="font-size:11px;">Ambil data mulai tanggal</label>
+                    <input type="date" id="poImportTanggalMulai" value="2026-01-01" style="padding:7px 8px;">
+                  </div>
+                  <button type="button" class="btn btn-secondary" id="btnImportPOExcel">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+                    Pilih file Excel
+                  </button>
+                  <input type="file" id="importPOExcelInput" accept=".xlsx,.xls" style="display:none;">
+                </div>
+              </div>
+              <div id="importPOResult" style="font-size:12px; color:var(--text-muted); text-transform:none;"></div>
+            </div>
             <div id="poTableWrap"></div>
           </div>
         </div>
@@ -6719,6 +6739,8 @@ function renderPO(){
   const wrap = document.getElementById('poTableWrap');
   const admin = isAdminUser();
   const bisaKonfirmasi = canConfirmPO();
+  const importWrap = document.getElementById('poImportWrap');
+  if(importWrap) importWrap.style.display = bisaKonfirmasi ? '' : 'none';
   updatePoBadge();
   if(poList.length === 0){
     wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
@@ -7056,6 +7078,150 @@ document.getElementById('formPOInput').addEventListener('submit', async function
   showToast('SO & PO berhasil disimpan, menunggu konfirmasi', 'success');
   goTo('po');
 });
+
+/* ---------- IMPOR DATA HISTORIS PO DARI EXCEL (menu Konfirmasi PO) ----------
+   Beda dengan "Input SO & Upload PO" (yang bikin order BARU berstatus "menunggu" konfirmasi), fitur ini
+   khusus untuk memasukkan data SO/PO LAMA yang sudah pernah terjadi (histori nyata, termasuk yang PO-nya
+   sudah habis/CLOSED di master Excel-nya) supaya tetap terdata di aplikasi. Baris yang diimpor:
+   - Langsung diberi status "dikonfirmasi" (Dikonfirmasi/ACC) -- bukan "menunggu", karena ini bukan order
+     baru yang perlu ditinjau, tapi histori yang sudah pasti terjadi.
+   - notifWaSent SENGAJA di-set true supaya TIDAK ikut kena kirim notifikasi WhatsApp "PO baru" oleh Apps
+     Script (function checkAndNotifyPoBaru mengecek notifWaSent yang masih falsy).
+   Kolom dibaca berdasarkan NAMA HEADER (bukan posisi kolom tetap) supaya tetap jalan meski susunan kolom
+   di file master sedikit berubah -- dicari baris header yang punya sel "NO CO", "TGL CO", "NAMA CUSTOMER",
+   dan "NO. PO" sekaligus, lalu baris-baris sesudahnya (di semua sheet) dibaca sebagai data, termasuk yang
+   melewati beberapa baris header berulang (dipakai file sumber sebagai pemisah bulan/tahun) -- baris
+   header berulang otomatis dilewati. */
+function excelCellToDateStr(val){
+  if(val instanceof Date && !isNaN(val)){
+    const y = val.getFullYear(), m = String(val.getMonth()+1).padStart(2,'0'), d = String(val.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+  if(typeof val === 'number' && val > 0){
+    const d = new Date(Math.round((val - 25569) * 86400 * 1000));
+    if(!isNaN(d)) return d.toISOString().slice(0,10);
+  }
+  if(typeof val === 'string' && val.trim()){
+    const d = new Date(val.trim());
+    if(!isNaN(d)) return d.toISOString().slice(0,10);
+  }
+  return '';
+}
+(function(){
+  const btn = document.getElementById('btnImportPOExcel');
+  const fileInput = document.getElementById('importPOExcelInput');
+  if(!btn || !fileInput) return;
+  btn.addEventListener('click', function(){ fileInput.click(); });
+  fileInput.addEventListener('change', function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+    const resultEl = document.getElementById('importPOResult');
+    resultEl.textContent = 'Memproses file...';
+    const tanggalMulai = document.getElementById('poImportTanggalMulai').value || '2026-01-01';
+    const reader = new FileReader();
+    reader.onload = function(evt){
+      try{
+        const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array', cellDates:true});
+        let headerInfo = null;
+        for(const sheetName of wb.SheetNames){
+          const sheet = wb.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(sheet, {header:1, defval:'', raw:true});
+          for(let r=0; r<rows.length; r++){
+            const norm = rows[r].map(v => String(v||'').trim().toUpperCase());
+            const idxNoCO = norm.indexOf('NO CO');
+            const idxTgl = norm.indexOf('TGL CO');
+            const idxCust = norm.indexOf('NAMA CUSTOMER');
+            const idxNoPO = norm.findIndex(v => v === 'NO. PO' || v === 'NO PO');
+            if(idxNoCO !== -1 && idxTgl !== -1 && idxCust !== -1 && idxNoPO !== -1){
+              headerInfo = { rows, headerRowIndex: r, col: {
+                noCO: idxNoCO, tglCO: idxTgl, noPO: idxNoPO, namaCustomer: idxCust,
+                sales: norm.indexOf('SALES'), gsm: norm.indexOf('GSM'), ukuran: norm.indexOf('UK'),
+                tonase: norm.indexOf('TONASE'), harga: norm.indexOf('HRG'),
+              }};
+              break;
+            }
+          }
+          if(headerInfo) break;
+        }
+        if(!headerInfo){
+          resultEl.textContent = 'Format file tidak dikenali -- kolom header (NO CO, TGL CO, NAMA CUSTOMER, NO. PO, dst) tidak ditemukan.';
+          showToast('Gagal membaca file: format kolom tidak dikenali', 'danger');
+          e.target.value = '';
+          return;
+        }
+        const cellAt = (row, idx) => (idx === -1 || idx === undefined) ? '' : row[idx];
+        const existingKeys = new Set(poList.map(p => String(p.noPO||'').trim().toUpperCase() + '|' + (p.tanggalCO||'')));
+        const seenInFile = new Set();
+        let added = 0, dilewatiDuplikat = 0, dilewatiTanggal = 0, dilewatiKosong = 0;
+        const acc = currentAccount();
+        const nowIso = new Date().toISOString();
+
+        for(let r = headerInfo.headerRowIndex + 1; r < headerInfo.rows.length; r++){
+          const row = headerInfo.rows[r];
+          if(!row || row.length === 0) continue;
+          const cNoCO = cellAt(row, headerInfo.col.noCO);
+          if(String(cNoCO||'').trim().toUpperCase() === 'NO CO') continue; // baris header berulang (pemisah bulan/tahun), bukan data
+          const tglCOStr = excelCellToDateStr(cellAt(row, headerInfo.col.tglCO));
+          if(!tglCOStr){ dilewatiKosong++; continue; }
+          if(tglCOStr < tanggalMulai){ dilewatiTanggal++; continue; }
+
+          const noPOraw = String(cellAt(row, headerInfo.col.noPO)||'').trim();
+          const key = noPOraw.toUpperCase() + '|' + tglCOStr;
+          if(noPOraw && (existingKeys.has(key) || seenInFile.has(key))){ dilewatiDuplikat++; continue; }
+          if(noPOraw) seenInFile.add(key);
+
+          poList.push({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2,6) + added,
+            noCO: String(cNoCO||'').trim(),
+            tanggalCO: tglCOStr,
+            noPO: noPOraw.toUpperCase(),
+            namaCustomer: String(cellAt(row, headerInfo.col.namaCustomer)||'').trim(),
+            sales: String(cellAt(row, headerInfo.col.sales)||'').trim(),
+            gsm: String(cellAt(row, headerInfo.col.gsm)||'').trim(),
+            ukuran: String(cellAt(row, headerInfo.col.ukuran)||'').trim(),
+            tonase: Number(cellAt(row, headerInfo.col.tonase)) || 0,
+            harga: Number(cellAt(row, headerInfo.col.harga)) || 0,
+            statusKirim: '',
+            fotoPO: null,
+            status: 'dikonfirmasi',
+            catatanTolak: '',
+            dikonfirmasiOleh: (acc ? acc.email : '') + ' (impor data historis)',
+            tanggalKonfirmasi: nowIso,
+            dibuatOleh: acc ? acc.email : '',
+            createdAt: new Date(tglCOStr + 'T00:00:00').toISOString(),
+            notifWaSent: true, /* data historis -- sengaja true supaya TIDAK memicu notifikasi WA PO baru (lihat checkAndNotifyPoBaru) */
+            importHistoris: true,
+          });
+          added++;
+        }
+
+        if(added > 0){
+          savePO();
+          renderPO();
+          updatePeringatanBadge();
+          updatePoBadge();
+        }
+        const ket = [];
+        if(added) ket.push(`${added} PO historis berhasil diimpor`);
+        if(dilewatiDuplikat) ket.push(`${dilewatiDuplikat} dilewati (No. PO & tanggal sama dengan data yang sudah ada)`);
+        if(dilewatiTanggal) ket.push(`${dilewatiTanggal} dilewati (tanggal sebelum ${fmtDate(tanggalMulai)})`);
+        if(dilewatiKosong) ket.push(`${dilewatiKosong} baris dilewati (tanggal kosong/tidak valid)`);
+        resultEl.textContent = ket.length ? ket.join(', ') + '.' : 'Tidak ada data yang bisa diimpor dari file ini.';
+        if(added > 0){
+          showToast(`${added} PO historis berhasil diimpor & langsung berstatus Dikonfirmasi (ACC)`, 'success');
+        }else{
+          showToast('Tidak ada PO baru yang diimpor (kosong, duplikat, atau semua sebelum tanggal mulai)', 'danger');
+        }
+      }catch(err){
+        resultEl.textContent = 'Gagal membaca file. Pastikan formatnya .xlsx atau .xls yang valid.';
+        showToast('Gagal membaca file Excel', 'danger');
+      }finally{
+        e.target.value = '';
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+})();
 
 /* ---------- PUSAT PERINGATAN ---------- */
 function computePeringatanItems(){
