@@ -22,14 +22,15 @@
          supaya ke depannya tidak membingungkan (variabel bernama "orange" tapi isinya biru).
        - --blue-500 (dipakai di 1 kartu statistik Dashboard) disamakan huenya dengan aksen baru
          supaya semua "biru" di aplikasi konsisten satu keluarga warna, bukan dua biru yang beda. */
-    --navy-900:#1a2740; --navy-800:#21304b; --navy-700:#2c3c5c; --navy-600:#384a6e;
-    --accent-500:#2f80c6; --accent-100:#e6f2fc; --accent-700:#225d93;
+    --navy-900:#0d1b3a; --navy-800:#16294f; --navy-700:#203759; --navy-600:#2c4570;
+    --accent-500:#2f66ea; --accent-100:#e7edfd; --accent-700:#1e46b8;
     --bg:#f5f6f8; --card:#ffffff; --border:#e4e6eb; --border-strong:#d3d7e0;
     --text:#151a24; --text-muted:#6b7280; --text-faint:#9aa0ab;
-    --green-600:#1f7a54; --green-100:#e3f5ec;
-    --amber-600:#b9740a; --amber-100:#fdf1dc;
-    --red-600:#c0392b; --red-100:#fceceb;
-    --blue-500:#2f80c6;
+    --green-600:#1fa155; --green-100:#e2f8ea;
+    --amber-600:#f2790f; --amber-100:#fff1e0;
+    --red-600:#f2464b; --red-100:#ffe9ea;
+    --purple-600:#7c3aed; --purple-100:#efe7fd;
+    --blue-500:#2f66ea;
     --radius:10px; --radius-lg:14px;
   }
   *{box-sizing:border-box;}
@@ -37,7 +38,6 @@
   body{
     font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
     background:var(--bg); color:var(--text); font-size:14px; line-height:1.5;
-    text-transform:uppercase;
   }
   .mono{font-family:'IBM Plex Mono',monospace;}
 
@@ -384,15 +384,33 @@
   .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:22px;}
   .stat-card{
     background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
-    padding:16px 18px; box-shadow:0 1px 3px rgba(15,27,48,.05), 0 1px 2px rgba(15,27,48,.04);
+    padding:18px 18px 16px; box-shadow:0 1px 3px rgba(15,27,48,.05), 0 1px 2px rgba(15,27,48,.04);
+    display:flex; flex-direction:column;
   }
+  .stat-card .stat-card-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
   .stat-card .icon{
     width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    margin-bottom:10px; box-shadow:0 2px 6px rgba(15,27,48,.14);
+    box-shadow:0 2px 6px rgba(15,27,48,.14); flex-shrink:0;
   }
-  .stat-card .icon svg{width:16px; height:16px;}
-  .stat-card .num{font-size:24px; font-weight:700; font-family:'IBM Plex Mono',monospace;}
-  .stat-card .lbl{color:var(--text-muted); font-size:12px; margin-top:2px;}
+  .stat-card .icon svg{width:18px; height:18px;}
+  .stat-card .num{
+    font-size:26px; font-weight:700; margin-top:14px;
+    font-family:'Poppins','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+  }
+  .stat-card .lbl{
+    font-size:12px; font-weight:700; letter-spacing:.03em; text-transform:uppercase;
+    color:var(--accent-500);
+  }
+  .stat-card.stat-blue .lbl{color:var(--accent-500);}
+  .stat-card.stat-blue .icon{background:var(--accent-500);}
+  .stat-card.stat-green .lbl{color:var(--green-600);}
+  .stat-card.stat-green .icon{background:var(--green-600);}
+  .stat-card.stat-purple .lbl{color:var(--purple-600);}
+  .stat-card.stat-purple .icon{background:var(--purple-600);}
+  .stat-card.stat-orange .lbl{color:var(--amber-600);}
+  .stat-card.stat-orange .icon{background:var(--amber-600);}
+  .stat-card.stat-red .lbl{color:var(--red-600);}
+  .stat-card.stat-red .icon{background:var(--red-600);}
 
   .panel{
     background:var(--card); border:1px solid var(--border); border-radius:var(--radius-lg);
@@ -980,33 +998,33 @@
       <div class="view active" data-view="dashboard">
         <div id="waLegalBanner"></div>
         <div class="stat-grid">
-          <div class="stat-card">
-            <div class="icon" style="background:var(--blue-500)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
+          <div class="stat-card stat-blue">
+            <div class="stat-card-top">
+              <div class="lbl">Total DO bulan ini</div>
+              <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg></div>
             </div>
             <div class="num" id="statTotal">0</div>
-            <div class="lbl">Total DO bulan ini</div>
           </div>
-          <div class="stat-card">
-            <div class="icon" style="background:var(--accent-500)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          <div class="stat-card stat-orange">
+            <div class="stat-card-top">
+              <div class="lbl">On Proses</div>
+              <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
             </div>
             <div class="num" id="statProses">0</div>
-            <div class="lbl">On Proses</div>
           </div>
-          <div class="stat-card">
-            <div class="icon" style="background:var(--green-600)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <div class="stat-card stat-green">
+            <div class="stat-card-top">
+              <div class="lbl">Selesai</div>
+              <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
             </div>
             <div class="num" id="statSelesai">0</div>
-            <div class="lbl">Selesai</div>
           </div>
-          <div class="stat-card">
-            <div class="icon" style="background:var(--navy-700)">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="15" height="10" rx="2"/><path d="M18 10h3l2 3v4h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
+          <div class="stat-card stat-purple">
+            <div class="stat-card-top">
+              <div class="lbl">Kendaraan aktif</div>
+              <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="15" height="10" rx="2"/><path d="M18 10h3l2 3v4h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg></div>
             </div>
             <div class="num" id="statKendaraan">0</div>
-            <div class="lbl">Kendaraan aktif</div>
           </div>
         </div>
 
