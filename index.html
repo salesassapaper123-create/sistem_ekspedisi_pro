@@ -388,7 +388,9 @@
   .topbar-row-top{display:flex; align-items:center; justify-content:space-between; gap:18px;}
   .topbar-row-title{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;}
   .topbar h1{font-size:24px; font-weight:700; margin:0; text-transform:none; letter-spacing:0;}
-  .topbar .date{color:var(--text-muted); font-size:12.5px; margin-top:2px;}
+  /* Tanggal dinaikkan supaya sejajar satu baris dengan judul halaman & jam live (bukan baris
+     terpisah di bawahnya lagi) -- mengikuti masukan user. */
+  .topbar .date{color:var(--text-muted); font-size:12.5px; margin:0; padding-left:10px; border-left:1px solid var(--border);}
   /* Jam digital realtime di sebelah judul halaman — indikator visual bahwa sistem & koneksinya
      selalu hidup/live (bukan indikator status koneksi Firebase itu sendiri, murni jam lokal
      perangkat yang di-update tiap detik lewat JavaScript). */
@@ -1056,9 +1058,9 @@
               <span class="live-clock-dot"></span>
               <span id="liveClockTime">00:00:00</span>
             </span>
+            <span class="date" id="pageDate"></span>
           </div>
           <div class="topbar-subtitle" id="pageSubtitle"></div>
-          <div class="date" id="pageDate"></div>
         </div>
       </div>
     </div>
