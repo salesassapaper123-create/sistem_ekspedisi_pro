@@ -8011,17 +8011,23 @@ function renderDashPeriodBadges(){
   const biayaLbl = document.getElementById('biayaOpPeriodLabel');
   if(biayaLbl) biayaLbl.textContent = p.curLabel;
 }
-/* Rentang "bulan berjalan" vs "bulan lalu", dipakai semua kartu statistik supaya konsisten. */
+/* Rentang "bulan berjalan" vs "bulan lalu", dipakai semua kartu statistik supaya konsisten.
+   curStart selalu tanggal 1 bulan berjalan; curEnd selalu HARI INI (bukan akhir bulan) --
+   jadi pil "Periode" & kartu statistik menampilkan rentang yang berjalan naik tiap hari (mis.
+   "01 Agu -- 29 Agu" kalau sedang tanggal 29), lalu otomatis mulai dari tanggal 1 lagi begitu
+   bulan berganti, karena dashboardPeriodRanges() dipanggil ulang dari new Date() setiap
+   dashboard dibuka (tidak di-hardcode / tidak disimpan). */
 function dashboardPeriodRanges(){
   const now = new Date();
   const curStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const curEnd = now;
   const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0);
   const toISO = d => d.toISOString().slice(0, 10);
   return {
     curLabel: curStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
     prevLabel: prevStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
-    curStart: toISO(curStart), curEnd: toISO(now),
+    curStart: toISO(curStart), curEnd: toISO(curEnd),
     prevStart: toISO(prevStart), prevEnd: toISO(prevEnd),
   };
 }
