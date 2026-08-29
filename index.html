@@ -941,6 +941,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.686-7-11a7 7 0 0 1 14 0c0 5.314-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
             Monitoring Armada
           </button>
+          <button class="nav-item nav-sub" data-view="monitoring-ban">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3M6.3 6.3l2.1 2.1M15.6 15.6l2.1 2.1M6.3 17.7l2.1-2.1M15.6 8.4l2.1-2.1"/></svg>
+            Monitoring Ban
+          </button>
         </div>
       </div>
 
@@ -1121,6 +1125,15 @@
             <a href="javascript:void(0)" class="dash-lihat-semua" data-goto="monitoring-armada">Lihat Semua</a>
           </div>
           <div class="dash-card-body" style="padding:0;"><div id="dashMonitoringArmadaWrap"></div></div>
+        </div>
+
+        <!-- BARIS 2c: Monitoring Ban (ringkasan kondisi & rotasi ban seluruh armada) -->
+        <div class="dash-card" style="margin-bottom:16px;">
+          <div class="dash-card-head">
+            <h3 style="text-transform:none;">Monitoring Ban</h3>
+            <a href="javascript:void(0)" class="dash-lihat-semua" data-goto="monitoring-ban">Lihat Semua</a>
+          </div>
+          <div class="dash-card-body"><div id="dashBanSummaryWrap"></div></div>
         </div>
 
         <!-- BARIS 3: grafik tren Ritase & Tonase (6 bulan terakhir) -->
@@ -2035,6 +2048,39 @@
           </div>
           <div class="panel-body">
             <div id="serviceTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MONITORING BAN — kondisi tiap posisi ban (FL/FR/RL/RR/cadangan) + jadwal rotasi, per kendaraan -->
+      <div class="view" data-view="monitoring-ban">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Monitoring ban (kondisi &amp; rotasi)</h2>
+              <p>Status tiap posisi ban dihitung dari umur pakai (bulan) &amp; jarak tempuh (KM) sejak dipasang, mana yang lebih dulu mendekati batas. Klik "Kelola" untuk ganti ban, catat rotasi, atau lihat riwayat.</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="banTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: KELOLA BAN PER KENDARAAN (kondisi tiap posisi, ganti ban, rotasi, riwayat) -->
+      <div class="form-modal-overlay" id="banDetailModalOverlay">
+        <div class="form-modal" style="max-width:760px;">
+          <div class="form-modal-head">
+            <div>
+              <h3 id="banDetailModalTitle">Kelola Ban</h3>
+              <p>Kondisi tiap posisi ban, ganti ban, catat rotasi, &amp; riwayat</p>
+            </div>
+            <button type="button" class="form-modal-close" id="btnCloseBanDetailModal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="form-modal-body">
+            <div id="banDetailModalBody"></div>
           </div>
         </div>
       </div>
@@ -3023,6 +3069,7 @@ function syncOdometerFromCartrack(){
                   <label class="acc-menu-chk"><input type="checkbox" data-view="ritase"> Ritase per Nopol (Rekap)</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="kendaraan"> Data Kendaraan</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="monitoring-armada"> Monitoring Armada</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="monitoring-ban"> Monitoring Ban</label>
                 </div>
                 <div>
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px;">Master Data</div>
@@ -3606,8 +3653,10 @@ function attachFirebaseListenersInner(){
       if(v === 'kendaraan') renderKendaraan();
       if(v === 'legalitas') renderLegalitas();
       if(v === 'service') renderServiceMonitoring();
-      if(v === 'dashboard'){ renderWaLegalBanner(); renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5); }
+      if(v === 'monitoring-ban') renderMonitoringBan();
+      if(v === 'dashboard'){ renderWaLegalBanner(); renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5); renderBanDashboardSummary(); }
       if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap'); // update live begitu GPS Cartrack menulis lokasi/status baru ke /kendaraan
+      if(banDetailTargetId) renderBanDetailModalBody(kendaraanList.find(x => x.id === banDetailTargetId) || null); // modal Kelola Ban sedang terbuka -> ikut refresh (mis. KM live dari GPS Cartrack berubah)
       updatePeringatanBadge();
     }else if(val == null){
       if(kendaraanList.length > 0 && !sudahPernahSinkron){
@@ -3619,7 +3668,8 @@ function attachFirebaseListenersInner(){
         if(v === 'kendaraan') renderKendaraan();
         if(v === 'legalitas') renderLegalitas();
         if(v === 'service') renderServiceMonitoring();
-        if(v === 'dashboard'){ renderWaLegalBanner(); renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5); }
+        if(v === 'monitoring-ban') renderMonitoringBan();
+        if(v === 'dashboard'){ renderWaLegalBanner(); renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5); renderBanDashboardSummary(); }
         if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
         updatePeringatanBadge();
       }
@@ -4557,7 +4607,7 @@ function updateUserTopbarInfo(acc){
   if(roleLbl) roleLbl.textContent = accountRole(acc) === 'admin' ? 'Admin' : 'Staf';
 }
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada'};
+const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada', 'monitoring-ban':'Monitoring Ban'};
 /* Subjudul kecil di bawah judul halaman (topbar) -- murni visual/deskriptif, mengikuti foto
    referensi dashboard "Accurate Expedition" yang menaruh satu baris ringkasan di bawah tiap judul
    halaman. View yang tidak terdaftar di sini cukup tidak menampilkan subjudul (elemennya kosong). */
@@ -4576,6 +4626,7 @@ const subtitles = {
   'biayapengeluaran-vendor':'Rekap biaya pengeluaran vendor luar per bulan', 'laporan-sisapo':'Rekap sisa PO seluruh customer',
   peringatan:'Pusat peringatan & notifikasi sistem', pengaturan:'Pengaturan akun & profil',
   'monitoring-armada':'Lokasi & status armada live dari GPS Cartrack',
+  'monitoring-ban':'Kondisi tiap posisi ban & jadwal rotasi seluruh armada',
 };
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -4609,6 +4660,7 @@ function goTo(view){
   if(view === 'po') renderPO();
   if(view === 'po-monitoring') renderPOMonitoring();
   if(view === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
+  if(view === 'monitoring-ban') renderMonitoringBan();
   if(view === 'laporan-sisapo') initLaporanSisaPoView();
   if(view === 'pengaturan'){
     const acc = currentAccount();
@@ -5199,13 +5251,13 @@ function dataInputRestrictedForCurrentUser(){
    Konsekuensinya: akun non-admin yang SUDAH ADA sebelum perubahan ini (dan belum pernah diatur lewat
    "Atur Menu") juga ikut kena default ketat ini -- admin perlu membuka "Atur Menu" sekali untuk
    masing-masing akun tsb dan memberi akses yang sesuai (bisa pakai tombol preset atau "Pilih Semua"). */
-const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo'];
+const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo'];
 const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
 const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor'];
 /* Preset siap-pakai untuk tombol di modal "Atur Menu" -- cuma pengisi awal checklist, admin masih
    boleh centang/hapus centang manual sebelum menyimpan. */
 const MENU_PRESET_OWNER = LEGACY_ADMINISTRASI_VIEWS.slice(); // owner: lihat semua laporan/monitoring, tanpa form Input
-const MENU_PRESET_STAFF_INPUT = ['po', 'po-monitoring', 'borongan', 'service', 'maintenance', 'ritase', 'monitoring-armada', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-sisapo']; // staff input: fokus input & data master, tanpa laporan/monitoring keuangan
+const MENU_PRESET_STAFF_INPUT = ['po', 'po-monitoring', 'borongan', 'service', 'maintenance', 'ritase', 'monitoring-armada', 'monitoring-ban', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-sisapo']; // staff input: fokus input & data master, tanpa laporan/monitoring keuangan
 function effectiveHiddenMenus(acc){
   if(!acc || accountRole(acc) === 'admin') return new Set();
   let hidden;
@@ -6698,6 +6750,409 @@ document.getElementById('formLegalitasInput').addEventListener('submit', functio
   showToast('Dokumen legalitas berhasil disimpan, cek menu Daftar > Legalitas Kendaraan', 'success');
 });
 
+/* ==================================================================================
+   MONITORING BAN — kondisi tiap posisi ban (depan-kiri/FL, depan-kanan/FR, belakang-kiri/RL,
+   belakang-kanan/RR, cadangan) + jadwal rotasi, per kendaraan. Semua data disimpan langsung
+   sebagai field baru pada tiap objek kendaraan (k.banList, k.rotasiTerakhirTanggal,
+   k.rotasiTerakhirKm, k.rotasiAmbangKm, k.riwayatBan, k.riwayatRotasi) -- BUKAN koleksi
+   Firebase terpisah -- supaya otomatis ikut tersimpan lewat saveKendaraan() yang sudah ada
+   (fbPush('kendaraan', kendaraanList)), tanpa perlu listener/sinkronisasi baru.
+   Status kondisi ban dihitung dari DUA arah (umur pakai bulan & jarak tempuh km sejak
+   dipasang), dipakai bersama KM live kendaraan (k.kmSaatIni, yang sudah otomatis ter-update
+   dari GPS Cartrack lewat fitur Service Berkala) -- mana pun yang lebih dulu mendekati batas
+   estimasi yang menentukan status akhir (Aman / Waspada / Perlu Ganti).
+   Status rotasi dihitung dari jarak tempuh sejak rotasi terakhir (k.rotasiTerakhirKm) VS
+   ambang km yang bisa diatur per kendaraan (default 10.000 km) -- pola yang sama persis
+   dengan Monitoring Service Berkala (interval km) supaya konsisten dgn fitur yang sudah ada. */
+const BAN_POSISI = [
+  { key: 'FL', label: 'Depan Kiri (FL)' },
+  { key: 'FR', label: 'Depan Kanan (FR)' },
+  { key: 'RL', label: 'Belakang Kiri (RL)' },
+  { key: 'RR', label: 'Belakang Kanan (RR)' },
+  { key: 'CAD', label: 'Cadangan' },
+];
+const BAN_ROTASI_AMBANG_DEFAULT = 10000;
+/* Tanggal hari ini dalam format "YYYY-MM-DD" dari komponen LOKAL (bukan lewat toISOString/UTC) --
+   dipakai untuk default input tanggal di form Ganti Ban & Catat Rotasi, supaya tidak kena bug
+   pergeseran tanggal timezone yang sama seperti yang pernah terjadi di pil "Periode" Dashboard
+   (lihat catatan di dashboardPeriodRanges()). */
+function todayISO(){
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function banOf(k, posisi){
+  return (k.banList && k.banList[posisi]) || null;
+}
+/* Umur pakai ban dalam bulan penuh, dihitung dari tanggalPasang sampai hari ini. */
+function banAgeMonths(tanggalPasang){
+  if(!tanggalPasang) return 0;
+  const pasang = new Date(tanggalPasang + 'T00:00:00');
+  const now = new Date();
+  let bulan = (now.getFullYear() - pasang.getFullYear()) * 12 + (now.getMonth() - pasang.getMonth());
+  if(now.getDate() < pasang.getDate()) bulan -= 1;
+  return Math.max(0, bulan);
+}
+/* status: 'kosong' (belum diisi), 'aman', 'waspada', atau 'ganti'.
+   pct diambil dari yang PALING BESAR antara persen umur bulan & persen km terpakai -- jadi kalau
+   salah satu sudah mendekati/lewat batas, status ikut naik meskipun yang satunya masih jauh. */
+function banStatusInfo(ban, kmSaatIni){
+  if(!ban || !ban.tanggalPasang) return { status: 'kosong', pct: 0, bulanTerpakai: 0, kmTerpakai: 0 };
+  const bulanTerpakai = banAgeMonths(ban.tanggalPasang);
+  const estimasiBulan = Number(ban.estimasiBulan) || 0;
+  const pctBulan = estimasiBulan > 0 ? bulanTerpakai / estimasiBulan : 0;
+  const kmTerpakai = Math.max(0, (Number(kmSaatIni) || 0) - (Number(ban.kmPasang) || 0));
+  const estimasiKm = Number(ban.estimasiKm) || 0;
+  const pctKm = estimasiKm > 0 ? kmTerpakai / estimasiKm : 0;
+  const pct = Math.max(pctBulan, pctKm);
+  let status = 'aman';
+  if(pct >= 1) status = 'ganti';
+  else if(pct >= 0.85) status = 'waspada';
+  return { status, pct, bulanTerpakai, kmTerpakai };
+}
+function banStatusBadge(info){
+  if(info.status === 'kosong') return '<span style="color:var(--text-faint);">Belum diisi</span>';
+  if(info.status === 'ganti') return `<span class="badge badge-legal-danger"><span class="badge-dot"></span>Perlu Ganti</span>`;
+  if(info.status === 'waspada') return `<span class="badge badge-legal-warn"><span class="badge-dot"></span>Waspada</span>`;
+  return `<span class="badge badge-legal-safe"><span class="badge-dot"></span>Aman</span>`;
+}
+/* status rotasi: kalau belum pernah dirotasi, baseline km diambil dari kmPasang ban PALING AWAL
+   yang sudah diisi (asumsi: sejak dipasang pertama kali belum pernah dirotasi). Kalau belum ada
+   ban terisi sama sekali, statusnya 'kosong' (belum ada data cukup untuk dihitung). */
+function rotasiInfo(k){
+  const ambang = Number(k.rotasiAmbangKm) || BAN_ROTASI_AMBANG_DEFAULT;
+  const kmSaatIni = Number(k.kmSaatIni) || 0;
+  let baseline = (k.rotasiTerakhirKm != null && k.rotasiTerakhirKm !== '') ? Number(k.rotasiTerakhirKm) : null;
+  if(baseline == null){
+    const kmPasangTerisi = BAN_POSISI.map(p => banOf(k, p.key)).filter(b => b && b.kmPasang != null && b.kmPasang !== '').map(b => Number(b.kmPasang));
+    baseline = kmPasangTerisi.length ? Math.min(...kmPasangTerisi) : null;
+  }
+  if(baseline == null) return { status: 'kosong', kmSejak: 0, ambang };
+  const kmSejak = Math.max(0, kmSaatIni - baseline);
+  let status = 'aman';
+  if(kmSejak >= ambang) status = 'perlu';
+  else if(kmSejak >= ambang * 0.8) status = 'mendekati';
+  return { status, kmSejak, ambang };
+}
+function rotasiBadge(info){
+  if(info.status === 'kosong') return '<span style="color:var(--text-faint);">Belum ada data</span>';
+  const kmTxt = Math.round(info.kmSejak).toLocaleString('id-ID');
+  if(info.status === 'perlu') return `<span class="badge badge-legal-danger"><span class="badge-dot"></span>Perlu Rotasi (${kmTxt} km)</span>`;
+  if(info.status === 'mendekati') return `<span class="badge badge-legal-warn"><span class="badge-dot"></span>Mendekati (${kmTxt} km)</span>`;
+  return `<span class="badge badge-legal-safe"><span class="badge-dot"></span>Aman (${kmTxt} km)</span>`;
+}
+
+/* ---------- HALAMAN MONITORING BAN (daftar semua kendaraan) ---------- */
+function renderMonitoringBan(){
+  const wrap = document.getElementById('banTableWrap');
+  if(!wrap) return;
+  if(kendaraanList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan lewat menu Administrasi &gt; Input Data Kendaraan.');
+    return;
+  }
+  wrap.innerHTML = `<table class="sv-table"><thead><tr>
+    <th>No</th><th>Nopol</th><th class="sv-left">Merk</th>
+    ${BAN_POSISI.map(p => `<th>${p.key}</th>`).join('')}
+    <th>Status Rotasi</th><th></th>
+  </tr></thead><tbody>${kendaraanList.map((k, i) => `<tr>
+      <td>${i + 1}</td>
+      <td><span class="plate-cell">${esc(k.nopol)}</span></td>
+      <td class="sv-left">${esc(k.merk || '-')}</td>
+      ${BAN_POSISI.map(p => `<td title="${esc(p.label)}">${banStatusBadge(banStatusInfo(banOf(k, p.key), k.kmSaatIni))}</td>`).join('')}
+      <td>${rotasiBadge(rotasiInfo(k))}</td>
+      <td><button type="button" class="btn btn-secondary btn-kelola-ban" data-id="${k.id}" style="font-size:12px; padding:6px 10px; white-space:nowrap;">Kelola</button></td>
+    </tr>`).join('')}</tbody></table>
+  <p class="hint" style="margin-top:8px;">Klik "Kelola" untuk update ban tiap posisi, catat rotasi, atau lihat riwayat kendaraan tersebut. Status: <span style="color:#57bb63; font-weight:700;">Aman</span>, <span style="color:#b9740a; font-weight:700;">Waspada</span> (&ge;85% umur/km terpakai), <span style="color:#e6534a; font-weight:700;">Perlu Ganti/Rotasi</span> (sudah lewat batas).</p>`;
+  wrap.querySelectorAll('.btn-kelola-ban').forEach(btn => btn.addEventListener('click', function(){
+    openBanDetailModal(this.dataset.id);
+  }));
+}
+
+/* ---------- MODAL: KELOLA BAN PER KENDARAAN ---------- */
+let banDetailTargetId = null;
+let banGantiOpenPosisi = null;
+let banRotasiFormOpen = false;
+function openBanDetailModal(id){
+  banDetailTargetId = id;
+  banGantiOpenPosisi = null;
+  banRotasiFormOpen = false;
+  const k = kendaraanList.find(x => x.id === id);
+  document.getElementById('banDetailModalTitle').textContent = `Kelola Ban — ${k ? k.nopol : ''}`;
+  renderBanDetailModalBody(k || null);
+  document.getElementById('banDetailModalOverlay').classList.add('show');
+}
+function closeBanDetailModal(){
+  document.getElementById('banDetailModalOverlay').classList.remove('show');
+  banDetailTargetId = null;
+  banGantiOpenPosisi = null;
+  banRotasiFormOpen = false;
+}
+(function(){
+  const btnClose = document.getElementById('btnCloseBanDetailModal');
+  const overlay = document.getElementById('banDetailModalOverlay');
+  if(btnClose) btnClose.addEventListener('click', closeBanDetailModal);
+  if(overlay) overlay.addEventListener('click', function(e){ if(e.target === overlay) closeBanDetailModal(); });
+})();
+
+function renderBanDetailModalBody(k){
+  const body = document.getElementById('banDetailModalBody');
+  if(!body) return;
+  if(!k){
+    body.innerHTML = emptyState('Kendaraan tidak ditemukan (mungkin sudah dihapus).');
+    return;
+  }
+  const rInfo = rotasiInfo(k);
+  let html = `<table class="sv-table" style="margin-bottom:16px;"><thead><tr>
+      <th class="sv-left">Posisi</th><th class="sv-left">Merk</th><th>Tgl Pasang</th><th>KM Pasang</th><th>Estimasi</th><th>Status</th><th></th>
+    </tr></thead><tbody>${BAN_POSISI.map(p => {
+      const ban = banOf(k, p.key);
+      const info = banStatusInfo(ban, k.kmSaatIni);
+      const estTxt = ban ? `${Number(ban.estimasiBulan)||0} bln / ${(Number(ban.estimasiKm)||0).toLocaleString('id-ID')} km` : '-';
+      return `<tr>
+        <td class="sv-left">${esc(p.label)}</td>
+        <td class="sv-left">${ban ? esc(ban.merk || '-') : '<span style="color:var(--text-faint);">-</span>'}</td>
+        <td>${ban && ban.tanggalPasang ? fmtDate(ban.tanggalPasang) : '-'}</td>
+        <td class="sv-num">${ban && ban.kmPasang != null ? Number(ban.kmPasang).toLocaleString('id-ID') : '-'}</td>
+        <td>${estTxt}</td>
+        <td>${banStatusBadge(info)}</td>
+        <td><button type="button" class="btn btn-secondary btn-ganti-ban-toggle" data-posisi="${p.key}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap;">${banGantiOpenPosisi === p.key ? 'Batal' : (ban ? 'Ganti Ban' : '+ Pasang Ban')}</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+
+  if(banGantiOpenPosisi){
+    const p = BAN_POSISI.find(x => x.key === banGantiOpenPosisi);
+    const banLama = banOf(k, banGantiOpenPosisi);
+    html += `<div class="panel" style="margin:0 0 16px; background:var(--bg);">
+      <div class="panel-body" style="padding:16px;">
+        <h4 style="margin:0 0 10px; font-size:14px;">${banLama ? 'Ganti' : 'Pasang'} ban — ${esc(p.label)}</h4>
+        <form id="formBanGanti">
+          <div class="grid2">
+            <div class="field"><label for="bgMerk">Merk / tipe ban</label><input type="text" id="bgMerk" placeholder="cth. Bridgestone R150" required></div>
+            <div class="field"><label for="bgTanggal">Tanggal pasang</label><input type="date" id="bgTanggal" value="${todayISO()}" required></div>
+            <div class="field"><label for="bgKmPasang">KM saat dipasang</label><input type="number" id="bgKmPasang" min="0" step="1" value="${k.kmSaatIni || 0}" required></div>
+            <div class="field"><label for="bgEstBulan">Estimasi umur (bulan)</label><input type="number" id="bgEstBulan" min="1" step="1" value="24" required></div>
+            <div class="field"><label for="bgEstKm">Estimasi umur (km)</label><input type="number" id="bgEstKm" min="1" step="1" value="40000" required></div>
+            <div class="field"><label for="bgBiaya">Biaya <span class="hint">(opsional)</span></label><input type="number" id="bgBiaya" min="0" step="1000" placeholder="cth. 2500000"></div>
+          </div>
+          <div class="login-error" id="banGantiFormError" style="text-align:left;"></div>
+          <div class="btn-row" style="justify-content:flex-end; margin-top:10px;">
+            <button type="button" class="btn btn-secondary btn-batal-ganti-ban">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+  }
+
+  html += `<div class="panel" style="margin:0 0 16px; background:var(--bg);">
+    <div class="panel-body" style="padding:16px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+        <div>
+          <h4 style="margin:0 0 4px; font-size:14px;">Rotasi ban</h4>
+          <div>${rotasiBadge(rInfo)}</div>
+        </div>
+        <button type="button" class="btn btn-secondary" id="btnToggleRotasiForm" style="font-size:12px; padding:7px 12px;">${banRotasiFormOpen ? 'Batal' : 'Catat Rotasi'}</button>
+      </div>
+      <div class="field" style="max-width:260px; margin-bottom:0;">
+        <label for="baAmbang">Ambang rotasi (km) <span class="hint">— alert muncul begitu KM sejak rotasi terakhir mencapai angka ini</span></label>
+        <div style="display:flex; gap:8px;">
+          <input type="number" id="baAmbang" min="1" step="500" value="${Number(k.rotasiAmbangKm) || BAN_ROTASI_AMBANG_DEFAULT}">
+          <button type="button" class="btn btn-secondary" id="btnSimpanAmbang" style="font-size:12px; padding:7px 12px; white-space:nowrap;">Simpan</button>
+        </div>
+      </div>
+      ${banRotasiFormOpen ? `
+      <form id="formBanRotasi" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
+        <p class="hint" style="margin:0 0 10px;">Pilih posisi baru tiap ban (posisi yang tidak dipindah biarkan sama).</p>
+        <div class="grid2">
+          ${BAN_POSISI.map(p => `<div class="field">
+            <label for="brTo${p.key}">${esc(p.label)} pindah ke</label>
+            <select id="brTo${p.key}" data-dari="${p.key}">
+              ${BAN_POSISI.map(p2 => `<option value="${p2.key}" ${p2.key === p.key ? 'selected' : ''}>${esc(p2.label)}</option>`).join('')}
+            </select>
+          </div>`).join('')}
+          <div class="field"><label for="brTanggal">Tanggal rotasi</label><input type="date" id="brTanggal" value="${todayISO()}" required></div>
+          <div class="field"><label for="brKm">KM saat rotasi</label><input type="number" id="brKm" min="0" step="1" value="${k.kmSaatIni || 0}" required></div>
+        </div>
+        <div class="login-error" id="banRotasiFormError" style="text-align:left;"></div>
+        <div class="btn-row" style="justify-content:flex-end; margin-top:10px;">
+          <button type="button" class="btn btn-secondary btn-batal-rotasi">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan rotasi</button>
+        </div>
+      </form>` : ''}
+    </div>
+  </div>`;
+
+  const riwayatBan = (k.riwayatBan || []).slice().reverse().slice(0, 10);
+  html += `<div style="margin-bottom:16px;">
+    <h4 style="margin:0 0 8px; font-size:14px;">Riwayat penggantian ban</h4>
+    ${riwayatBan.length === 0 ? emptyState('Belum ada riwayat penggantian ban.') : `<table class="sv-table"><thead><tr>
+      <th>Tanggal</th><th class="sv-left">Posisi</th><th class="sv-left">Ban lama</th><th class="sv-left">Ban baru</th><th>Biaya</th>
+    </tr></thead><tbody>${riwayatBan.map(r => `<tr>
+      <td>${r.tanggal ? fmtDate(r.tanggal) : '-'}</td>
+      <td class="sv-left">${esc((BAN_POSISI.find(p => p.key === r.posisi) || {}).label || r.posisi)}</td>
+      <td class="sv-left">${r.merkLama ? esc(r.merkLama) : '<span style="color:var(--text-faint);">- (baru dipasang)</span>'}</td>
+      <td class="sv-left">${esc(r.merkBaru || '-')}</td>
+      <td>${r.biaya ? rupiah(r.biaya) : '-'}</td>
+    </tr>`).join('')}</tbody></table>`}
+  </div>`;
+
+  const riwayatRotasi = (k.riwayatRotasi || []).slice().reverse().slice(0, 10);
+  html += `<div>
+    <h4 style="margin:0 0 8px; font-size:14px;">Riwayat rotasi</h4>
+    ${riwayatRotasi.length === 0 ? emptyState('Belum ada riwayat rotasi.') : `<table class="sv-table"><thead><tr>
+      <th>Tanggal</th><th>KM</th><th class="sv-left">Perpindahan posisi</th>
+    </tr></thead><tbody>${riwayatRotasi.map(r => `<tr>
+      <td>${r.tanggal ? fmtDate(r.tanggal) : '-'}</td>
+      <td class="sv-num">${Number(r.km || 0).toLocaleString('id-ID')}</td>
+      <td class="sv-left">${(r.mapping || []).map(m => `${esc(m.dari)}&rarr;${esc(m.ke)}`).join(', ') || '-'}</td>
+    </tr>`).join('')}</tbody></table>`}
+  </div>`;
+
+  body.innerHTML = html;
+  wireBanDetailModalEvents(k);
+}
+
+function wireBanDetailModalEvents(k){
+  const body = document.getElementById('banDetailModalBody');
+  if(!body) return;
+
+  body.querySelectorAll('.btn-ganti-ban-toggle').forEach(btn => btn.addEventListener('click', function(){
+    banGantiOpenPosisi = (banGantiOpenPosisi === this.dataset.posisi) ? null : this.dataset.posisi;
+    banRotasiFormOpen = false;
+    renderBanDetailModalBody(k);
+  }));
+  const btnBatalGanti = body.querySelector('.btn-batal-ganti-ban');
+  if(btnBatalGanti) btnBatalGanti.addEventListener('click', function(){ banGantiOpenPosisi = null; renderBanDetailModalBody(k); });
+
+  const formGanti = document.getElementById('formBanGanti');
+  if(formGanti) formGanti.addEventListener('submit', function(e){
+    e.preventDefault();
+    const errEl = document.getElementById('banGantiFormError');
+    errEl.textContent = '';
+    const merk = document.getElementById('bgMerk').value.trim();
+    const tanggal = document.getElementById('bgTanggal').value;
+    const kmPasang = document.getElementById('bgKmPasang').value;
+    const estimasiBulan = document.getElementById('bgEstBulan').value;
+    const estimasiKm = document.getElementById('bgEstKm').value;
+    const biaya = document.getElementById('bgBiaya').value;
+    if(!merk || !tanggal || kmPasang === '' || estimasiBulan === '' || estimasiKm === ''){
+      errEl.textContent = 'Merk, tanggal pasang, KM pasang, & estimasi umur wajib diisi.';
+      return;
+    }
+    const posisi = banGantiOpenPosisi;
+    const banLama = banOf(k, posisi);
+    if(!k.banList) k.banList = {};
+    if(banLama){
+      if(!k.riwayatBan) k.riwayatBan = [];
+      k.riwayatBan.push({ tanggal, posisi, merkLama: banLama.merk || '', merkBaru: merk, kmGanti: Number(kmPasang) || 0, biaya: Number(biaya) || 0 });
+    }
+    k.banList[posisi] = { merk, tanggalPasang: tanggal, kmPasang: Number(kmPasang) || 0, estimasiBulan: Number(estimasiBulan) || 0, estimasiKm: Number(estimasiKm) || 0 };
+    saveKendaraan();
+    banGantiOpenPosisi = null;
+    renderBanDetailModalBody(k);
+    renderMonitoringBan();
+    renderBanDashboardSummary();
+    showToast(`${banLama ? 'Penggantian' : 'Pemasangan'} ban berhasil disimpan`, 'success');
+  });
+
+  const btnAmbang = document.getElementById('btnSimpanAmbang');
+  if(btnAmbang) btnAmbang.addEventListener('click', function(){
+    const val = Number(document.getElementById('baAmbang').value) || BAN_ROTASI_AMBANG_DEFAULT;
+    k.rotasiAmbangKm = val;
+    saveKendaraan();
+    renderBanDetailModalBody(k);
+    renderMonitoringBan();
+    renderBanDashboardSummary();
+    showToast('Ambang rotasi berhasil disimpan', 'success');
+  });
+
+  const btnToggleRotasi = document.getElementById('btnToggleRotasiForm');
+  if(btnToggleRotasi) btnToggleRotasi.addEventListener('click', function(){
+    banRotasiFormOpen = !banRotasiFormOpen;
+    banGantiOpenPosisi = null;
+    renderBanDetailModalBody(k);
+  });
+  const btnBatalRotasi = body.querySelector('.btn-batal-rotasi');
+  if(btnBatalRotasi) btnBatalRotasi.addEventListener('click', function(){ banRotasiFormOpen = false; renderBanDetailModalBody(k); });
+
+  const formRotasi = document.getElementById('formBanRotasi');
+  if(formRotasi) formRotasi.addEventListener('submit', function(e){
+    e.preventDefault();
+    const errEl = document.getElementById('banRotasiFormError');
+    errEl.textContent = '';
+    const tanggal = document.getElementById('brTanggal').value;
+    const km = document.getElementById('brKm').value;
+    if(!tanggal || km === ''){
+      errEl.textContent = 'Tanggal & KM saat rotasi wajib diisi.';
+      return;
+    }
+    const targets = {};
+    BAN_POSISI.forEach(p => { targets[p.key] = document.getElementById(`brTo${p.key}`).value; });
+    const targetValues = Object.values(targets);
+    const uniqueTargets = new Set(targetValues);
+    if(uniqueTargets.size !== targetValues.length){
+      errEl.textContent = 'Satu posisi tujuan tidak boleh dipilih dua kali — pastikan tiap posisi tujuan hanya dipakai sekali.';
+      return;
+    }
+    const mapping = BAN_POSISI.filter(p => targets[p.key] !== p.key).map(p => ({ dari: p.key, ke: targets[p.key] }));
+    if(mapping.length === 0){
+      errEl.textContent = 'Belum ada perubahan posisi yang dipilih — pilih posisi tujuan yang berbeda untuk minimal satu ban.';
+      return;
+    }
+    const newBanList = {};
+    BAN_POSISI.forEach(p => {
+      const ban = banOf(k, p.key);
+      if(ban) newBanList[targets[p.key]] = ban;
+    });
+    k.banList = newBanList;
+    k.rotasiTerakhirTanggal = tanggal;
+    k.rotasiTerakhirKm = Number(km) || 0;
+    if(!k.riwayatRotasi) k.riwayatRotasi = [];
+    k.riwayatRotasi.push({ tanggal, km: Number(km) || 0, mapping });
+    saveKendaraan();
+    banRotasiFormOpen = false;
+    renderBanDetailModalBody(k);
+    renderMonitoringBan();
+    renderBanDashboardSummary();
+    showToast('Rotasi ban berhasil dicatat', 'success');
+  });
+}
+
+/* ---------- KARTU RINGKASAN BAN DI DASHBOARD ---------- */
+function renderBanDashboardSummary(){
+  const wrap = document.getElementById('dashBanSummaryWrap');
+  if(!wrap) return;
+  if(kendaraanList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada data armada.');
+    return;
+  }
+  let ganti = 0, waspada = 0, rotasiPerlu = 0, rotasiMendekati = 0;
+  kendaraanList.forEach(k => {
+    BAN_POSISI.forEach(p => {
+      const st = banStatusInfo(banOf(k, p.key), k.kmSaatIni).status;
+      if(st === 'ganti') ganti++;
+      else if(st === 'waspada') waspada++;
+    });
+    const rSt = rotasiInfo(k).status;
+    if(rSt === 'perlu') rotasiPerlu++;
+    else if(rSt === 'mendekati') rotasiMendekati++;
+  });
+  const items = [
+    { n: ganti, lbl: 'Ban perlu diganti', color: '#e6534a' },
+    { n: waspada, lbl: 'Ban waspada (mendekati batas)', color: '#b9740a' },
+    { n: rotasiPerlu, lbl: 'Kendaraan perlu dirotasi', color: '#e6534a' },
+    { n: rotasiMendekati, lbl: 'Kendaraan mendekati jadwal rotasi', color: '#b9740a' },
+  ];
+  if(items.every(it => it.n === 0)){
+    wrap.innerHTML = `<div class="alert-item alert-info"><div class="alert-icon">${DASH_ICON_INFO}</div><div><div class="alert-title">Semua ban dalam kondisi aman</div><div class="alert-desc">Tidak ada ban yang perlu diganti atau kendaraan yang perlu dirotasi saat ini.</div></div></div>`;
+    return;
+  }
+  wrap.innerHTML = items.filter(it => it.n > 0).map(it => `
+    <div class="alert-item alert-warn">
+      <div class="alert-icon">${DASH_ICON_ALERT}</div>
+      <div><div class="alert-title" style="color:${it.color};">${it.n} ${esc(it.lbl)}</div></div>
+    </div>`).join('');
+}
+
 /* ---------- NOTIFIKASI WHATSAPP: JATUH TEMPO KIR & PAJAK ---------- */
 const WA_NOMOR_KEY = 'ekspedisi_wa_nomor_admin';
 const WA_AUTOBANNER_KEY = 'ekspedisi_wa_autobanner';
@@ -7985,6 +8440,7 @@ function renderDashboard(){
   renderCustomerSummaryCard();
   renderAlertNotifCard();
   renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5);
+  renderBanDashboardSummary();
   renderRitaseTrendChart();
   renderTonaseTrendChart();
   renderTopKotaTable();
