@@ -2063,7 +2063,6 @@
           <div class="panel-head">
             <div>
               <h2>Monitoring ban (kondisi &amp; rotasi)</h2>
-              <p>Status tiap posisi ban dihitung dari umur pakai (bulan) &amp; jarak tempuh (KM) sejak dipasang, mana yang lebih dulu mendekati batas. Klik "Kelola" untuk ganti ban, catat rotasi, atau lihat riwayat.</p>
             </div>
           </div>
           <div class="panel-body">
@@ -6942,8 +6941,7 @@ function renderMonitoringBan(){
       <td class="sv-left">${banSummaryBadge(k)}</td>
       <td>${rotasiBadge(rotasiInfo(k))}</td>
       <td><button type="button" class="btn btn-secondary btn-kelola-ban" data-id="${k.id}" style="font-size:12px; padding:6px 10px; white-space:nowrap;">Kelola</button></td>
-    </tr>`).join('')}</tbody></table>
-  <p class="hint" style="margin-top:8px;">Klik "Kelola" untuk lihat rincian tiap posisi ban, update, catat rotasi, atau lihat riwayat kendaraan tersebut. Status: <span style="color:#57bb63; font-weight:700;">Aman</span>, <span style="color:#b9740a; font-weight:700;">Waspada</span> (&ge;85% umur/km terpakai), <span style="color:#e6534a; font-weight:700;">Perlu Ganti/Rotasi</span> (sudah lewat batas).</p>`;
+    </tr>`).join('')}</tbody></table>`;
   wrap.querySelectorAll('.btn-kelola-ban').forEach(btn => btn.addEventListener('click', function(){
     openBanDetailModal(this.dataset.id);
   }));
@@ -9036,6 +9034,8 @@ function renderTable(){
         localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
         fbRemoveFromList('records', item => String(item.id) === String(targetId), targetId);
         renderTable();
+        renderDashboard(); // ikut refresh widget Monitoring Armada & statistik lain di Dashboard begitu DO dihapus
+        renderMonitoringArmadaCard('monitoringArmadaFullWrap'); // halaman penuh Monitoring Armada -- driver/rute diambil dari DO TERBARU per nopol (dashVehicleLatestRecord), jadi harus ikut refresh begitu DO dihapus, bukan hanya nunggu navigasi ulang
         showToast('Data DO berhasil dihapus', 'danger');
       }
     }));
