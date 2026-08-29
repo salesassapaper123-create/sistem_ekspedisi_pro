@@ -41,14 +41,12 @@
   }
   .mono{font-family:'IBM Plex Mono',monospace;}
 
-  /* ---------- TIPOGRAFI: Poppins untuk semua judul/heading, Inter tetap dipakai untuk isi/body
-     (badan teks, label, input, tabel, tombol — sudah default lewat font-family di body). Elemen
-     heading asli (h1-h6) otomatis kepakai di sini; ditambah beberapa elemen non-<h*> yang secara
-     visual berfungsi sebagai judul (nama brand di sidebar & label grup menu sidebar). Karena body
-     sudah uppercase, heading Poppins tebal diberi sedikit tambahan letter-spacing supaya tetap
-     enak dibaca & terlihat lebih premium/profesional, bukan cuma tebal. */
-  h1,h2,h3,h4,h5,h6{font-family:'Poppins','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; letter-spacing:.01em;}
-  .brand-name,.nav-group-head,.login-slogan{font-family:'Poppins','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;}
+  /* ---------- TIPOGRAFI: satu keluarga font (Inter) dipakai konsisten untuk heading MAUPUN
+     isi/body, mengikuti foto referensi terbaru user (dashboard "Accurate Expedition") yang
+     memakai satu jenis sans-serif modern di semua elemen -- sebelumnya heading pakai Poppins
+     terpisah dari body Inter, sekarang disatukan supaya tipografinya benar-benar seragam. */
+  h1,h2,h3,h4,h5,h6{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif; letter-spacing:0;}
+  .brand-name,.nav-group-head,.login-slogan{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;}
 
   /* ---------- LAYOUT ---------- */
   /* Sesi keempatpuluhdua: .app dikunci tinggi persis 100vh (bukan cuma min-height lagi) supaya
@@ -231,7 +229,36 @@
   .road-dash{ stroke-dasharray:26 20; animation:roadmove 2.2s linear infinite; }
   @keyframes drift{ 0%{ transform:translateX(0); } 100%{ transform:translateX(-40px); } }
   .cloud-drift{ animation:drift 40s linear infinite alternate; }
-  .user-menu{display:flex; align-items:center; gap:10px;}
+  .user-menu{display:flex; align-items:center; gap:12px;}
+  /* Grup kiri topbar (hamburger + kolom pencarian) -- ditambahkan mengikuti foto referensi
+     dashboard "Accurate Expedition"; hamburger cuma alternatif visual untuk tombol ciutkan
+     sidebar yang sudah ada (.sidebar-toggle), kolom pencarian murni visual/placeholder karena
+     sistem belum punya mesin pencarian lintas-menu. */
+  .topbar-left{display:flex; align-items:center; gap:14px; flex:1; min-width:0; max-width:520px;}
+  .topbar-hamburger{
+    width:38px; height:38px; border-radius:10px; border:1px solid var(--border); background:#fff;
+    color:var(--navy-700); display:flex; align-items:center; justify-content:center; cursor:pointer;
+    flex-shrink:0; transition:background .15s ease, color .15s ease;
+  }
+  .topbar-hamburger:hover{background:var(--navy-700); color:#fff;}
+  .topbar-hamburger svg{width:19px; height:19px;}
+  .topbar-search{
+    display:flex; align-items:center; gap:8px; background:var(--bg); border:1px solid var(--border);
+    border-radius:999px; padding:0 16px; height:38px; flex:1; min-width:0; text-transform:none;
+  }
+  .topbar-search svg{width:16px; height:16px; color:var(--text-faint); flex-shrink:0;}
+  .topbar-search input{
+    border:none; background:none; outline:none; font-size:13px; font-family:inherit; color:var(--text);
+    width:100%; text-transform:none;
+  }
+  .topbar-search input::placeholder{color:var(--text-faint); text-transform:none;}
+  .topbar-title-wrap{flex-shrink:0;}
+  .topbar-subtitle{color:var(--text-muted); font-size:12.5px; margin-top:3px; text-transform:none; font-weight:400;}
+  .topbar-subtitle:empty{display:none;}
+  .user-info{display:flex; flex-direction:column; align-items:flex-end; line-height:1.3; text-transform:none;}
+  .user-info .user-name{font-size:13px; font-weight:700; color:var(--text);}
+  .user-info .user-role{font-size:11px; color:var(--text-muted);}
+  @media (max-width:1150px){ .topbar-left{display:none;} .user-info{display:none;} }
   .topbar-icon-btn{
     position:relative; width:38px; height:38px; border-radius:10px; border:1px solid var(--border);
     background:#fff; color:var(--navy-700); display:flex; align-items:center; justify-content:center;
@@ -350,10 +377,10 @@
   .topbar{
     flex-shrink:0;
     background:var(--card); border-bottom:1px solid var(--border);
-    padding:16px 28px; display:flex; align-items:center; justify-content:space-between;
+    padding:14px 28px; display:flex; align-items:center; justify-content:space-between; gap:18px;
     box-shadow:0 1px 2px rgba(15,27,48,.04);
   }
-  .topbar h1{font-size:18px; font-weight:700; margin:0;}
+  .topbar h1{font-size:24px; font-weight:700; margin:0; text-transform:none; letter-spacing:0;}
   .topbar .date{color:var(--text-muted); font-size:12.5px; margin-top:2px;}
   /* Jam digital realtime di sebelah judul halaman — indikator visual bahwa sistem & koneksinya
      selalu hidup/live (bukan indikator status koneksi Firebase itu sendiri, murni jam lokal
@@ -391,7 +418,7 @@
     margin-bottom:10px; box-shadow:0 2px 6px rgba(15,27,48,.14);
   }
   .stat-card .icon svg{width:16px; height:16px;}
-  .stat-card .num{font-size:24px; font-weight:700; font-family:'IBM Plex Mono',monospace;}
+  .stat-card .num{font-size:27px; font-weight:800; letter-spacing:-.01em;}
   .stat-card .lbl{color:var(--text-muted); font-size:12px; margin-top:2px;}
 
   .panel{
@@ -510,10 +537,20 @@
     display:flex; flex-direction:column; overflow:hidden; box-shadow:0 1px 3px rgba(15,27,48,.05), 0 1px 2px rgba(15,27,48,.04);
   }
   .dash-card-head{
-    background:var(--navy-600); color:#fff; padding:12px 16px;
+    background:var(--card); color:var(--text); padding:14px 16px; border-bottom:1px solid var(--border);
     display:flex; align-items:center; justify-content:space-between; gap:10px; position:relative;
   }
-  .dash-card-head h3{font-size:12px; font-weight:700; margin:0; letter-spacing:.02em;}
+  .dash-card-head h3{font-size:14.5px; font-weight:700; margin:0; letter-spacing:0; text-transform:none; color:var(--text);}
+  /* Link/kontrol kecil di kanan header kartu dashboard -- "Lihat Semua" (warna aksen, teks biasa)
+     atau pil dropdown periode statis "Per Bulan"/"Bulan Ini" (visual saja, mengikuti foto referensi
+     dashboard "Accurate Expedition"; sistem belum punya mesin pilihan rentang tanggal sungguhan). */
+  .dash-lihat-semua{background:none; border:none; color:var(--accent-500); font-size:11.5px; font-weight:700; cursor:pointer; text-transform:none; padding:0; text-decoration:none; white-space:nowrap;}
+  .dash-lihat-semua:hover{text-decoration:underline;}
+  .dash-period-select{
+    background:var(--bg); border:1px solid var(--border); color:var(--text-muted); border-radius:7px;
+    font-size:10.5px; font-weight:600; padding:4px 9px; text-transform:none; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; flex-shrink:0;
+  }
+  .dash-period-select svg{width:10px; height:10px;}
   .dash-card-menu-wrap{position:relative; flex-shrink:0;}
   .dash-card-menu-btn{background:none; border:none; color:#fff; opacity:.85; cursor:pointer; padding:4px; border-radius:6px; display:flex;}
   .dash-card-menu-btn:hover{background:rgba(255,255,255,.16); opacity:1;}
@@ -531,6 +568,19 @@
   .dash-card-menu button:hover{background:#f3f4f6;}
   .dash-card-body{padding:18px 16px; flex:1; display:flex; flex-direction:column; min-height:0;}
   .dash-card-foot{padding:9px 16px; color:var(--text-faint); font-size:10.5px; border-top:1px solid var(--border); text-transform:none;}
+
+  /* Baris judul Dashboard + pil "Periode" di kanan atas (statis, dihitung dari rentang bulan
+     berjalan yang sama dipakai kartu statistik) -- mengikuti foto referensi dashboard. */
+  .dash-title-row{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:16px;}
+  .dash-title-row h2{font-size:20px; font-weight:700; margin:0; text-transform:none;}
+  .dash-title-row p{color:var(--text-muted); font-size:12.5px; margin:3px 0 0; text-transform:none;}
+  .dash-period-badge{
+    display:inline-flex; align-items:center; gap:9px; background:var(--card); border:1px solid var(--border);
+    border-radius:10px; padding:7px 14px; box-shadow:0 1px 3px rgba(15,27,48,.05); flex-shrink:0;
+  }
+  .dash-period-badge svg{width:16px; height:16px; color:var(--text-muted); flex-shrink:0;}
+  .dash-period-badge .period-lbl{display:block; font-size:10px; font-weight:600; color:var(--text-faint); text-transform:uppercase; letter-spacing:.02em; margin-bottom:1px;}
+  .dash-period-badge .period-val{display:block; font-size:12.5px; font-weight:700; color:var(--text); text-transform:none; white-space:nowrap;}
 
   .dash-tabs{display:flex; gap:16px; padding:0 16px; border-bottom:1px solid var(--border); flex-wrap:wrap;}
   .dash-tab{
@@ -552,7 +602,7 @@
   .stat-card .stat-delta-meta{font-size:10.5px; color:var(--text-faint); text-transform:none; margin-top:1px;}
 
   /* Kartu ringkas "mini" (Sisa PO Outstanding, Ringkasan Customer) -- angka besar + sub-baris rincian */
-  .dash-mini-num{font-size:26px; font-weight:800; font-family:'IBM Plex Mono',monospace; color:var(--text);}
+  .dash-mini-num{font-size:28px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
   .dash-mini-num .dash-mini-unit{font-size:13px; font-weight:600; color:var(--text-muted); margin-left:5px; text-transform:uppercase;}
   .dash-mini-sub{font-size:11.5px; color:var(--text-muted); text-transform:none; margin-top:2px; margin-bottom:12px;}
   .dash-mini-rows{display:flex; flex-direction:column; gap:8px; flex:1;}
@@ -570,7 +620,7 @@
   .alert-icon svg{width:15px; height:15px;}
   .alert-item.alert-warn .alert-icon{background:var(--amber-100); color:var(--amber-600);}
   .alert-item.alert-info .alert-icon{background:#e6ecfb; color:var(--navy-700);}
-  .alert-title{font-size:12.5px; font-weight:700; line-height:1.35;}
+  .alert-title{font-size:12.5px; font-weight:700; line-height:1.35; text-transform:none;}
   .alert-desc{font-size:11.5px; color:var(--text-muted); text-transform:none; margin-top:2px; line-height:1.4;}
 
   /* Grafik tren (Ritase/Tonase) -- SVG polos ditulis manual, tanpa library eksternal, konsisten
@@ -966,7 +1016,16 @@
   <!-- MAIN -->
   <div class="main">
     <div class="topbar">
-      <div>
+      <div class="topbar-left">
+        <button type="button" class="topbar-hamburger" id="btnTopbarHamburger" title="Ciutkan/lebarkan sidebar" aria-label="Ciutkan/lebarkan sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="topbar-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="topbarSearchInput" placeholder="Cari menu, data, laporan..." autocomplete="off" title="Pencarian menu (segera hadir)">
+        </div>
+      </div>
+      <div class="topbar-title-wrap">
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
           <h1 id="pageTitle">Dashboard</h1>
           <span class="live-clock" id="liveClock" title="Jam realtime perangkat ini, update tiap detik — menandakan sistem &amp; koneksinya selalu live">
@@ -974,6 +1033,7 @@
             <span id="liveClockTime">00:00:00</span>
           </span>
         </div>
+        <div class="topbar-subtitle" id="pageSubtitle"></div>
         <div class="date" id="pageDate"></div>
       </div>
       <div class="user-menu">
@@ -984,6 +1044,10 @@
         <button class="topbar-icon-btn" id="btnPengaturanIcon" data-view="pengaturan" title="Pengaturan">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
+        <div class="user-info">
+          <div class="user-name" id="userNameLabel">Admin</div>
+          <div class="user-role" id="userRoleLabel">Admin</div>
+        </div>
         <div class="user-badge" id="userBadge">A</div>
       </div>
     </div>
@@ -993,6 +1057,17 @@
       <!-- DASHBOARD -->
       <div class="view active" data-view="dashboard">
         <div id="waLegalBanner"></div>
+
+        <!-- Pil "Periode" (bulan berjalan) -- rentang yang sama dipakai kartu statistik & tren di bawah -->
+        <div style="display:flex; justify-content:flex-end; margin-bottom:16px;">
+          <div class="dash-period-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            <span>
+              <span class="period-lbl">Periode</span>
+              <span class="period-val" id="dashPeriodBadge">&nbsp;</span>
+            </span>
+          </div>
+        </div>
 
         <!-- BARIS 1: 5 kartu statistik utama (ritase, tonase, utilisasi armada, rate perbaikan, % DO selesai) -->
         <div class="stat-grid-5" id="statGrid5"></div>
@@ -1008,20 +1083,28 @@
             <div class="dash-card-body"><div id="dashCustomerWrap"></div></div>
           </div>
           <div class="dash-card">
-            <div class="dash-card-head"><h3>Alert &amp; Notifikasi</h3></div>
+            <div class="dash-card-head">
+              <h3 style="text-transform:none;">Alert &amp; Notifikasi</h3>
+              <a href="javascript:void(0)" class="dash-lihat-semua" data-goto="peringatan">Lihat Semua</a>
+            </div>
             <div class="dash-card-body" style="padding-top:6px; padding-bottom:6px;"><div id="dashAlertWrap"></div></div>
-            <div class="dash-card-foot"><a href="javascript:void(0)" data-goto="peringatan" style="color:var(--accent-500); font-weight:600; text-decoration:none;">Lihat semua &rarr;</a></div>
           </div>
         </div>
 
         <!-- BARIS 3: grafik tren Ritase & Tonase (6 bulan terakhir) -->
         <div class="dash-grid cols-2">
           <div class="dash-card">
-            <div class="dash-card-head"><h3>Ritase Trend (Rit) &mdash; 6 Bulan Terakhir</h3></div>
+            <div class="dash-card-head">
+              <h3 style="text-transform:none;">Ritase Trend (Rit) &mdash; 6 Bulan Terakhir</h3>
+              <span class="dash-period-select">Per Bulan <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+            </div>
             <div class="dash-card-body"><div class="trend-chart-wrap" id="ritaseTrendWrap"></div></div>
           </div>
           <div class="dash-card">
-            <div class="dash-card-head"><h3>Tonase Trend (Ton) &mdash; 6 Bulan Terakhir</h3></div>
+            <div class="dash-card-head">
+              <h3 style="text-transform:none;">Tonase Trend (Ton) &mdash; 6 Bulan Terakhir</h3>
+              <span class="dash-period-select">Per Bulan <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>
+            </div>
             <div class="dash-card-body"><div class="trend-chart-wrap" id="tonaseTrendWrap"></div></div>
           </div>
         </div>
@@ -1031,16 +1114,17 @@
           <div class="panel" style="margin-bottom:0;">
             <div class="panel-head">
               <div>
-                <h2>Ritase per Rute (Top 5)</h2>
+                <h2 style="text-transform:none;">Ritase per Rute (Top 5)</h2>
                 <p>Bulan berjalan, diurutkan dari ritase terbanyak</p>
               </div>
+              <button class="btn btn-secondary" data-goto="ritase">Lihat semua</button>
             </div>
             <div class="panel-body"><div id="topKotaWrap"></div></div>
           </div>
           <div class="panel" style="margin-bottom:0;">
             <div class="panel-head">
               <div>
-                <h2>Order / Pengiriman Terbaru</h2>
+                <h2 style="text-transform:none;">Order / Pengiriman Terbaru</h2>
                 <p>5 DO terakhir yang diinput ke sistem</p>
               </div>
               <button class="btn btn-secondary" data-goto="rekap">Lihat semua</button>
@@ -1050,9 +1134,10 @@
           <div class="panel" style="margin-bottom:0;">
             <div class="panel-head">
               <div>
-                <h2>Biaya Operasional</h2>
+                <h2 style="text-transform:none;">Biaya Operasional</h2>
                 <p>Ringkasan bulan berjalan</p>
               </div>
+              <span class="dash-period-select" id="biayaOpPeriodLabel">&nbsp;</span>
             </div>
             <div class="panel-body"><div class="biaya-op-grid" id="biayaOperasionalWrap"></div></div>
           </div>
@@ -3233,8 +3318,7 @@ function attachAccountsV2Listener(){
       // Kalau data akun sendiri yang sedang login berubah (mis. baru saja di-ACC admin lain di perangkat lain), perbarui badge nama tanpa perlu reload
       const cu = firebase.auth().currentUser;
       if(cu && accountsByUid[cu.uid] && document.getElementById('userBadge')){
-        const a = accountsByUid[cu.uid];
-        document.getElementById('userBadge').textContent = (a.nama || a.email || '?').charAt(0).toUpperCase();
+        updateUserTopbarInfo(accountsByUid[cu.uid]);
       }
       // Kalau admin mengubah flag "Batasi akses data DO/PKB" saat akun itu SEDANG login (perangkat lain
       // atau tab lain), sidebar-nya ikut menyesuaikan langsung tanpa perlu reload.
@@ -4341,13 +4425,46 @@ document.querySelectorAll('.settings-tab').forEach(btn => {
   btn.addEventListener('click', () => setSettingsTab(btn.dataset.settingsTab));
 });
 
+/* Perbarui inisial avatar + nama & role di topbar sekaligus (dipanggil setiap kali data akun yang
+   sedang login berubah/dimuat) -- ditambahkan bareng dengan tampilan nama+role baru di topbar
+   supaya ketiganya (avatar, nama, role) selalu konsisten satu sama lain, tidak update sebagian. */
+function updateUserTopbarInfo(acc){
+  if(!acc) return;
+  const displayName = acc.nama || acc.email || '?';
+  const badge = document.getElementById('userBadge');
+  const nameLbl = document.getElementById('userNameLabel');
+  const roleLbl = document.getElementById('userRoleLabel');
+  if(badge) badge.textContent = displayName.charAt(0).toUpperCase();
+  if(nameLbl) nameLbl.textContent = displayName;
+  if(roleLbl) roleLbl.textContent = accountRole(acc) === 'admin' ? 'Admin' : 'Staf';
+}
 /* ---------- NAVIGATION ---------- */
 const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang'};
+/* Subjudul kecil di bawah judul halaman (topbar) -- murni visual/deskriptif, mengikuti foto
+   referensi dashboard "Accurate Expedition" yang menaruh satu baris ringkasan di bawah tiap judul
+   halaman. View yang tidak terdaftar di sini cukup tidak menampilkan subjudul (elemennya kosong). */
+const subtitles = {
+  dashboard:'Ringkasan performa operasional ekspedisi', input:'Input data pengiriman & buat PKB baru',
+  rekap:'Rekap seluruh data DO yang sudah diinput', 'po-input':'Input SO baru & upload dokumen PO customer',
+  po:'Daftar PO masuk & status konfirmasinya', 'po-monitoring':'Pantau sisa tonase PO yang sudah dikonfirmasi',
+  borongan:'Rekap ongkos kirim borongan vendor luar', service:'Jadwal & status service berkala armada',
+  maintenance:'Riwayat & status perbaikan armada', ritase:'Rekap ritase per kendaraan',
+  kendaraan:'Daftar seluruh armada terdaftar', 'kendaraan-input':'Tambahkan data armada baru',
+  legalitas:'Pantau masa berlaku dokumen legalitas armada', 'legalitas-input':'Input dokumen legalitas armada',
+  driver:'Daftar seluruh driver terdaftar', 'driver-input':'Tambahkan data driver baru',
+  customer:'Daftar seluruh customer terdaftar', 'customer-input':'Tambahkan data customer baru',
+  barang:'Daftar jenis barang/muatan', 'barang-input':'Tambahkan jenis barang/muatan baru',
+  laporan:'Rekap pengiriman per bulan', biayapengeluaran:'Rekap biaya pengeluaran organik per bulan',
+  'biayapengeluaran-vendor':'Rekap biaya pengeluaran vendor luar per bulan', 'laporan-sisapo':'Rekap sisa PO seluruh customer',
+  peringatan:'Pusat peringatan & notifikasi sistem', pengaturan:'Pengaturan akun & profil',
+};
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.topbar-icon-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
   document.getElementById('pageTitle').textContent = titles[view];
+  const subtitleEl = document.getElementById('pageSubtitle');
+  if(subtitleEl) subtitleEl.textContent = subtitles[view] || '';
   if(view === 'dashboard') renderDashboard();
   if(view === 'input'){ populateDoNoCODropdown(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); }
   if(view === 'rekap') renderTable();
@@ -4479,11 +4596,16 @@ const SIDEBAR_COLLAPSED_KEY = 'ekspedisi_pro_sidebar_collapsed';
 
   applyState(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
 
-  btnToggle.addEventListener('click', function(){
+  function toggle(){
     const collapsed = !sidebarEl.classList.contains('collapsed');
     applyState(collapsed);
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
-  });
+  }
+  btnToggle.addEventListener('click', toggle);
+  // Tombol hamburger di topbar -- alternatif visual untuk tombol ciutkan sidebar yang sama
+  // (mengikuti foto referensi dashboard yang menaruh hamburger di topbar, bukan di tepi sidebar).
+  const btnHamburger = document.getElementById('btnTopbarHamburger');
+  if(btnHamburger) btnHamburger.addEventListener('click', toggle);
 })();
 
 /* ---------- INPUT FORM ---------- */
@@ -7685,6 +7807,7 @@ document.getElementById('btnHppMarginGenerate').addEventListener('click', genera
 /* ---------- DASHBOARD ---------- */
 function renderDashboard(){
   renderWaLegalBanner();
+  renderDashPeriodBadges();
   renderStatCardsV2();
   renderSisaPoOutstandingCard();
   renderCustomerSummaryCard();
@@ -7704,6 +7827,17 @@ function renderDashboard(){
    angka yang dikarang/di-hardcode supaya dashboard ini selalu bisa dipercaya. Tanpa
    library chart eksternal, SVG ditulis manual supaya tetap 100% jalan offline. */
 
+/* Isi pil "Periode" di kanan atas Dashboard & label kecil di header kartu Biaya Operasional --
+   keduanya menampilkan rentang bulan berjalan yang PERSIS sama dipakai kartu statistik & tren di
+   bawahnya, supaya tidak ada kesan dua rentang tanggal berbeda di satu halaman. */
+function renderDashPeriodBadges(){
+  const p = dashboardPeriodRanges();
+  const rangeLabel = `${fmtDate(p.curStart)} &mdash; ${fmtDate(p.curEnd)}`;
+  const badge = document.getElementById('dashPeriodBadge');
+  if(badge) badge.innerHTML = rangeLabel;
+  const biayaLbl = document.getElementById('biayaOpPeriodLabel');
+  if(biayaLbl) biayaLbl.textContent = p.curLabel;
+}
 /* Rentang "bulan berjalan" vs "bulan lalu", dipakai semua kartu statistik supaya konsisten. */
 function dashboardPeriodRanges(){
   const now = new Date();
@@ -9346,7 +9480,7 @@ function initApp(){
   updatePeringatanBadge();
   const acc = currentAccount();
   if(acc){
-    document.getElementById('userBadge').textContent = (acc.nama || acc.email).charAt(0).toUpperCase();
+    updateUserTopbarInfo(acc);
   }
   applyDataInputRestrictionToNav();
   attachFirebaseListeners();
@@ -9639,7 +9773,7 @@ document.getElementById('formPassword').addEventListener('submit', async functio
   try{
     if(newPass) await user.updatePassword(newPass);
     await fbUpdateAccountV2(user.uid, {nama: inputNama});
-    document.getElementById('userBadge').textContent = (inputNama || acc.email).charAt(0).toUpperCase();
+    updateUserTopbarInfo({ nama: inputNama, email: acc.email, role: accountRole(acc) });
     okEl.textContent = 'Profil berhasil diperbarui.';
     document.getElementById('oldPass').value = '';
     document.getElementById('newPass').value = '';
