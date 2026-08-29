@@ -1469,6 +1469,11 @@
                   </select>
                 </div>
                 <div class="field">
+                  <label for="kiJumlahSumbuBelakang">Jumlah sumbu belakang (roda dobel) <span class="hint">— menentukan jumlah ban di Monitoring Ban</span></label>
+                  <input type="number" id="kiJumlahSumbuBelakang" min="1" max="6" step="1" value="1">
+                  <p class="hint" style="margin-top:4px;">Otomatis: Tronton = 2 sumbu (10 ban), Engkel = 1 sumbu (6 ban), keduanya + 1 cadangan. Untuk CDD/Lainnya isi manual sesuai kondisi kendaraan sebenarnya.</p>
+                </div>
+                <div class="field">
                   <label for="kiSupir">A/N</label>
                   <input type="text" id="kiSupir" placeholder="cth. Budi Santoso">
                 </div>
@@ -6140,6 +6145,7 @@ function buildKendaraanFromFields(prefix){
     id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     nopol: document.getElementById(prefix + 'Nopol').value.trim().toUpperCase(),
     jenisArmada: document.getElementById(prefix + 'JenisArmada').value,
+    jumlahSumbuBelakang: Number(document.getElementById(prefix + 'JumlahSumbuBelakang').value) || 1, // dasar Monitoring Ban (lihat kendaraanRearAxles()) -- otomatis diisi sesuai jenis armada lewat listener di bawah, tetap bisa diedit manual utk CDD/Lainnya
     supir: document.getElementById(prefix + 'Supir').value.trim(),
     rute: document.getElementById(prefix + 'Rute').value.trim(),
     kapasitas: document.getElementById(prefix + 'Kapasitas').value.trim(),
@@ -6152,6 +6158,15 @@ function buildKendaraanFromFields(prefix){
   };
 }
 /* ---------- INPUT DATA KENDARAAN (halaman berdiri sendiri, menu Administrasi — hasilnya tampil di Daftar > Data Kendaraan) ---------- */
+/* Auto-isi "Jumlah sumbu belakang" begitu Jenis Armada dipilih -- Tronton=2, Engkel=1, CDD/Lainnya=1
+   (admin masih bebas ubah manual sesudahnya, terutama utk CDD/Lainnya yang skemanya bervariasi).
+   Pakai event 'change' supaya TIDAK ikut kepicu saat editKendaraan() mengisi form lewat .value= --
+   assignment JS langsung tidak memicu 'change', jadi data tersimpan (jumlahSumbuBelakang asli) yang
+   sudah ada tidak akan tertimpa nilai default begitu form dibuka utk edit. */
+document.getElementById('kiJenisArmada').addEventListener('change', function(){
+  const map = { tronton: 2, engkel: 1, cdd: 1, lainnya: 1 };
+  document.getElementById('kiJumlahSumbuBelakang').value = map[this.value] || 1;
+});
 document.getElementById('formKendaraanInput').addEventListener('submit', function(e){
   e.preventDefault();
   if(editingKendaraanId){
@@ -6185,6 +6200,7 @@ function editKendaraan(id){
 
   document.getElementById('kiNopol').value = k.nopol || '';
   document.getElementById('kiJenisArmada').value = k.jenisArmada || 'tronton';
+  document.getElementById('kiJumlahSumbuBelakang').value = k.jumlahSumbuBelakang || (k.jenisArmada === 'tronton' ? 2 : 1);
   document.getElementById('kiSupir').value = k.supir || '';
   document.getElementById('kiRute').value = k.rute || '';
   document.getElementById('kiKapasitas').value = k.kapasitas || '';
@@ -6751,27 +6767,66 @@ document.getElementById('formLegalitasInput').addEventListener('submit', functio
 });
 
 /* ==================================================================================
-   MONITORING BAN — kondisi tiap posisi ban (depan-kiri/FL, depan-kanan/FR, belakang-kiri/RL,
-   belakang-kanan/RR, cadangan) + jadwal rotasi, per kendaraan. Semua data disimpan langsung
-   sebagai field baru pada tiap objek kendaraan (k.banList, k.rotasiTerakhirTanggal,
-   k.rotasiTerakhirKm, k.rotasiAmbangKm, k.riwayatBan, k.riwayatRotasi) -- BUKAN koleksi
-   Firebase terpisah -- supaya otomatis ikut tersimpan lewat saveKendaraan() yang sudah ada
-   (fbPush('kendaraan', kendaraanList)), tanpa perlu listener/sinkronisasi baru.
+   MONITORING BAN — kondisi tiap posisi ban + jadwal rotasi, per kendaraan. Semua data
+   disimpan langsung sebagai field baru pada tiap objek kendaraan (k.banList,
+   k.rotasiTerakhirTanggal, k.rotasiTerakhirKm, k.rotasiAmbangKm, k.riwayatBan,
+   k.riwayatRotasi) -- BUKAN koleksi Firebase terpisah -- supaya otomatis ikut tersimpan
+   lewat saveKendaraan() yang sudah ada (fbPush('kendaraan', kendaraanList)), tanpa perlu
+   listener/sinkronisasi baru.
    Status kondisi ban dihitung dari DUA arah (umur pakai bulan & jarak tempuh km sejak
    dipasang), dipakai bersama KM live kendaraan (k.kmSaatIni, yang sudah otomatis ter-update
    dari GPS Cartrack lewat fitur Service Berkala) -- mana pun yang lebih dulu mendekati batas
    estimasi yang menentukan status akhir (Aman / Waspada / Perlu Ganti).
    Status rotasi dihitung dari jarak tempuh sejak rotasi terakhir (k.rotasiTerakhirKm) VS
    ambang km yang bisa diatur per kendaraan (default 10.000 km) -- pola yang sama persis
-   dengan Monitoring Service Berkala (interval km) supaya konsisten dgn fitur yang sudah ada. */
-const BAN_POSISI = [
-  { key: 'FL', label: 'Depan Kiri (FL)' },
-  { key: 'FR', label: 'Depan Kanan (FR)' },
-  { key: 'RL', label: 'Belakang Kiri (RL)' },
-  { key: 'RR', label: 'Belakang Kanan (RR)' },
-  { key: 'CAD', label: 'Cadangan' },
-];
+   dengan Monitoring Service Berkala (interval km) supaya konsisten dgn fitur yang sudah ada.
+   ---- JUMLAH & POSISI BAN MENYESUAIKAN JENIS ARMADA (Sesi kelimapuluhsatu) ----
+   Awalnya posisi ban di-hardcode 5 slot tetap (FL/FR/RL/RR/cadangan) untuk semua kendaraan.
+   Ternyata armada sungguhan berbeda-beda jumlah bannya: Tronton = 10 ban (1 sumbu depan +
+   2 sumbu belakang roda dobel), Engkel = 6 ban (1 sumbu depan + 1 sumbu belakang roda dobel).
+   Sekarang posisi ban dihasilkan DINAMIS per kendaraan lewat banPosisiUntuk(k) berdasarkan
+   k.jenisArmada (field yang sudah ada di form Input Data Kendaraan) & k.jumlahSumbuBelakang:
+   - tronton -> otomatis 2 sumbu belakang (10 ban + cadangan = 11 slot)
+   - engkel  -> otomatis 1 sumbu belakang (6 ban + cadangan = 7 slot)
+   - cdd / lainnya -> jumlah sumbu belakang diisi MANUAL oleh admin lewat field
+     "Jumlah sumbu belakang" di form Input Data Kendaraan (k.jumlahSumbuBelakang, default 1)
+   Tiap sumbu belakang selalu dianggap roda dobel (dalam & luar) kiri-kanan = 4 ban/sumbu.
+   Sumbu depan selalu 1 (kiri & kanan, roda tunggal) = 2 ban. Ditambah 1 slot Cadangan (CAD)
+   di semua jenis. Karena jumlah posisi kini variatif per kendaraan, tabel utama Monitoring Ban
+   TIDAK LAGI menampilkan kolom per-posisi tetap (posisinya bisa 7 atau 11 kolom, beda-beda per
+   baris) -- diganti ringkasan jumlah status per kendaraan, detail lengkap tetap di modal Kelola. */
 const BAN_ROTASI_AMBANG_DEFAULT = 10000;
+/* Jumlah sumbu belakang (roda dobel) kendaraan -- dasar penghitung jumlah & posisi ban.
+   Tronton & Engkel otomatis (sesuai jenis armada yang sudah dipilih di data kendaraan),
+   jenis lain (CDD/Lainnya) memakai field manual k.jumlahSumbuBelakang yang diisi admin. */
+function kendaraanRearAxles(k){
+  if(k.jenisArmada === 'tronton') return 2;
+  if(k.jenisArmada === 'engkel') return 1;
+  const n = Number(k.jumlahSumbuBelakang);
+  return (n && n > 0) ? n : 1;
+}
+/* Menghasilkan daftar posisi ban kendaraan ini: 1 sumbu depan (2 ban) + N sumbu belakang
+   roda dobel (4 ban/sumbu: kiri-dalam, kiri-luar, kanan-dalam, kanan-luar) + 1 cadangan.
+   Kalau cuma 1 sumbu belakang (Engkel/CDD/Lainnya standar), label tidak diberi nomor sumbu
+   ("Belakang Kiri Dalam") supaya tetap ringkas; kalau lebih dari 1 sumbu (Tronton dst),
+   tiap sumbu diberi nomor ("Belakang-1 Kiri Dalam", "Belakang-2 Kiri Dalam", dst). */
+function banPosisiUntuk(k){
+  const rearAxles = kendaraanRearAxles(k);
+  const posisi = [
+    { key: 'FL', label: 'Depan Kiri (FL)' },
+    { key: 'FR', label: 'Depan Kanan (FR)' },
+  ];
+  for(let i = 1; i <= rearAxles; i++){
+    const axleLabel = rearAxles > 1 ? `Belakang-${i}` : 'Belakang';
+    const keyPrefix = rearAxles > 1 ? `RA${i}` : 'R';
+    posisi.push({ key: `${keyPrefix}L-IN`, label: `${axleLabel} Kiri Dalam` });
+    posisi.push({ key: `${keyPrefix}L-OUT`, label: `${axleLabel} Kiri Luar` });
+    posisi.push({ key: `${keyPrefix}R-IN`, label: `${axleLabel} Kanan Dalam` });
+    posisi.push({ key: `${keyPrefix}R-OUT`, label: `${axleLabel} Kanan Luar` });
+  }
+  posisi.push({ key: 'CAD', label: 'Cadangan' });
+  return posisi;
+}
 /* Tanggal hari ini dalam format "YYYY-MM-DD" dari komponen LOKAL (bukan lewat toISOString/UTC) --
    dipakai untuk default input tanggal di form Ganti Ban & Catat Rotasi, supaya tidak kena bug
    pergeseran tanggal timezone yang sama seperti yang pernah terjadi di pil "Periode" Dashboard
@@ -6823,7 +6878,7 @@ function rotasiInfo(k){
   const kmSaatIni = Number(k.kmSaatIni) || 0;
   let baseline = (k.rotasiTerakhirKm != null && k.rotasiTerakhirKm !== '') ? Number(k.rotasiTerakhirKm) : null;
   if(baseline == null){
-    const kmPasangTerisi = BAN_POSISI.map(p => banOf(k, p.key)).filter(b => b && b.kmPasang != null && b.kmPasang !== '').map(b => Number(b.kmPasang));
+    const kmPasangTerisi = banPosisiUntuk(k).map(p => banOf(k, p.key)).filter(b => b && b.kmPasang != null && b.kmPasang !== '').map(b => Number(b.kmPasang));
     baseline = kmPasangTerisi.length ? Math.min(...kmPasangTerisi) : null;
   }
   if(baseline == null) return { status: 'kosong', kmSejak: 0, ambang };
@@ -6841,6 +6896,33 @@ function rotasiBadge(info){
   return `<span class="badge badge-legal-safe"><span class="badge-dot"></span>Aman (${kmTxt} km)</span>`;
 }
 
+/* Label "Jenis armada (jumlah ban)" -- dipakai tabel Monitoring Ban supaya jelas skema
+   ban yang dipakai tiap kendaraan (Tronton 11 slot, Engkel 7 slot, dst -- termasuk cadangan). */
+function jenisArmadaBanLabel(k){
+  const jenis = ({tronton:'Tronton', engkel:'Engkel', cdd:'CDD', lainnya:'Lainnya'})[k.jenisArmada] || 'Lainnya';
+  return `${jenis} (${banPosisiUntuk(k).length} slot)`;
+}
+/* Ringkasan status seluruh posisi ban satu kendaraan -- dipakai tabel Monitoring Ban (kolom
+   jumlah posisi bervariasi per kendaraan sekarang, jadi tidak lagi ditampilkan per-kolom di
+   tabel utama; ringkasan angka di sini, rincian lengkap tetap ada di modal Kelola). */
+function banSummaryBadge(k){
+  const posisi = banPosisiUntuk(k);
+  let ganti = 0, waspada = 0, aman = 0, kosong = 0;
+  posisi.forEach(p => {
+    const st = banStatusInfo(banOf(k, p.key), k.kmSaatIni).status;
+    if(st === 'ganti') ganti++;
+    else if(st === 'waspada') waspada++;
+    else if(st === 'aman') aman++;
+    else kosong++;
+  });
+  const parts = [];
+  if(ganti > 0) parts.push(`<span class="badge badge-legal-danger"><span class="badge-dot"></span>${ganti} Perlu Ganti</span>`);
+  if(waspada > 0) parts.push(`<span class="badge badge-legal-warn"><span class="badge-dot"></span>${waspada} Waspada</span>`);
+  if(kosong > 0) parts.push(`<span style="color:var(--text-faint); font-size:12px;">${kosong} belum diisi</span>`);
+  if(parts.length === 0) parts.push(`<span class="badge badge-legal-safe"><span class="badge-dot"></span>Semua Aman (${aman})</span>`);
+  return parts.join(' ');
+}
+
 /* ---------- HALAMAN MONITORING BAN (daftar semua kendaraan) ---------- */
 function renderMonitoringBan(){
   const wrap = document.getElementById('banTableWrap');
@@ -6850,18 +6932,18 @@ function renderMonitoringBan(){
     return;
   }
   wrap.innerHTML = `<table class="sv-table"><thead><tr>
-    <th>No</th><th>Nopol</th><th class="sv-left">Merk</th>
-    ${BAN_POSISI.map(p => `<th>${p.key}</th>`).join('')}
-    <th>Status Rotasi</th><th></th>
+    <th>No</th><th>Nopol</th><th class="sv-left">Merk</th><th class="sv-left">Jenis Armada</th>
+    <th class="sv-left">Status Ban</th><th>Status Rotasi</th><th></th>
   </tr></thead><tbody>${kendaraanList.map((k, i) => `<tr>
       <td>${i + 1}</td>
       <td><span class="plate-cell">${esc(k.nopol)}</span></td>
       <td class="sv-left">${esc(k.merk || '-')}</td>
-      ${BAN_POSISI.map(p => `<td title="${esc(p.label)}">${banStatusBadge(banStatusInfo(banOf(k, p.key), k.kmSaatIni))}</td>`).join('')}
+      <td class="sv-left">${esc(jenisArmadaBanLabel(k))}</td>
+      <td class="sv-left">${banSummaryBadge(k)}</td>
       <td>${rotasiBadge(rotasiInfo(k))}</td>
       <td><button type="button" class="btn btn-secondary btn-kelola-ban" data-id="${k.id}" style="font-size:12px; padding:6px 10px; white-space:nowrap;">Kelola</button></td>
     </tr>`).join('')}</tbody></table>
-  <p class="hint" style="margin-top:8px;">Klik "Kelola" untuk update ban tiap posisi, catat rotasi, atau lihat riwayat kendaraan tersebut. Status: <span style="color:#57bb63; font-weight:700;">Aman</span>, <span style="color:#b9740a; font-weight:700;">Waspada</span> (&ge;85% umur/km terpakai), <span style="color:#e6534a; font-weight:700;">Perlu Ganti/Rotasi</span> (sudah lewat batas).</p>`;
+  <p class="hint" style="margin-top:8px;">Klik "Kelola" untuk lihat rincian tiap posisi ban, update, catat rotasi, atau lihat riwayat kendaraan tersebut. Status: <span style="color:#57bb63; font-weight:700;">Aman</span>, <span style="color:#b9740a; font-weight:700;">Waspada</span> (&ge;85% umur/km terpakai), <span style="color:#e6534a; font-weight:700;">Perlu Ganti/Rotasi</span> (sudah lewat batas).</p>`;
   wrap.querySelectorAll('.btn-kelola-ban').forEach(btn => btn.addEventListener('click', function(){
     openBanDetailModal(this.dataset.id);
   }));
@@ -6900,10 +6982,12 @@ function renderBanDetailModalBody(k){
     body.innerHTML = emptyState('Kendaraan tidak ditemukan (mungkin sudah dihapus).');
     return;
   }
+  const posisiList = banPosisiUntuk(k);
   const rInfo = rotasiInfo(k);
-  let html = `<table class="sv-table" style="margin-bottom:16px;"><thead><tr>
+  let html = `<p class="hint" style="margin:0 0 10px;">${esc(jenisArmadaBanLabel(k))} — ${posisiList.length} posisi ban (termasuk cadangan).</p>
+  <table class="sv-table" style="margin-bottom:16px;"><thead><tr>
       <th class="sv-left">Posisi</th><th class="sv-left">Merk</th><th>Tgl Pasang</th><th>KM Pasang</th><th>Estimasi</th><th>Status</th><th></th>
-    </tr></thead><tbody>${BAN_POSISI.map(p => {
+    </tr></thead><tbody>${posisiList.map(p => {
       const ban = banOf(k, p.key);
       const info = banStatusInfo(ban, k.kmSaatIni);
       const estTxt = ban ? `${Number(ban.estimasiBulan)||0} bln / ${(Number(ban.estimasiKm)||0).toLocaleString('id-ID')} km` : '-';
@@ -6919,7 +7003,7 @@ function renderBanDetailModalBody(k){
     }).join('')}</tbody></table>`;
 
   if(banGantiOpenPosisi){
-    const p = BAN_POSISI.find(x => x.key === banGantiOpenPosisi);
+    const p = posisiList.find(x => x.key === banGantiOpenPosisi);
     const banLama = banOf(k, banGantiOpenPosisi);
     html += `<div class="panel" style="margin:0 0 16px; background:var(--bg);">
       <div class="panel-body" style="padding:16px;">
@@ -6963,10 +7047,10 @@ function renderBanDetailModalBody(k){
       <form id="formBanRotasi" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
         <p class="hint" style="margin:0 0 10px;">Pilih posisi baru tiap ban (posisi yang tidak dipindah biarkan sama).</p>
         <div class="grid2">
-          ${BAN_POSISI.map(p => `<div class="field">
+          ${posisiList.map(p => `<div class="field">
             <label for="brTo${p.key}">${esc(p.label)} pindah ke</label>
             <select id="brTo${p.key}" data-dari="${p.key}">
-              ${BAN_POSISI.map(p2 => `<option value="${p2.key}" ${p2.key === p.key ? 'selected' : ''}>${esc(p2.label)}</option>`).join('')}
+              ${posisiList.map(p2 => `<option value="${p2.key}" ${p2.key === p.key ? 'selected' : ''}>${esc(p2.label)}</option>`).join('')}
             </select>
           </div>`).join('')}
           <div class="field"><label for="brTanggal">Tanggal rotasi</label><input type="date" id="brTanggal" value="${todayISO()}" required></div>
@@ -6988,7 +7072,7 @@ function renderBanDetailModalBody(k){
       <th>Tanggal</th><th class="sv-left">Posisi</th><th class="sv-left">Ban lama</th><th class="sv-left">Ban baru</th><th>Biaya</th>
     </tr></thead><tbody>${riwayatBan.map(r => `<tr>
       <td>${r.tanggal ? fmtDate(r.tanggal) : '-'}</td>
-      <td class="sv-left">${esc((BAN_POSISI.find(p => p.key === r.posisi) || {}).label || r.posisi)}</td>
+      <td class="sv-left">${esc((posisiList.find(p => p.key === r.posisi) || {}).label || r.posisi)}</td>
       <td class="sv-left">${r.merkLama ? esc(r.merkLama) : '<span style="color:var(--text-faint);">- (baru dipasang)</span>'}</td>
       <td class="sv-left">${esc(r.merkBaru || '-')}</td>
       <td>${r.biaya ? rupiah(r.biaya) : '-'}</td>
@@ -7014,6 +7098,7 @@ function renderBanDetailModalBody(k){
 function wireBanDetailModalEvents(k){
   const body = document.getElementById('banDetailModalBody');
   if(!body) return;
+  const posisiList = banPosisiUntuk(k);
 
   body.querySelectorAll('.btn-ganti-ban-toggle').forEach(btn => btn.addEventListener('click', function(){
     banGantiOpenPosisi = (banGantiOpenPosisi === this.dataset.posisi) ? null : this.dataset.posisi;
@@ -7086,20 +7171,20 @@ function wireBanDetailModalEvents(k){
       return;
     }
     const targets = {};
-    BAN_POSISI.forEach(p => { targets[p.key] = document.getElementById(`brTo${p.key}`).value; });
+    posisiList.forEach(p => { targets[p.key] = document.getElementById(`brTo${p.key}`).value; });
     const targetValues = Object.values(targets);
     const uniqueTargets = new Set(targetValues);
     if(uniqueTargets.size !== targetValues.length){
       errEl.textContent = 'Satu posisi tujuan tidak boleh dipilih dua kali — pastikan tiap posisi tujuan hanya dipakai sekali.';
       return;
     }
-    const mapping = BAN_POSISI.filter(p => targets[p.key] !== p.key).map(p => ({ dari: p.key, ke: targets[p.key] }));
+    const mapping = posisiList.filter(p => targets[p.key] !== p.key).map(p => ({ dari: p.key, ke: targets[p.key] }));
     if(mapping.length === 0){
       errEl.textContent = 'Belum ada perubahan posisi yang dipilih — pilih posisi tujuan yang berbeda untuk minimal satu ban.';
       return;
     }
     const newBanList = {};
-    BAN_POSISI.forEach(p => {
+    posisiList.forEach(p => {
       const ban = banOf(k, p.key);
       if(ban) newBanList[targets[p.key]] = ban;
     });
@@ -7127,7 +7212,7 @@ function renderBanDashboardSummary(){
   }
   let ganti = 0, waspada = 0, rotasiPerlu = 0, rotasiMendekati = 0;
   kendaraanList.forEach(k => {
-    BAN_POSISI.forEach(p => {
+    banPosisiUntuk(k).forEach(p => {
       const st = banStatusInfo(banOf(k, p.key), k.kmSaatIni).status;
       if(st === 'ganti') ganti++;
       else if(st === 'waspada') waspada++;
