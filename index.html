@@ -458,6 +458,12 @@
 
   /* ---------- FORM ---------- */
   .grid2{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px;}
+  /* Checklist "Atur Menu per akun" (Pengaturan > Akun terdaftar) -- checkbox harus di-override
+     eksplisit karena aturan global "input, select{width:100%; padding:...}" di atas (dibuat untuk
+     field form teks) ikut men-stretch checkbox jadi selebar kontainernya kalau tidak ditimpa. */
+  .acc-menu-chk{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text); padding:4px 0; cursor:pointer;}
+  .acc-menu-chk input[type="checkbox"]{width:16px; height:16px; min-width:16px; padding:0; margin:0; border-radius:4px; flex:0 0 auto;}
   .field{margin-bottom:2px;}
   .field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px; color:var(--text);}
   .field .hint{font-weight:400; color:var(--text-faint); font-size:11.5px;}
@@ -700,6 +706,7 @@
     .sidebar.open{transform:translateX(0);}
     .stat-grid{grid-template-columns:repeat(2,1fr);}
     .grid2{grid-template-columns:1fr;}
+    .grid3{grid-template-columns:1fr;}
     .content{padding:18px 14px 30px;}
   }
 
@@ -2980,6 +2987,73 @@ function syncOdometerFromCartrack(){
           </div>
         </div>
 
+        <!-- MODAL: ATUR MENU PER AKUN -- admin memilih menu apa saja yang boleh dilihat satu akun
+             tertentu (non-admin). Dua tombol preset ("Owner"/"Staff Input") cuma mengisi checklist
+             di bawahnya secara instan (belum tersimpan) -- admin masih bisa sesuaikan sendiri
+             sebelum klik Simpan. Ini SEPENUHNYA kosmetik (sembunyikan tombol menu di sidebar),
+             BUKAN pengganti "Batasi akses data DO/PKB" yang teregak di Firebase Rules -- keduanya
+             sengaja tetap dua mekanisme terpisah. -->
+        <div class="form-modal-overlay" id="accountMenuModalOverlay">
+          <div class="form-modal" style="max-width:640px;">
+            <div class="form-modal-head">
+              <div>
+                <h3>Atur menu untuk <span id="accountMenuModalEmail">-</span></h3>
+                <p>Centang menu yang boleh dilihat akun ini di sidebar. Tidak mengubah hak akses data (lihat 2 opsi lain di atas).</p>
+              </div>
+              <button type="button" class="form-modal-close" id="btnCloseAccountMenuModal" aria-label="Tutup">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <div class="form-modal-body">
+              <div class="btn-row" style="margin-bottom:14px; flex-wrap:wrap;">
+                <button type="button" class="btn btn-secondary" id="btnPresetOwner" style="font-size:12px; padding:7px 12px;">Preset: Owner (lihat laporan, tanpa input)</button>
+                <button type="button" class="btn btn-secondary" id="btnPresetStaffInput" style="font-size:12px; padding:7px 12px;">Preset: Staff Input (hanya input &amp; data master)</button>
+                <button type="button" class="btn btn-secondary" id="btnPresetSemua" style="font-size:12px; padding:7px 12px;">Pilih semua</button>
+              </div>
+              <div class="grid3" style="gap:20px; align-items:start;">
+                <div>
+                  <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px;">Menu Utama</div>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="dashboard"> Dashboard</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="rekap"> Rekap Data DO</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="po"> Konfirmasi PO</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="po-monitoring"> Monitoring Sisa PO</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="borongan"> Ongkos Borongan</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="service"> Service Berkala</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="maintenance"> Maintenance Perbaikan</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="ritase"> Ritase per Nopol (Rekap)</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="kendaraan"> Data Kendaraan</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="monitoring-armada"> Monitoring Armada</label>
+                </div>
+                <div>
+                  <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px;">Master Data</div>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="input"> Input PKB</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="po-input"> Input SO &amp; Upload PO</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="kendaraan-input"> Input Data Kendaraan</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="legalitas-input"> Input Legalitas Kendaraan</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="legalitas"> Legalitas Kendaraan</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="driver-input"> Input Driver</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="driver"> Driver</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="customer-input"> Input Customer</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="customer"> Data Customer</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="barang-input"> Input Barang</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="barang"> Data Barang</label>
+                </div>
+                <div>
+                  <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px;">Laporan</div>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="laporan"> Ekspedisi per Bulan</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="biayapengeluaran"> Biaya Pengeluaran Organik</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="biayapengeluaran-vendor"> Biaya Pengeluaran Vendor Luar</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="laporan-sisapo"> Laporan Sisa PO</label>
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end; margin-top:18px;">
+                <button type="button" class="btn btn-secondary" id="btnBatalAccountMenu">Batal</button>
+                <button type="button" class="btn btn-primary" id="btnSimpanAccountMenu">Simpan</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="panel" data-settings-panel="tarif">
           <div class="panel-head">
             <div>
@@ -5106,39 +5180,65 @@ function dataInputRestrictedForCurrentUser(){
     return false;
   }
 }
-/* Sesi keempatpuluh: berbeda dari dataInputRestricted di atas (yang membatasi BACA/TULIS data DO/PKB,
-   ditegakkan di Firebase Rules) -- flag ini murni menyembunyikan seluruh grup menu "Administrasi" (7
-   form Input: PKB, Data Kendaraan, Driver, Legalitas, SO & PO, Customer, Barang) dari sidebar. Cocok
-   untuk akun yang memang tidak pernah perlu menginput data apa pun (mis. akun owner yang cuma mau lihat
-   laporan/rekap). SENGAJA cuma kosmetik (tidak ada perubahan Rules) -- akun ini biasanya tetap dipercaya
-   penuh untuk data yang sudah ada, cuma tidak perlu tombol Input-nya terlihat/mengganggu di sidebar. */
-function hideAdministrasiMenuForCurrentUser(){
-  try{
-    const acc = currentAccount();
-    return !!(acc && accountRole(acc) !== 'admin' && acc.hideAdministrasiMenu === true);
-  }catch(e){
-    return false;
+/* Sesi keempatpuluh satu: "Atur Menu" -- admin memilih PERSIS menu apa saja yang boleh dilihat satu
+   akun non-admin (lewat modal di Pengaturan > Akun terdaftar), disimpan sebagai daftar nama view di
+   field akun "hiddenMenus" (isinya menu yang DISEMBUNYIKAN, bukan yang ditampilkan -- kosong/tidak ada
+   berarti tidak dibatasi sama sekali, semua menu terlihat). Ini menggantikan toggle lama
+   "hideAdministrasiMenu" (dulu cuma bisa sembunyikan 1 grup menu Input sekaligus) dengan kontrol
+   granular per-menu satu per satu, supaya cocok dipakai untuk berbagai peran (mis. preset "Owner" yang
+   cuma sembunyikan form Input, atau preset "Staff Input" yang cuma menyisakan menu Input & data master).
+   SEPENUHNYA kosmetik (sembunyikan tombol di sidebar) -- BUKAN pengganti "dataInputRestricted" di atas
+   yang memang ditegakkan di Firebase Rules; keduanya digabung di effectiveHiddenMenus() di bawah supaya
+   satu fungsi saja yang perlu dipanggil untuk merapikan sidebar. Akun yang sudah lebih dulu diatur pakai
+   toggle "hideAdministrasiMenu" (sebelum fitur "Atur Menu" ini ada) TETAP terhormati -- kalau field
+   "hiddenMenus" belum pernah disimpan sama sekali untuk akun itu, dipakai daftar 7 menu Input lama
+   sebagai bawaan, supaya tidak ada akun yang tiba-tiba "kebuka" menunya begitu fitur ini dipasang. */
+const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo'];
+const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
+const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor'];
+/* Preset siap-pakai untuk tombol di modal "Atur Menu" -- cuma pengisi awal checklist, admin masih
+   boleh centang/hapus centang manual sebelum menyimpan. */
+const MENU_PRESET_OWNER = LEGACY_ADMINISTRASI_VIEWS.slice(); // owner: lihat semua laporan/monitoring, tanpa form Input
+const MENU_PRESET_STAFF_INPUT = ['po', 'po-monitoring', 'borongan', 'service', 'maintenance', 'ritase', 'monitoring-armada', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-sisapo']; // staff input: fokus input & data master, tanpa laporan/monitoring keuangan
+function effectiveHiddenMenus(acc){
+  if(!acc || accountRole(acc) === 'admin') return new Set();
+  let hidden;
+  if(Array.isArray(acc.hiddenMenus)){
+    hidden = acc.hiddenMenus.slice();
+  }else{
+    // belum pernah diatur lewat modal "Atur Menu" -- pakai toggle lama sebagai bawaan supaya perilaku
+    // akun yang sudah ada tidak berubah tiba-tiba begitu fitur ini dipasang.
+    hidden = acc.hideAdministrasiMenu === true ? LEGACY_ADMINISTRASI_VIEWS.slice() : [];
   }
+  if(acc.dataInputRestricted === true){
+    DATA_INPUT_RESTRICTED_VIEWS.forEach(v => { if(!hidden.includes(v)) hidden.push(v); });
+  }
+  return new Set(hidden);
 }
 function applyDataInputRestrictionToNav(){
-  const restricted = dataInputRestrictedForCurrentUser();
-  const viewsToHide = ['rekap', 'input', 'ritase', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor'];
-  viewsToHide.forEach(v => {
-    document.querySelectorAll(`.nav-item[data-view="${v}"]`).forEach(btn => { btn.style.display = restricted ? 'none' : ''; });
+  const hidden = effectiveHiddenMenus(currentAccount());
+  ALL_MENU_VIEWS.forEach(v => {
+    document.querySelectorAll(`.nav-item[data-view="${v}"]`).forEach(btn => { btn.style.display = hidden.has(v) ? 'none' : ''; });
   });
 
-  const hideAdministrasi = hideAdministrasiMenuForCurrentUser();
-  const administrasiGroup = document.querySelector('.nav-group[data-group="administrasi"]');
-  const administrasiViews = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
-  if(administrasiGroup) administrasiGroup.style.display = hideAdministrasi ? 'none' : '';
+  // Kalau SEMUA menu di satu grup (Menu Utama/Master Data/Laporan) kebetulan disembunyikan semua
+  // untuk akun ini, sembunyikan juga judul grupnya -- supaya sidebar tidak menampilkan grup kosong
+  // yang kalau diklik cuma memperlihatkan daftar hampa.
+  document.querySelectorAll('.nav-group').forEach(group => {
+    const items = [...group.querySelectorAll('.nav-item[data-view]')];
+    const adaYangTerlihat = items.some(btn => btn.style.display !== 'none');
+    group.style.display = (items.length > 0 && !adaYangTerlihat) ? 'none' : '';
+  });
 
-  // Kalau akun ini sedang berada di salah satu halaman yang baru saja disembunyikan (mis. admin
-  // mengaktifkan pembatasan SAAT akun itu sedang membuka halaman itu), pindahkan ke Dashboard supaya
-  // tidak nyangkut di halaman yang menu-nya sudah hilang dari sidebar.
+  // Kalau akun ini sedang berada di halaman yang baru saja disembunyikan (mis. admin mengubah
+  // pengaturan menu SAAT akun itu sedang membuka halaman itu), pindahkan ke menu pertama yang masih
+  // boleh dilihat supaya tidak nyangkut di halaman yang tombolnya sudah hilang dari sidebar.
   const activeView = document.querySelector('.view.active');
   const activeName = activeView ? activeView.getAttribute('data-view') : '';
-  const shouldRedirect = (restricted && viewsToHide.includes(activeName)) || (hideAdministrasi && administrasiViews.includes(activeName));
-  if(shouldRedirect) goTo('dashboard');
+  if(activeName && hidden.has(activeName)){
+    const fallback = ALL_MENU_VIEWS.find(v => !hidden.has(v)) || 'dashboard';
+    goTo(fallback);
+  }
 }
 /* Hak konfirmasi PO (ACC/Tolak) berbeda dari hak admin biasa — admin selalu bisa, tapi admin juga bisa
    memberi akses ini secara khusus ke akun non-admin tertentu (toggle "Bisa konfirmasi PO" di menu
@@ -9736,10 +9836,10 @@ function renderAccountList(){
           <input type="checkbox" class="data-input-toggle" data-uid="${esc(a.uid)}" ${a.dataInputRestricted ? 'checked' : ''}>
           Batasi akses data DO/PKB (tidak bisa lihat Rekap Data DO, Input PKB, Ritase, Laporan &amp; Biaya Pengeluaran)
         </label>
-        <label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted); cursor:pointer;">
-          <input type="checkbox" class="hide-administrasi-toggle" data-uid="${esc(a.uid)}" ${a.hideAdministrasiMenu ? 'checked' : ''}>
-          Sembunyikan grup menu Administrasi (semua form Input -- cocok untuk akun owner yang hanya perlu lihat laporan)
-        </label>` : ''}
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+          <span class="hint">Menu terlihat: ${ALL_MENU_VIEWS.length - effectiveHiddenMenus(a).size} dari ${ALL_MENU_VIEWS.length}</span>
+          <button type="button" class="btn btn-secondary atur-menu-btn" data-uid="${esc(a.uid)}" data-email="${esc(a.email)}" style="padding:5px 10px; font-size:11.5px;">Atur Menu</button>
+        </div>` : ''}
       </div>
       ${acc && a.uid === acc.uid
         ? '<span class="account-badge-you">AKUN INI</span>'
@@ -9775,13 +9875,49 @@ function renderAccountList(){
     const cu = firebase.auth().currentUser;
     if(cu && cu.uid === this.dataset.uid) applyDataInputRestrictionToNav();
   }));
-  wrap.querySelectorAll('.hide-administrasi-toggle').forEach(cb => cb.addEventListener('change', function(){
-    fbUpdateAccountV2(this.dataset.uid, {hideAdministrasiMenu: this.checked});
-    showToast(this.checked ? 'Menu Administrasi disembunyikan untuk akun ini' : 'Menu Administrasi ditampilkan lagi untuk akun ini', 'success');
-    const cu = firebase.auth().currentUser;
-    if(cu && cu.uid === this.dataset.uid) applyDataInputRestrictionToNav();
+  wrap.querySelectorAll('.atur-menu-btn').forEach(btn => btn.addEventListener('click', function(){
+    openAccountMenuModal(this.dataset.uid, this.dataset.email);
   }));
 }
+
+/* ---------- MODAL "ATUR MENU" (Pengaturan > Akun terdaftar > tombol Atur Menu) ---------- */
+let accountMenuModalUid = null;
+function openAccountMenuModal(uid, email){
+  accountMenuModalUid = uid;
+  const acc = accountsByUid[uid] || {};
+  const hidden = effectiveHiddenMenus(Object.assign({uid: uid}, acc));
+  document.getElementById('accountMenuModalEmail').textContent = email || acc.email || '-';
+  document.querySelectorAll('#accountMenuModalOverlay input[type="checkbox"][data-view]').forEach(cb => {
+    cb.checked = !hidden.has(cb.dataset.view);
+  });
+  document.getElementById('accountMenuModalOverlay').classList.add('show');
+}
+function closeAccountMenuModal(){
+  accountMenuModalUid = null;
+  document.getElementById('accountMenuModalOverlay').classList.remove('show');
+}
+function setAccountMenuCheckboxesFromHidden(hiddenList){
+  document.querySelectorAll('#accountMenuModalOverlay input[type="checkbox"][data-view]').forEach(cb => {
+    cb.checked = !hiddenList.includes(cb.dataset.view);
+  });
+}
+document.getElementById('btnCloseAccountMenuModal').addEventListener('click', closeAccountMenuModal);
+document.getElementById('btnBatalAccountMenu').addEventListener('click', closeAccountMenuModal);
+document.getElementById('accountMenuModalOverlay').addEventListener('click', function(e){ if(e.target === this) closeAccountMenuModal(); });
+document.getElementById('btnPresetOwner').addEventListener('click', function(){ setAccountMenuCheckboxesFromHidden(MENU_PRESET_OWNER); });
+document.getElementById('btnPresetStaffInput').addEventListener('click', function(){ setAccountMenuCheckboxesFromHidden(MENU_PRESET_STAFF_INPUT); });
+document.getElementById('btnPresetSemua').addEventListener('click', function(){ setAccountMenuCheckboxesFromHidden([]); });
+document.getElementById('btnSimpanAccountMenu').addEventListener('click', function(){
+  if(!accountMenuModalUid) return;
+  const hiddenMenus = [...document.querySelectorAll('#accountMenuModalOverlay input[type="checkbox"][data-view]')]
+    .filter(cb => !cb.checked)
+    .map(cb => cb.dataset.view);
+  fbUpdateAccountV2(accountMenuModalUid, {hiddenMenus: hiddenMenus});
+  showToast('Menu untuk akun ini berhasil disimpan', 'success');
+  const cu = firebase.auth().currentUser;
+  if(cu && cu.uid === accountMenuModalUid) applyDataInputRestrictionToNav();
+  closeAccountMenuModal();
+});
 
 /* Hapus SEMUA data master Konfirmasi PO sekaligus (bukan satu per satu) -- khusus admin. Menghapus
    poList lokal, localStorage, dan node 'po' di Firebase Realtime Database secara penuh, supaya tidak
