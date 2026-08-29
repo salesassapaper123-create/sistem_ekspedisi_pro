@@ -5189,10 +5189,16 @@ function dataInputRestrictedForCurrentUser(){
    cuma sembunyikan form Input, atau preset "Staff Input" yang cuma menyisakan menu Input & data master).
    SEPENUHNYA kosmetik (sembunyikan tombol di sidebar) -- BUKAN pengganti "dataInputRestricted" di atas
    yang memang ditegakkan di Firebase Rules; keduanya digabung di effectiveHiddenMenus() di bawah supaya
-   satu fungsi saja yang perlu dipanggil untuk merapikan sidebar. Akun yang sudah lebih dulu diatur pakai
-   toggle "hideAdministrasiMenu" (sebelum fitur "Atur Menu" ini ada) TETAP terhormati -- kalau field
-   "hiddenMenus" belum pernah disimpan sama sekali untuk akun itu, dipakai daftar 7 menu Input lama
-   sebagai bawaan, supaya tidak ada akun yang tiba-tiba "kebuka" menunya begitu fitur ini dipasang. */
+   satu fungsi saja yang perlu dipanggil untuk merapikan sidebar.
+   ATURAN BAWAAN (default-deny): begitu admin BELUM PERNAH menekan "Simpan" di modal "Atur Menu" untuk
+   suatu akun (field "hiddenMenus" belum pernah tersimpan sama sekali), akun itu dianggap BELUM diberi
+   akses apa pun -- semua menu disembunyikan (termasuk "Konfirmasi PO"), kecuali Dashboard supaya akun
+   yang baru disetujui tidak melihat sidebar kosong total. Ini SENGAJA lebih ketat daripada versi awal
+   fitur ini (yang dulu memakai toggle lama "hideAdministrasiMenu" sebagai bawaan dan membiarkan menu
+   lain tetap terbuka) -- sesuai permintaan: hanya admin yang boleh menentukan akun mana melihat apa.
+   Konsekuensinya: akun non-admin yang SUDAH ADA sebelum perubahan ini (dan belum pernah diatur lewat
+   "Atur Menu") juga ikut kena default ketat ini -- admin perlu membuka "Atur Menu" sekali untuk
+   masing-masing akun tsb dan memberi akses yang sesuai (bisa pakai tombol preset atau "Pilih Semua"). */
 const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo'];
 const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
 const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor'];
@@ -5206,9 +5212,9 @@ function effectiveHiddenMenus(acc){
   if(Array.isArray(acc.hiddenMenus)){
     hidden = acc.hiddenMenus.slice();
   }else{
-    // belum pernah diatur lewat modal "Atur Menu" -- pakai toggle lama sebagai bawaan supaya perilaku
-    // akun yang sudah ada tidak berubah tiba-tiba begitu fitur ini dipasang.
-    hidden = acc.hideAdministrasiMenu === true ? LEGACY_ADMINISTRASI_VIEWS.slice() : [];
+    // Belum pernah diatur admin lewat modal "Atur Menu" -> default AMAN: sembunyikan SEMUA menu
+    // (termasuk Konfirmasi PO), kecuali Dashboard, sampai admin secara eksplisit memberi akses.
+    hidden = ALL_MENU_VIEWS.filter(v => v !== 'dashboard');
   }
   if(acc.dataInputRestricted === true){
     DATA_INPUT_RESTRICTED_VIEWS.forEach(v => { if(!hidden.includes(v)) hidden.push(v); });
@@ -5238,6 +5244,24 @@ function applyDataInputRestrictionToNav(){
   if(activeName && hidden.has(activeName)){
     const fallback = ALL_MENU_VIEWS.find(v => !hidden.has(v)) || 'dashboard';
     goTo(fallback);
+  }
+
+  // Tab-tab di halaman Pengaturan yang sifatnya administrasi sistem (Notifikasi WA, Setup WA
+  // Otomatis, Keamanan Sistem, Akun Terdaftar, Database Tarif) HANYA boleh dilihat admin -- akun
+  // "Terbatas" cuma boleh mengubah profil & password sendiri lewat tab Profil Saya (sesuai label
+  // yang sudah tertulis di baris akunnya sendiri di panel Akun Terdaftar). Ini murni penyembunyian
+  // tampilan; Firebase Rules sendiri sudah menolak akun non-admin menulis field-field akun lain,
+  // tapi tab-tab ini sebelumnya tetap kelihatan & bisa dibuka meski aksinya toh akan ditolak server.
+  const admin = isAdminUser();
+  const ADMIN_ONLY_SETTINGS_TABS = ['notif-wa', 'setup-wa', 'keamanan', 'akun', 'tarif'];
+  ADMIN_ONLY_SETTINGS_TABS.forEach(tab => {
+    const btn = document.querySelector(`.settings-tab[data-settings-tab="${tab}"]`);
+    if(btn) btn.style.display = admin ? '' : 'none';
+  });
+  if(!admin){
+    const activeTab = document.querySelector('.settings-tab.active');
+    const activeTabName = activeTab ? activeTab.dataset.settingsTab : '';
+    if(ADMIN_ONLY_SETTINGS_TABS.includes(activeTabName)) setSettingsTab('profil');
   }
 }
 /* Hak konfirmasi PO (ACC/Tolak) berbeda dari hak admin biasa — admin selalu bisa, tapi admin juga bisa
@@ -9836,8 +9860,8 @@ function renderAccountList(){
           <input type="checkbox" class="data-input-toggle" data-uid="${esc(a.uid)}" ${a.dataInputRestricted ? 'checked' : ''}>
           Batasi akses data DO/PKB (tidak bisa lihat Rekap Data DO, Input PKB, Ritase, Laporan &amp; Biaya Pengeluaran)
         </label>
-        <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
-          <span class="hint">Menu terlihat: ${ALL_MENU_VIEWS.length - effectiveHiddenMenus(a).size} dari ${ALL_MENU_VIEWS.length}</span>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:8px; flex-wrap:wrap;">
+          <span class="hint"${Array.isArray(a.hiddenMenus) ? '' : ' style="color:var(--amber-600); font-weight:600;"'}>Menu terlihat: ${ALL_MENU_VIEWS.length - effectiveHiddenMenus(a).size} dari ${ALL_MENU_VIEWS.length}${Array.isArray(a.hiddenMenus) ? '' : ' (belum diatur admin -- baru bisa lihat Dashboard)'}</span>
           <button type="button" class="btn btn-secondary atur-menu-btn" data-uid="${esc(a.uid)}" data-email="${esc(a.email)}" style="padding:5px 10px; font-size:11.5px;">Atur Menu</button>
         </div>` : ''}
       </div>
