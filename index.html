@@ -8016,14 +8016,19 @@ function renderDashPeriodBadges(){
    jadi pil "Periode" & kartu statistik menampilkan rentang yang berjalan naik tiap hari (mis.
    "01 Agu -- 29 Agu" kalau sedang tanggal 29), lalu otomatis mulai dari tanggal 1 lagi begitu
    bulan berganti, karena dashboardPeriodRanges() dipanggil ulang dari new Date() setiap
-   dashboard dibuka (tidak di-hardcode / tidak disimpan). */
+   dashboard dibuka (tidak di-hardcode / tidak disimpan).
+   Catatan timezone: toISO() TIDAK boleh pakai d.toISOString() -- itu mengonversi ke UTC, dan
+   untuk zona waktu WIB/WITA/WIT (UTC+7/8/9) tanggal 1 jam 00:00 lokal jadi mundur ke tanggal
+   terakhir bulan sebelumnya begitu dikonversi ke UTC (mis. "01 Agu 00:00 WIB" -> "31 Jul 17:00 UTC"),
+   sehingga pil Periode salah tampil "31 Jul" alih-alih "01 Agu". toISO() di bawah ambil
+   tahun/bulan/tanggal langsung dari komponen lokal supaya tidak ikut bergeser. */
 function dashboardPeriodRanges(){
   const now = new Date();
   const curStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const curEnd = now;
   const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0);
-  const toISO = d => d.toISOString().slice(0, 10);
+  const toISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   return {
     curLabel: curStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
     prevLabel: prevStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
