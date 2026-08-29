@@ -930,6 +930,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="7" width="15" height="10" rx="2"/><path d="M16 10h3l3 3v4h-6"/><circle cx="6" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/></svg>
             Data Kendaraan
           </button>
+          <button class="nav-item nav-sub" data-view="monitoring-armada">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.686-7-11a7 7 0 0 1 14 0c0 5.314-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            Monitoring Armada
+          </button>
         </div>
       </div>
 
@@ -1101,6 +1105,15 @@
             </div>
             <div class="dash-card-body" style="padding-top:6px; padding-bottom:6px;"><div id="dashAlertWrap"></div></div>
           </div>
+        </div>
+
+        <!-- BARIS 2b: Monitoring Armada (lokasi & status live dari GPS Cartrack) -->
+        <div class="dash-card" style="margin-bottom:16px;">
+          <div class="dash-card-head">
+            <h3 style="text-transform:none;">Monitoring Armada</h3>
+            <a href="javascript:void(0)" class="dash-lihat-semua" data-goto="monitoring-armada">Lihat Semua</a>
+          </div>
+          <div class="dash-card-body" style="padding:0;"><div id="dashMonitoringArmadaWrap"></div></div>
         </div>
 
         <!-- BARIS 3: grafik tren Ritase & Tonase (6 bulan terakhir) -->
@@ -1607,6 +1620,20 @@
           </div>
           <div class="panel-body">
             <div id="poMonitoringTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="view" data-view="monitoring-armada">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Monitoring Armada</h2>
+              <p>Lokasi & status seluruh armada, diperbarui live dari GPS Cartrack. Driver & rute tetap diambil dari data DO terakhir milik masing-masing kendaraan.</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div id="monitoringArmadaFullWrap"></div>
           </div>
         </div>
       </div>
@@ -3451,6 +3478,7 @@ function attachFirebaseListenersInner(){
       if(v === 'dashboard') renderDashboard();
       if(v === 'peringatan') renderPeringatan();
       if(v === 'po-monitoring') renderPOMonitoring(); // tonase terkirim/sisa dihitung dari data DO, jadi ikut refresh saat DO berubah
+      if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap'); // Driver/Rute di Monitoring Armada ikut ambil dari DO terbaru
       if(v === 'input') updateDoNoCOHint();
       updatePeringatanBadge();
     }else if(val == null){
@@ -3466,6 +3494,7 @@ function attachFirebaseListenersInner(){
         if(v === 'dashboard') renderDashboard();
         if(v === 'peringatan') renderPeringatan();
         if(v === 'po-monitoring') renderPOMonitoring();
+        if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
         if(v === 'input') updateDoNoCOHint();
         updatePeringatanBadge();
       }
@@ -3483,6 +3512,7 @@ function attachFirebaseListenersInner(){
       if(v === 'dashboard') renderDashboard();
       if(v === 'peringatan') renderPeringatan();
       if(v === 'po-monitoring') renderPOMonitoring();
+      if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
       updatePeringatanBadge();
     }
     applyDataInputRestrictionToNav();
@@ -3502,7 +3532,8 @@ function attachFirebaseListenersInner(){
       if(v === 'kendaraan') renderKendaraan();
       if(v === 'legalitas') renderLegalitas();
       if(v === 'service') renderServiceMonitoring();
-      if(v === 'dashboard') renderWaLegalBanner();
+      if(v === 'dashboard'){ renderWaLegalBanner(); renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5); }
+      if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap'); // update live begitu GPS Cartrack menulis lokasi/status baru ke /kendaraan
       updatePeringatanBadge();
     }else if(val == null){
       if(kendaraanList.length > 0 && !sudahPernahSinkron){
@@ -3514,7 +3545,8 @@ function attachFirebaseListenersInner(){
         if(v === 'kendaraan') renderKendaraan();
         if(v === 'legalitas') renderLegalitas();
         if(v === 'service') renderServiceMonitoring();
-        if(v === 'dashboard') renderWaLegalBanner();
+        if(v === 'dashboard'){ renderWaLegalBanner(); renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5); }
+        if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
         updatePeringatanBadge();
       }
     }
@@ -4451,7 +4483,7 @@ function updateUserTopbarInfo(acc){
   if(roleLbl) roleLbl.textContent = accountRole(acc) === 'admin' ? 'Admin' : 'Staf';
 }
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang'};
+const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada'};
 /* Subjudul kecil di bawah judul halaman (topbar) -- murni visual/deskriptif, mengikuti foto
    referensi dashboard "Accurate Expedition" yang menaruh satu baris ringkasan di bawah tiap judul
    halaman. View yang tidak terdaftar di sini cukup tidak menampilkan subjudul (elemennya kosong). */
@@ -4469,6 +4501,7 @@ const subtitles = {
   laporan:'Rekap pengiriman per bulan', biayapengeluaran:'Rekap biaya pengeluaran organik per bulan',
   'biayapengeluaran-vendor':'Rekap biaya pengeluaran vendor luar per bulan', 'laporan-sisapo':'Rekap sisa PO seluruh customer',
   peringatan:'Pusat peringatan & notifikasi sistem', pengaturan:'Pengaturan akun & profil',
+  'monitoring-armada':'Lokasi & status armada live dari GPS Cartrack',
 };
 function goTo(view){
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -4501,6 +4534,7 @@ function goTo(view){
   if(view === 'borongan') renderBoronganTables();
   if(view === 'po') renderPO();
   if(view === 'po-monitoring') renderPOMonitoring();
+  if(view === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
   if(view === 'laporan-sisapo') initLaporanSisaPoView();
   if(view === 'pengaturan'){
     const acc = currentAccount();
@@ -7826,6 +7860,7 @@ function renderDashboard(){
   renderSisaPoOutstandingCard();
   renderCustomerSummaryCard();
   renderAlertNotifCard();
+  renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5);
   renderRitaseTrendChart();
   renderTonaseTrendChart();
   renderTopKotaTable();
@@ -7995,6 +8030,71 @@ function renderAlertNotifCard(){
         <div class="alert-desc">${it.desc}</div>
       </div>
     </div>`).join('');
+}
+
+/* ---- Kartu/Tabel "Monitoring Armada" -- lokasi & status kendaraan LIVE dari GPS Cartrack.
+   Prinsip penting: field yang berasal dari GPS (gpsLokasi, gpsStatus, gpsWaktuUpdate) HANYA
+   diisi oleh integrasi Cartrack (lewat Apps Script -> Firebase) -- tidak pernah dikarang di sisi
+   app ini. Sebaliknya, Driver & Rute/Tujuan TIDAK didapat dari GPS (perangkat GPS tidak selalu
+   tahu siapa sopirnya / mau kemana), jadi diambil dari data DO/record terakhir milik nopol
+   tersebut yang sudah ada di aplikasi ini sendiri. Selama field GPS belum diisi (integrasi
+   belum jalan), kolom Status menampilkan "Belum Terhubung" & Lokasi/Waktu menampilkan "-"
+   -- bukan data karangan -- supaya kartu ini tetap bisa dipakai dipanggil dari mana saja
+   begitu integrasi GPS sudah live. Dipakai baik oleh kartu ringkas di Dashboard (limit=5)
+   maupun halaman penuh Monitoring Armada (tanpa limit). ---- */
+const DASH_ICON_PIN = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; flex-shrink:0;"><path d="M12 21s-7-5.686-7-11a7 7 0 0 1 14 0c0 5.314-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+/* "X menit/jam/hari lalu" dari timestamp ISO -- dipakai untuk kolom Waktu Update GPS. */
+function waktuLalu(iso){
+  if(!iso) return null;
+  const then = new Date(iso).getTime();
+  if(isNaN(then)) return null;
+  const diffMs = Date.now() - then;
+  const menit = Math.floor(diffMs / 60000);
+  if(menit < 1) return 'baru saja';
+  if(menit < 60) return `${menit} menit lalu`;
+  const jam = Math.floor(menit / 60);
+  if(jam < 24) return `${jam} jam lalu`;
+  const hari = Math.floor(jam / 24);
+  return `${hari} hari lalu`;
+}
+/* DO/record terakhir milik satu nopol -- sumber Driver & Rute/Tujuan (bukan dari GPS). */
+function dashVehicleLatestRecord(nopol){
+  const recs = records.filter(r => r.nopol === nopol).sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
+  return recs[0] || null;
+}
+function gpsStatusBadge(status){
+  if(status === 'jalan' || status === 'bergerak' || status === 'berjalan') return `<span class="badge badge-done"><span class="badge-dot"></span>Berjalan</span>`;
+  if(status === 'berhenti' || status === 'stop' || status === 'diam') return `<span class="badge badge-legal-warn"><span class="badge-dot"></span>Berhenti</span>`;
+  return `<span class="badge" style="background:#eef0f2; color:var(--text-muted);"><span class="badge-dot"></span>Belum Terhubung</span>`;
+}
+function renderMonitoringArmadaCard(containerId, limit){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  if(kendaraanList.length === 0){ wrap.innerHTML = emptyState('Belum ada data armada.'); return; }
+  let list = kendaraanList.slice().sort((a, b) => {
+    const ta = a.gpsWaktuUpdate ? new Date(a.gpsWaktuUpdate).getTime() : -1;
+    const tb = b.gpsWaktuUpdate ? new Date(b.gpsWaktuUpdate).getTime() : -1;
+    return tb - ta;
+  });
+  if(limit) list = list.slice(0, limit);
+  wrap.innerHTML = `<table><thead><tr>
+    <th>No. Polisi</th><th>Driver</th><th class="sv-left">Rute/Tujuan</th><th>Status</th><th class="sv-left">Lokasi Terakhir</th><th>Waktu Update</th>
+  </tr></thead><tbody>
+    ${list.map(k => {
+      const rec = dashVehicleLatestRecord(k.nopol);
+      const driver = rec ? esc(rec.sopir || '-') : '<span style="color:var(--text-faint);">-</span>';
+      const rute = rec ? tujuanList(rec) : '<span style="color:var(--text-faint);">-</span>';
+      const waktu = waktuLalu(k.gpsWaktuUpdate);
+      return `<tr>
+        <td><span class="plate-cell">${esc(k.nopol)}</span></td>
+        <td>${driver}</td>
+        <td class="sv-left">${rute}</td>
+        <td>${gpsStatusBadge(k.gpsStatus)}</td>
+        <td class="sv-left">${k.gpsLokasi ? esc(k.gpsLokasi) : '<span style="color:var(--text-faint);">-</span>'}</td>
+        <td>${waktu ? `<span style="color:var(--text-muted); font-size:12px; white-space:nowrap;">${DASH_ICON_PIN} ${waktu}</span>` : '<span style="color:var(--text-faint);">-</span>'}</td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
 }
 
 /* ---- Grafik tren garis (Ritase & Tonase, 6 bulan terakhir) -- SVG polos, tanpa library. ---- */
