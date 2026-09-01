@@ -2830,15 +2830,20 @@ function poTerpakai_(po, records){
   });
   return sum;
 }
-/* Total SISA PO gabungan seluruh PO yang sudah Dikonfirmasi (ACC) & sisanya masih > 0 —
-   sama persis dengan angka "TOTAL SISA PO" di menu Monitoring Sisa PO. PO yang belum di-ACC
-   TIDAK ikut dihitung (aturan bisnis: DO baru bisa dikaitkan setelah PO di-ACC). */
+/* Total SISA PO "Outstanding Luar Kota" -- gabungan seluruh PO yang sudah Dikonfirmasi (ACC) &
+   sisanya masih > 0, TIDAK TERMASUK customer "BK 1" (mis. "BK 1" atau "BK 1 ( ML 75 )"). Khusus
+   dipakai untuk notifikasi WA "PO Baru Masuk" (baris "Sisa updet PO") -- sengaja beda dengan angka
+   "TOTAL SISA PO" di menu Monitoring Sisa PO/Laporan Sisa PO di aplikasi, yang masih menghitung
+   SEMUA customer termasuk BK 1 (lihat isBK1 di renderLaporanSisaPo/export Excel/PDF -- filter yang
+   sama dipakai di sini supaya konsisten). PO yang belum di-ACC TIDAK ikut dihitung (aturan bisnis:
+   DO baru bisa dikaitkan setelah PO di-ACC). */
 function totalSisaPoDikonfirmasi_(){
   var list = poList_();
   var records = recordsList_();
   var total = 0;
   list.forEach(function(p){
     if (!p || p.status !== 'dikonfirmasi') return;
+    if (String(p.namaCustomer || '').trim().toUpperCase().indexOf('BK 1') === 0) return; // exclude BK 1 -- sama seperti isBK1() di aplikasi
     var sisa = (Number(p.tonase)||0) - poTerpakai_(p, records);
     if (sisa > 0) total += sisa;
   });
@@ -2893,10 +2898,10 @@ function checkAndNotifyPoBaru(){
   var belumNotif = list.filter(function(p){ return p && !p.notifWaSent; });
   if (belumNotif.length === 0) return;
 
-  /* "Sisa PO" di notif ini adalah TOTAL SISA gabungan seluruh PO yang sudah Dikonfirmasi (ACC) —
-     sama seperti angka "TOTAL SISA PO" di menu Monitoring Sisa PO — BUKAN sisa PO baru ini sendiri
-     (PO baru yang belum di-ACC belum ikut menyumbang ke total ini). Dihitung sekali di luar loop
-     karena nilainya sama untuk semua PO baru yang dinotifikasi di run yang sama. */
+  /* "Sisa updet PO" di notif ini adalah TOTAL SISA Outstanding LUAR KOTA (PO yang sudah Dikonfirmasi/ACC,
+     TIDAK TERMASUK customer "BK 1") — BUKAN sisa PO baru ini sendiri (PO baru yang belum di-ACC belum
+     ikut menyumbang ke total ini). Dihitung sekali di luar loop karena nilainya sama untuk semua PO
+     baru yang dinotifikasi di run yang sama. Lihat totalSisaPoDikonfirmasi_() untuk detail filter BK 1. */
   var totalSisaPo = totalSisaPoDikonfirmasi_();
 
   belumNotif.forEach(function(p){
