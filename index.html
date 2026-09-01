@@ -8899,27 +8899,28 @@ function renderSisaPoOutstandingCard(){
 function isBK1Customer(p){
   return String((p && p.namaCustomer) || '').trim().toUpperCase().startsWith('BK 1');
 }
-/* ---- Kartu "Ringkasan Pengiriman" -- pembanding Sisa PO Outstanding antara "Cust Luar" (semua
-   customer SELAIN BK 1) vs "BK 1" (customer BK 1 saja), pakai basis filter yang SAMA PERSIS dengan
-   kartu "Sisa PO (Outstanding)" di sebelahnya (status 'dikonfirmasi', belum ditutup, sisa > 0)
-   supaya kedua kartu ini selalu konsisten & totalnya kalau dijumlah = angka di kartu sebelah. ---- */
+/* ---- Kartu "Ringkasan Pengiriman" -- pembanding HASIL PENGIRIMAN (tonase yang SUDAH benar-benar
+   terkirim/dipakai, dihitung dari DO yang sudah dikaitkan ke tiap PO lewat computePOTerpakai() --
+   BUKAN sisa/outstanding, itu sudah ada di kartu "Sisa PO (Outstanding)" di sebelahnya) antara
+   "Cust Luar" (semua customer SELAIN BK 1) vs "BK 1" (customer BK 1 saja). Dihitung dari SELURUH
+   PO apa pun statusnya sekarang (termasuk yang sudah Ditutup) -- pengiriman yang sudah terjadi
+   tetap terhitung sebagai hasil pengiriman meskipun PO-nya belakangan ditutup. ---- */
 function renderPengirimanSummaryCard(){
   const wrap = document.getElementById('dashPengirimanWrap');
   if(!wrap) return;
-  const open = poList.filter(p => p.status === 'dikonfirmasi' && !p.closed && computePOSisa(p) > 0);
-  if(open.length === 0){
-    wrap.innerHTML = emptyState('Tidak ada PO aktif dengan sisa tonase saat ini.');
+  const custLuarPO = poList.filter(p => !isBK1Customer(p) && computePOTerpakai(p) > 0);
+  const bk1PO = poList.filter(p => isBK1Customer(p) && computePOTerpakai(p) > 0);
+  if(custLuarPO.length === 0 && bk1PO.length === 0){
+    wrap.innerHTML = emptyState('Belum ada DO yang terkirim & terkait PO saat ini.');
     return;
   }
-  const custLuar = open.filter(p => !isBK1Customer(p));
-  const bk1 = open.filter(p => isBK1Customer(p));
-  const custLuarTon = custLuar.reduce((s, p) => s + computePOSisa(p), 0) / 1000;
-  const bk1Ton = bk1.reduce((s, p) => s + computePOSisa(p), 0) / 1000;
+  const custLuarTon = custLuarPO.reduce((s, p) => s + computePOTerpakai(p), 0) / 1000;
+  const bk1Ton = bk1PO.reduce((s, p) => s + computePOTerpakai(p), 0) / 1000;
   wrap.innerHTML = `
     <div class="dash-mini-num">${custLuarTon.toLocaleString('id-ID', { maximumFractionDigits: 1 })}<span class="dash-mini-unit">Ton</span></div>
-    <div class="dash-mini-sub">Sisa PO Outstanding -- Cust Luar (${custLuar.length} PO, bukan BK 1)</div>
+    <div class="dash-mini-sub">Hasil Pengiriman -- Cust Luar (${custLuarPO.length} PO, bukan BK 1)</div>
     <div class="dash-mini-rows">
-      <div class="dash-mini-row" style="justify-content:space-between;"><span class="dash-mini-row-lbl">Sisa PO Outstanding -- BK 1 (${bk1.length} PO)</span></div>
+      <div class="dash-mini-row" style="justify-content:space-between;"><span class="dash-mini-row-lbl">Hasil Pengiriman -- BK 1 (${bk1PO.length} PO)</span></div>
       <div class="dash-mini-num" style="font-size:19px;">${bk1Ton.toLocaleString('id-ID', { maximumFractionDigits: 1 })} Ton</div>
     </div>
     <button type="button" class="btn btn-secondary" data-goto="po-monitoring" style="width:100%; justify-content:center; margin-top:12px;">Lihat Detail &rarr;</button>
