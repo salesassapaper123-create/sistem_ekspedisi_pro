@@ -258,7 +258,13 @@
   .user-info{display:flex; flex-direction:column; align-items:flex-end; line-height:1.3; text-transform:none;}
   .user-info .user-name{font-size:13px; font-weight:700; color:var(--text);}
   .user-info .user-role{font-size:11px; color:var(--text-muted);}
-  @media (max-width:1150px){ .topbar-left{display:none;} .user-info{display:none;} }
+  @media (max-width:1150px){ .topbar-search{display:none;} .user-info{display:none;} }
+  /* Latar gelap di belakang drawer sidebar mobile -- lihat #sidebarBackdrop di HTML.
+     display:none secara default (dan di layar lebar) supaya tidak pernah menghalangi apa pun
+     di mode desktop; baru ditampilkan lewat class .show yang di-toggle oleh JS (initSidebarToggle),
+     dan HANYA benar-benar terlihat di layar <=860px lewat media query terpisah di bawah. */
+  .sidebar-backdrop{display:none; position:fixed; inset:0; background:rgba(15,23,42,.45); z-index:19;}
+  @media (max-width:860px){ .sidebar-backdrop.show{display:block;} }
   .topbar-icon-btn{
     position:relative; width:38px; height:38px; border-radius:10px; border:1px solid var(--border);
     background:#fff; color:var(--navy-700); display:flex; align-items:center; justify-content:center;
@@ -877,6 +883,10 @@
 </div>
 
 <div class="app" id="appRoot" style="display:none;">
+
+  <!-- Latar gelap di belakang sidebar saat dibuka sebagai drawer di layar sempit (tablet/HP) --
+       diklik untuk menutup. Hanya terlihat (via CSS) saat sidebar punya class "open" di layar <=860px. -->
+  <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebarEl">
@@ -4877,6 +4887,7 @@ const SIDEBAR_COLLAPSED_KEY = 'ekspedisi_pro_sidebar_collapsed';
 (function initSidebarToggle(){
   const sidebarEl = document.getElementById('sidebarEl');
   const btnToggle = document.getElementById('btnSidebarToggle');
+  const backdrop = document.getElementById('sidebarBackdrop');
   if(!sidebarEl || !btnToggle) return;
 
   // Tampilkan judul menu (tooltip) saat hover, dipakai terutama saat sidebar diciutkan
@@ -4885,15 +4896,33 @@ const SIDEBAR_COLLAPSED_KEY = 'ekspedisi_pro_sidebar_collapsed';
     if(label) btn.setAttribute('title', label);
   });
 
+  // Di layar <=860px sidebar berubah jadi drawer melayang (lihat CSS .sidebar{position:fixed...}
+  // di @media max-width:860px) -- di lebar segini tombol hamburger/ciutkan HARUS membuka/menutup
+  // drawer itu (class "open"), BUKAN mode "ciutkan jadi rel ikon" (class "collapsed") yang dipakai
+  // di layar lebar/desktop. Tanpa pembeda ini pengguna tablet/HP tidak akan pernah bisa membuka
+  // menu navigasi sama sekali.
+  function isMobileNavMode(){
+    return window.matchMedia('(max-width:860px)').matches;
+  }
+
   function applyState(collapsed){
     sidebarEl.classList.toggle('collapsed', collapsed);
     btnToggle.setAttribute('aria-label', collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar');
     btnToggle.title = collapsed ? 'Lebarkan sidebar' : 'Ciutkan sidebar';
   }
 
+  function openMobileNav(open){
+    sidebarEl.classList.toggle('open', open);
+    if(backdrop) backdrop.classList.toggle('show', open);
+  }
+
   applyState(localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
 
   function toggle(){
+    if(isMobileNavMode()){
+      openMobileNav(!sidebarEl.classList.contains('open'));
+      return;
+    }
     const collapsed = !sidebarEl.classList.contains('collapsed');
     applyState(collapsed);
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
@@ -4901,8 +4930,17 @@ const SIDEBAR_COLLAPSED_KEY = 'ekspedisi_pro_sidebar_collapsed';
   btnToggle.addEventListener('click', toggle);
   // Tombol hamburger di topbar -- alternatif visual untuk tombol ciutkan sidebar yang sama
   // (mengikuti foto referensi dashboard yang menaruh hamburger di topbar, bukan di tepi sidebar).
+  // Di layar sempit ini JUSTRU jadi satu-satunya cara membuka menu (lihat isMobileNavMode di atas).
   const btnHamburger = document.getElementById('btnTopbarHamburger');
   if(btnHamburger) btnHamburger.addEventListener('click', toggle);
+
+  // Tutup drawer mobile saat: klik area gelap di luar drawer, pilih salah satu menu,
+  // atau jendela dilebarkan balik ke ukuran desktop (supaya tidak "nyangkut" kebuka).
+  if(backdrop) backdrop.addEventListener('click', () => openMobileNav(false));
+  document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
+    btn.addEventListener('click', () => { if(isMobileNavMode()) openMobileNav(false); });
+  });
+  window.addEventListener('resize', () => { if(!isMobileNavMode()) openMobileNav(false); });
 })();
 
 /* ---------- INPUT FORM ---------- */
