@@ -1169,6 +1169,19 @@
           <div class="dash-card-body"><div id="dashBanSummaryWrap"></div></div>
         </div>
 
+        <!-- BARIS 2d: Monitoring Ritase & Tonase per Nopol+Sopir, KHUSUS Angkutan Organik --
+             format & warna mengikuti rekap manual Excel yang biasa dipakai user, bukan mengikuti
+             setting "Jenis Angkutan" admin di atas (permintaan eksplisit: selalu organik saja,
+             supaya bisa dibandingkan langsung dengan rekap manual mereka apa pun setting Dashboard-nya). -->
+        <div class="dash-card" style="margin-bottom:16px;">
+          <div class="dash-card-head">
+            <h3 style="text-transform:none;">Monitoring Ritase &amp; Tonase per Kendaraan (Angkutan Organik)</h3>
+            <span class="dash-period-select" id="dashMonitoringOrganikPeriodLabel">&nbsp;</span>
+          </div>
+          <div class="dash-card-body" style="padding:0;"><div id="dashMonitoringOrganikWrap"></div></div>
+          <div class="dash-card-foot">Ritase/Tonase OCC &amp; BK dari seluruh DO Organik periode ini. "Roll Buyer Luar" = kirim ke customer Cust Luar (bukan BK 1) tapi tetap pakai armada Organik sendiri (bukan vendor angkutan luar) -- dicek dari PO terkait DO Roll tersebut.</div>
+        </div>
+
         <!-- BARIS 3: grafik tren Ritase & Tonase (6 bulan terakhir) -->
         <div class="dash-grid cols-2">
           <div class="dash-card">
@@ -8905,6 +8918,7 @@ function renderDashboard(){
   renderAlertNotifCard();
   renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5);
   renderBanDashboardSummary();
+  renderMonitoringOrganikTable();
   renderRitaseTrendChart();
   renderTonaseTrendChart();
   renderTopKotaTable();
@@ -9294,6 +9308,99 @@ function renderOrderTerbaruTable(){
       </tr>`;
     }).join('')}
   </tbody></table>`;
+}
+
+/* ---- Kartu "Monitoring Ritase & Tonase per Kendaraan (Angkutan Organik)" -- rekap per Nopol +
+   Sopir, dipecah Ritase/Tonase OCC, BK, dan "Roll Buyer Luar", mengikuti format rekap manual Excel
+   yang biasa dipakai user. SELALU basis Angkutan Organik (tidak ikut getDashJenisFilter() / setting
+   admin "Jenis Angkutan default") -- ini permintaan eksplisit, beda basis dari kartu lain di
+   Dashboard supaya selalu bisa dibandingkan langsung ke rekap manual mereka.
+   "Roll Buyer Luar" = kirim ke customer Cust Luar (BUKAN BK 1) TAPI tetap pakai armada Angkutan
+   Organik sendiri (bukan disubkontrakkan ke vendor angkutan luar) -- ditegaskan langsung oleh user.
+   Karena tabel ini sudah difilter jenisAngkutan==='organik' dari awal (armadanya sudah pasti
+   organik), sisanya tinggal cek dimensi customer: DO jenis Roll (recKirimRoll) yang PO terkaitnya
+   (r.poId -> poList) customer-nya BUKAN BK 1 (isBK1Customer() bernilai false, dimensi yang sama
+   dipakai kartu Sisa PO/Ringkasan Pengiriman). DO Roll yang TIDAK terhubung PO tidak dihitung ke
+   Buyer Luar (tidak ada info customer-nya), tapi Tonase Roll totalnya tetap masuk ke kolom "Tonase
+   Roll" biasa (Roll Buyer Luar adalah SUBSET dari Tonase Roll, bukan tambahan di luar itu). Periode
+   = "bulan berjalan" yang sama dipakai seluruh Dashboard (dashboardPeriodRanges()). */
+function computeMonitoringOrganikNopolSopir(){
+  const p = dashboardPeriodRanges();
+  const data = records.filter(r => dashInRange(r.tanggal, p.curStart, p.curEnd) && (r.jenisAngkutan || 'organik') === 'organik');
+  const isRollBuyerLuar = r => {
+    if(!recKirimRoll(r) || !r.poId) return false;
+    const po = poList.find(x => String(x.id) === String(r.poId));
+    return po ? !isBK1Customer(po) : false;
+  };
+  const byNopol = {};
+  data.forEach(r => {
+    const nopolKey = r.nopol || '-';
+    if(!byNopol[nopolKey]) byNopol[nopolKey] = { nopol: nopolKey, sopirs: {} };
+    const ng = byNopol[nopolKey];
+    const sKey = r.sopir || '-';
+    if(!ng.sopirs[sKey]) ng.sopirs[sKey] = { sopir: sKey, ritOCC: 0, tonOCC: 0, ritBK: 0, tonBK: 0, ritRollBL: 0, tonRoll: 0, tonRollBL: 0 };
+    const g = ng.sopirs[sKey];
+    if(recKirimOCC(r)){ g.ritOCC += 1; g.tonOCC += (Number(r.tonase3)||0); }
+    if(recKirimBK(r)){ g.ritBK += 1; g.tonBK += (Number(r.tonase1)||0); }
+    if(recKirimRoll(r)){
+      g.tonRoll += (Number(r.tonase2)||0);
+      if(isRollBuyerLuar(r)){ g.ritRollBL += 1; g.tonRollBL += (Number(r.tonase2)||0); }
+    }
+  });
+  return Object.values(byNopol).sort((a,b) => a.nopol.localeCompare(b.nopol)).map(ng => Object.assign({}, ng, {
+    sopirRows: Object.values(ng.sopirs).sort((a,b) => a.sopir.localeCompare(b.sopir)),
+  }));
+}
+function renderMonitoringOrganikTable(){
+  const wrap = document.getElementById('dashMonitoringOrganikWrap');
+  if(!wrap) return;
+  const periodLbl = document.getElementById('dashMonitoringOrganikPeriodLabel');
+  if(periodLbl) periodLbl.textContent = dashboardPeriodRanges().curLabel;
+  const groups = computeMonitoringOrganikNopolSopir();
+  if(groups.length === 0){ wrap.innerHTML = emptyState('Belum ada DO Angkutan Organik pada periode ini.'); return; }
+  const COL = { ritOcc:'#fde3d4', ritBk:'#d7ecc7', ritRoll:'#dde2f5', ton:'#fff6b0' };
+  let bodyRows = '';
+  groups.forEach(ng => {
+    const rowspan = ng.sopirRows.length;
+    ng.sopirRows.forEach((g, i) => {
+      bodyRows += '<tr>';
+      if(i === 0) bodyRows += `<td class="sv-left" rowspan="${rowspan}" style="background:#fde3d4; vertical-align:middle;"><span class="plate-cell">${esc(ng.nopol)}</span></td>`;
+      bodyRows += `
+        <td class="sv-left">${esc(g.sopir)}</td>
+        <td class="mono sv-num" style="background:${COL.ritOcc};">${g.ritOCC || '-'}</td>
+        <td class="mono sv-num" style="background:${COL.ritBk};">${g.ritBK || '-'}</td>
+        <td class="mono sv-num" style="background:${COL.ritRoll};">${g.ritRollBL || '-'}</td>
+        <td class="mono sv-num" style="background:${COL.ton};">${g.tonOCC ? g.tonOCC.toLocaleString('id-ID') : '-'}</td>
+        <td class="mono sv-num" style="background:${COL.ton};">${g.tonBK ? g.tonBK.toLocaleString('id-ID') : '-'}</td>
+        <td class="mono sv-num" style="background:${COL.ton};">${g.tonRoll ? g.tonRoll.toLocaleString('id-ID') : '-'}</td>
+        <td class="mono sv-num" style="background:${COL.ton};">${g.tonRollBL ? g.tonRollBL.toLocaleString('id-ID') : '-'}</td>`;
+      bodyRows += '</tr>';
+    });
+  });
+  const sum = fn => groups.reduce((s,ng) => s + ng.sopirRows.reduce((s2,g) => s2 + fn(g), 0), 0);
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:900px;">
+    <thead><tr>
+      <th>Nopol</th><th>Sopir</th>
+      <th style="background:${COL.ritOcc}; color:var(--text);">Total Ritase OCC</th>
+      <th style="background:${COL.ritBk}; color:var(--text);">Total Ritase BK</th>
+      <th style="background:${COL.ritRoll}; color:var(--text);">Total Ritase Roll Buyer Luar</th>
+      <th style="background:${COL.ton}; color:var(--text);">Total Tonase OCC (Kg)</th>
+      <th style="background:${COL.ton}; color:var(--text);">Total Tonase BK (Kg)</th>
+      <th style="background:${COL.ton}; color:var(--text);">Total Tonase Roll (Kg)</th>
+      <th style="background:${COL.ton}; color:var(--text);">Total Tonase Roll Buyer Luar (Kg)</th>
+    </tr></thead>
+    <tbody>${bodyRows}</tbody>
+    <tfoot><tr style="font-weight:700; background:#e5f0da;">
+      <td colspan="2" class="sv-left">TOTAL KIRIMAN</td>
+      <td class="mono sv-num">${sum(g=>g.ritOCC)}</td>
+      <td class="mono sv-num">${sum(g=>g.ritBK)}</td>
+      <td class="mono sv-num">${sum(g=>g.ritRollBL)}</td>
+      <td class="mono sv-num">${sum(g=>g.tonOCC).toLocaleString('id-ID')}</td>
+      <td class="mono sv-num">${sum(g=>g.tonBK).toLocaleString('id-ID')}</td>
+      <td class="mono sv-num">${sum(g=>g.tonRoll).toLocaleString('id-ID')}</td>
+      <td class="mono sv-num">${sum(g=>g.tonRollBL).toLocaleString('id-ID')}</td>
+    </tr></tfoot>
+  </table></div>`;
 }
 
 /* ---- Kartu "Biaya Operasional" -- basis hitung SAMA PERSIS dengan laporan Biaya
