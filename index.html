@@ -1090,6 +1090,24 @@
         <!-- Pil "Periode" (bulan berjalan, khusus Dashboard) -- dinaikkan sejajar satu baris dengan
              judul halaman (bukan lagi di baris terpisah dengan jarak kosong di bawahnya); disembunyikan
              otomatis di halaman selain Dashboard lewat goTo(). -->
+        <!-- Filter "Jenis angkutan" khusus Dashboard -- default "Angkutan Organik" karena tujuan
+             utama Dashboard ini memantau armada organik sendiri, tapi tetap bisa dipindah ke
+             "Semua" atau "Vendor Luar" kapan saja. Berlaku untuk kartu/tabel yang basisnya data DO
+             per pengiriman (5 kartu statistik, grafik tren Ritase/Tonase, Top Kota, Order Terbaru)
+             -- TIDAK untuk kartu yang basisnya bukan per-pengiriman (Sisa PO, Ringkasan Pengiriman
+             BK1/Cust Luar, Monitoring Armada/Ban, Biaya Operasional yang memang sudah membandingkan
+             Organik vs Vendor berdampingan). -->
+        <div class="dash-period-badge" id="dashJenisFilterWrap" style="margin-right:8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="15" height="10" rx="2"/><path d="M18 10h3l2 3v4h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
+          <span>
+            <span class="period-lbl">Jenis angkutan</span>
+            <select id="dashJenisAngkutanFilter" style="border:none; background:transparent; padding:0; font-size:13px; font-weight:700; color:var(--text); cursor:pointer; width:auto; -webkit-appearance:none; appearance:none;">
+              <option value="organik" selected>Angkutan Organik</option>
+              <option value="">Semua Angkutan</option>
+              <option value="vendor">Vendor Luar</option>
+            </select>
+          </span>
+        </div>
         <div class="dash-period-badge" id="dashPeriodBadgeWrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
           <span>
@@ -2610,6 +2628,14 @@
                 <label for="laporanSampai">Sampai tanggal</label>
                 <input type="date" id="laporanSampai">
               </div>
+              <div class="field">
+                <label for="laporanJenisAngkutan">Jenis angkutan</label>
+                <select id="laporanJenisAngkutan">
+                  <option value="">Semua angkutan (Organik + Vendor Luar)</option>
+                  <option value="organik">Angkutan Organik saja</option>
+                  <option value="vendor">Vendor Luar saja</option>
+                </select>
+              </div>
               <button class="btn btn-primary" id="btnGenerate">Tampilkan laporan</button>
               <button class="btn btn-secondary" id="btnExportExcel">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
@@ -3027,24 +3053,29 @@ function syncOdometerFromCartrack(){
 
       // Lokasi: pakai teks alamat yang sudah di-reverse-geocode Cartrack kalau ada (paling enak dibaca);
       // kalau tidak ada, fallback ke koordinat lat/long mentah supaya tetap ada info lokasi.
-      var pos = v.position || {};
-      var lat = v.latitude != null ? v.latitude : pos.latitude;
-      var lng = v.longitude != null ? v.longitude : pos.longitude;
-      var alamat = v.address || v.location_address || pos.address || null;
+      // KONFIRMASI dari Log Eksekusi akun ini (2 Sep 2026): lokasi ada di objek bersarang "location",
+      // BUKAN "position" -- field yang benar: location.latitude, location.longitude,
+      // location.position_description (alamat hasil reverse-geocode Cartrack, paling enak dibaca),
+      // location.updated (jam GPS terakhir). Pola lama (v.position/v.address/dst) tetap dijaga sebagai
+      // fallback kalau suatu saat strukturnya berubah / beda akun.
+      var loc = v.location || v.position || {};
+      var lat = loc.latitude != null ? loc.latitude : v.latitude;
+      var lng = loc.longitude != null ? loc.longitude : v.longitude;
+      var alamat = loc.position_description || v.address || v.location_address || loc.address || null;
       var lokasi = alamat ? String(alamat) : ((lat != null && lng != null) ? (Number(lat).toFixed(5) + ', ' + Number(lng).toFixed(5)) : null);
 
-      // Status bergerak/berhenti: pakai field status teks kalau ada, kalau tidak turunkan dari ignition/kecepatan.
+      // Status bergerak/berhenti: akun ini KONFIRMASI mengirim field "speed" (km/jam) langsung di level
+      // kendaraan (bukan cuma teks status) -- speed di atas 3 km/jam dianggap "jalan", selain itu "berhenti".
+      // Field teks status (movement_status/status) tetap dicoba lebih dulu untuk jaga-jaga akun/versi API lain.
       var statusRaw = (v.movement_status || v.status || '').toString().toLowerCase();
-      var ignitionOn = v.ignition === true || v.ignition === 1 || v.ignition_status === 'on';
       var speed = Number(v.speed != null ? v.speed : v.speed_kmh) || 0;
       var status = null;
       if (statusRaw.indexOf('mov') !== -1 || statusRaw.indexOf('jalan') !== -1 || statusRaw.indexOf('drive') !== -1) status = 'jalan';
       else if (statusRaw.indexOf('stop') !== -1 || statusRaw.indexOf('idle') !== -1 || statusRaw.indexOf('berhenti') !== -1) status = 'berhenti';
       else if (speed > 3) status = 'jalan';
-      else if (ignitionOn) status = 'berhenti'; // mesin nyala tapi diam
-      else if (v.ignition != null || speed > 0 || statusRaw) status = 'berhenti'; // ada sinyal GPS tapi tidak bergerak
+      else status = 'berhenti'; // speed rendah/0 -- termasuk kalau mesin nyala tapi diam (idling)
 
-      var waktuRaw = v.position_ts || v.event_ts || v.last_updated || v.timestamp || v.gps_time || null;
+      var waktuRaw = loc.updated || v.position_ts || v.event_ts || v.last_updated || v.timestamp || v.gps_time || null;
       var waktuIso = null;
       if (waktuRaw){
         var d = new Date(waktuRaw);
@@ -4779,6 +4810,8 @@ function goTo(view){
   if(subtitleEl) subtitleEl.textContent = subtitles[view] || '';
   const periodBadgeWrap = document.getElementById('dashPeriodBadgeWrap');
   if(periodBadgeWrap) periodBadgeWrap.style.display = (view === 'dashboard') ? 'inline-flex' : 'none';
+  const jenisFilterWrap = document.getElementById('dashJenisFilterWrap');
+  if(jenisFilterWrap) jenisFilterWrap.style.display = (view === 'dashboard') ? 'inline-flex' : 'none';
   if(view === 'dashboard') renderDashboard();
   if(view === 'input'){ populateDoNoCODropdown(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); }
   if(view === 'rekap') renderTable();
@@ -8857,6 +8890,24 @@ function dashInRange(tanggal, start, end){
 function dashRecTonase(r){
   return (Number(r.tonase1) || 0) + (Number(r.tonase2) || 0) + (Number(r.tonase3) || 0);
 }
+/* Filter "Jenis angkutan" khusus Dashboard (lihat select #dashJenisAngkutanFilter di topbar) --
+   default "organik" karena tujuan utama Dashboard ini memantau armada organik sendiri. Dipakai
+   oleh kartu/tabel yang basisnya data DO per pengiriman (statistik utama, tren, Top Kota, Order
+   Terbaru) -- TIDAK dipakai kartu yang basisnya bukan per-pengiriman (Sisa PO, Ringkasan
+   Pengiriman BK1/Cust Luar, Monitoring Armada/Ban, Biaya Operasional yang sudah membandingkan
+   Organik vs Vendor berdampingan sendiri). */
+function getDashJenisFilter(){
+  const el = document.getElementById('dashJenisAngkutanFilter');
+  return el ? el.value : 'organik';
+}
+function dashFilterRecords(recs){
+  const f = getDashJenisFilter();
+  return f ? recs.filter(r => (r.jenisAngkutan || 'organik') === f) : recs;
+}
+(function initDashJenisFilter(){
+  const el = document.getElementById('dashJenisAngkutanFilter');
+  if(el) el.addEventListener('change', renderDashboard);
+})();
 /* Badge naik/turun persen dibanding bulan lalu -- arah saja (naik=hijau, turun=merah),
    bukan penilaian baik/buruk (mis. Rate Perbaikan turun itu bagus, tapi tetap ditampilkan
    merah karena arahnya turun -- konsisten & mudah dibaca, tidak butuh logika berbeda per kartu). */
@@ -8879,8 +8930,8 @@ function renderStatCardsV2(){
   const wrap = document.getElementById('statGrid5');
   if(!wrap) return;
   const p = dashboardPeriodRanges();
-  const curRecords = records.filter(r => dashInRange(r.tanggal, p.curStart, p.curEnd));
-  const prevRecords = records.filter(r => dashInRange(r.tanggal, p.prevStart, p.prevEnd));
+  const curRecords = dashFilterRecords(records.filter(r => dashInRange(r.tanggal, p.curStart, p.curEnd)));
+  const prevRecords = dashFilterRecords(records.filter(r => dashInRange(r.tanggal, p.prevStart, p.prevEnd)));
   const curMaint = maintenanceList.filter(m => dashInRange(m.tanggal, p.curStart, p.curEnd));
   const prevMaint = maintenanceList.filter(m => dashInRange(m.tanggal, p.prevStart, p.prevEnd));
   const totalArmada = kendaraanList.length;
@@ -9092,14 +9143,14 @@ function renderTrendChart(wrapId, months, color){
 function renderRitaseTrendChart(){
   const months = lastNMonths(6).map(b => ({
     label: new Date(b + '-01').toLocaleDateString('id-ID', { month: 'short' }),
-    value: records.filter(r => r.tanggal && r.tanggal.startsWith(b)).length,
+    value: dashFilterRecords(records.filter(r => r.tanggal && r.tanggal.startsWith(b))).length,
   }));
   renderTrendChart('ritaseTrendWrap', months, 'var(--blue-500)');
 }
 function renderTonaseTrendChart(){
   const months = lastNMonths(6).map(b => ({
     label: new Date(b + '-01').toLocaleDateString('id-ID', { month: 'short' }),
-    value: Math.round(records.filter(r => r.tanggal && r.tanggal.startsWith(b)).reduce((s, r) => s + dashRecTonase(r), 0) / 1000),
+    value: Math.round(dashFilterRecords(records.filter(r => r.tanggal && r.tanggal.startsWith(b))).reduce((s, r) => s + dashRecTonase(r), 0) / 1000),
   }));
   renderTrendChart('tonaseTrendWrap', months, 'var(--green-600)');
 }
@@ -9110,7 +9161,7 @@ function renderTopKotaTable(){
   const wrap = document.getElementById('topKotaWrap');
   if(!wrap) return;
   const p = dashboardPeriodRanges();
-  const curRecords = records.filter(r => dashInRange(r.tanggal, p.curStart, p.curEnd));
+  const curRecords = dashFilterRecords(records.filter(r => dashInRange(r.tanggal, p.curStart, p.curEnd)));
   const byKota = {};
   curRecords.forEach(r => {
     const k = r.kota || '(Tanpa kota)';
@@ -9130,7 +9181,7 @@ function renderTopKotaTable(){
 function renderOrderTerbaruTable(){
   const wrap = document.getElementById('orderTerbaruWrap');
   if(!wrap) return;
-  const recent = records.slice().sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1)).slice(0, 5);
+  const recent = dashFilterRecords(records.slice()).sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1)).slice(0, 5);
   if(recent.length === 0){ wrap.innerHTML = emptyState('Belum ada DO diinput.'); return; }
   wrap.innerHTML = `<table><thead><tr><th>No. DO</th><th>Tanggal</th><th>Customer</th><th>Rute</th><th>Tonase (Ton)</th><th>Status</th></tr></thead><tbody>
     ${recent.map(r => {
@@ -9364,6 +9415,19 @@ function addDaysIso(baseIso, days){
   document.getElementById('laporanSampai').value = todayIso;
 })();
 
+/* Baca filter "Jenis angkutan" (Semua / Organik / Vendor Luar) dari dropdown di toolbar Laporan
+   Pengiriman -- dipakai bersama oleh tampilan layar (generateLaporan) & export Excel/PDF/Cetak
+   (getLaporanRowsForExport) supaya hasil export selalu cocok persis dengan yang tampil di layar. */
+function getLaporanJenisFilter(){
+  const el = document.getElementById('laporanJenisAngkutan');
+  return el ? el.value : '';
+}
+function laporanJenisFilterLabel(jenisFilter){
+  if(jenisFilter === 'organik') return 'Angkutan Organik saja';
+  if(jenisFilter === 'vendor') return 'Vendor Luar saja';
+  return 'Semua angkutan (Organik + Vendor Luar)';
+}
+
 /* Baca rentang tanggal bebas dari UI, kembalikan {startDate, endDate, label, slug} atau null jika belum lengkap/tidak valid */
 function getLaporanPeriodInfo(){
   const dari = document.getElementById('laporanDari').value;
@@ -9384,13 +9448,15 @@ function generateLaporan(){
   const lWrap = document.getElementById('laporanWrap');
   if(!period){ sWrap.innerHTML=''; rWrap.innerHTML=''; lWrap.innerHTML = emptyState('Pilih periode terlebih dahulu.'); return; }
 
-  const data = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate).sort((a,b) => a.tanggal.localeCompare(b.tanggal));
+  const jenisFilter = getLaporanJenisFilter();
+  let data = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate).sort((a,b) => a.tanggal.localeCompare(b.tanggal));
+  if(jenisFilter) data = data.filter(r => (r.jenisAngkutan || 'organik') === jenisFilter);
   const selesai = data.filter(r => r.status === 'selesai').length;
   const totalTonase = data.reduce((sum, r) => sum + (r.tonase1 ? Number(r.tonase1) : 0) + (r.tonase2 ? Number(r.tonase2) : 0) + (r.tonase3 ? Number(r.tonase3) : 0), 0);
   const jumlahOrganik = data.filter(r => (r.jenisAngkutan || 'organik') === 'organik').length;
   const jumlahVendor = data.filter(r => r.jenisAngkutan === 'vendor').length;
 
-  sWrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>
+  sWrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b> &middot; Jenis angkutan: <b>${esc(laporanJenisFilterLabel(jenisFilter))}</b></p>
   <div class="stat-grid" style="margin-bottom:18px;">
     <div class="stat-card"><div class="num">${data.length}</div><div class="lbl">Total DO</div></div>
     <div class="stat-card"><div class="num">${selesai}</div><div class="lbl">Selesai</div></div>
@@ -9505,6 +9571,12 @@ function buildRekapNopolTable(data, opts){
 }
 document.getElementById('btnGenerate').addEventListener('click', generateLaporan);
 document.getElementById('btnPrint').addEventListener('click', () => window.print());
+// Ganti filter jenis angkutan langsung menampilkan ulang laporan (tanpa perlu klik "Tampilkan laporan"
+// lagi) SELAMA laporan memang sudah pernah ditampilkan sebelumnya -- kalau summaryWrap masih kosong
+// (laporan belum pernah digenerate di sesi ini), biarkan dulu supaya tidak muncul tabel kosong tiba-tiba.
+document.getElementById('laporanJenisAngkutan').addEventListener('change', function(){
+  if(document.getElementById('summaryWrap').innerHTML.trim() !== '') generateLaporan();
+});
 
 /* Ambil rentang tanggal dari sepasang input date generik — dipakai bersama oleh Ritase per Nopol & Biaya Pengeluaran */
 function getRangePeriod(fromId, toId){
@@ -9667,8 +9739,11 @@ document.getElementById('btnBpvGenerate').addEventListener('click', generateBiay
 function getLaporanRowsForExport(){
   const period = getLaporanPeriodInfo();
   if(!period){ alert('Pilih periode terlebih dahulu.'); return null; }
-  const data = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate).sort((a,b) => a.tanggal.localeCompare(b.tanggal));
-  if(data.length === 0){ alert('Tidak ada data DO untuk diexport pada periode ini.'); return null; }
+  const jenisFilter = getLaporanJenisFilter();
+  let data = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate).sort((a,b) => a.tanggal.localeCompare(b.tanggal));
+  if(jenisFilter) data = data.filter(r => (r.jenisAngkutan || 'organik') === jenisFilter);
+  if(data.length === 0){ alert('Tidak ada data DO untuk diexport pada periode & filter jenis angkutan ini.'); return null; }
+  period.label = `${period.label} · ${laporanJenisFilterLabel(jenisFilter)}`;
   return { period, data };
 }
 
