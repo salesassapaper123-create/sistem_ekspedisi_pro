@@ -8267,7 +8267,15 @@ function renderPORekapDitutup(){
    status konfirmasi, maupun tombol aksi ACC/Tolak/Hapus di sini — itu semua ada di menu Konfirmasi PO. */
 /* Format angka kg jadi tonase (1 ton = 1000 kg) — dipakai khusus di Monitoring Sisa PO */
 function fmtTon(kg){
-  return (Number(kg)/1000).toLocaleString('id-ID', {maximumFractionDigits:2}) + ' ton';
+  // Aturan yang benar (klarifikasi user): kalau angkanya BULAT (tanpa desimal sama sekali, mis. 200
+  // ton), tetap ditulis "200 ton" TANPA ",00" di belakangnya. Tapi kalau MEMANG ada angka di belakang
+  // koma, selalu tampil PERSIS 2 digit (mis. "17,40" bukan "17,4", "29,25" tetap "29,25") -- supaya
+  // yang punya desimal seragam 2 angka, tanpa memaksa angka bulat jadi kelihatan ada desimalnya.
+  const ton = Number(kg) / 1000;
+  const rounded2 = Math.round(ton * 100) / 100; // bulatkan dulu ke 2 desimal sebelum dicek bulat/tidaknya
+  const isWhole = Number.isInteger(rounded2);
+  const opts = isWhole ? {minimumFractionDigits:0, maximumFractionDigits:0} : {minimumFractionDigits:2, maximumFractionDigits:2};
+  return rounded2.toLocaleString('id-ID', opts) + ' ton';
 }
 /* Bangun HTML tabel Sisa PO LENGKAP (baris data + pengelompokan BK 1 + baris-baris total) dari daftar
    PO yang SUDAH difilter (status dikonfirmasi & sisa > 0) dan diurutkan — dipakai bersama oleh
