@@ -3160,13 +3160,24 @@ function syncOdometerFromCartrack(){
       else if (speed > 3) status = 'jalan';
       else status = 'berhenti'; // speed rendah/0 -- termasuk kalau mesin nyala tapi diam (idling)
 
+      // PENTING (diperbaiki setelah laporan user "waktu update jalan tapi lokasi tidak berubah"):
+      // waktuRaw SENGAJA TIDAK diberi fallback ke "new Date()" (jam Apps Script menjalankan script)
+      // lagi -- sebelumnya kalau Cartrack tidak mengirim timestamp GPS yang valid untuk kendaraan ini
+      // di ronde tertentu (mis. device sempat kehilangan sinyal/fix GPS), kode lama tetap menulis
+      // "gpsWaktuUpdate" = SEKARANG (karena ada fallback new Date()), padahal "gpsLokasi" tidak ikut
+      // ditulis (ada pengecekan if(d.lokasi) di bawah, sengaja tidak menimpa dengan kosong). Akibatnya
+      // kolom "Waktu Update" di Monitoring Armada kelihatan terus segar ("X menit lalu") padahal teks
+      // "Lokasi Terakhir"-nya sebenarnya BEKU dari fix GPS terakhir yang valid -- persis gejala yang
+      // dilaporkan. Sekarang waktuIso HANYA diisi kalau memang ada timestamp asli dari Cartrack untuk
+      // ronde ini, dan waktu HANYA ditulis ke Firebase bareng-bareng dengan lokasi (lihat if(d.waktu)
+      // di bawah) -- supaya "Waktu Update" & "Lokasi Terakhir" selalu bergerak BERSAMAAN, tidak lagi
+      // bisa satu terlihat segar sementara yang lain beku.
       var waktuRaw = loc.updated || v.position_ts || v.event_ts || v.last_updated || v.timestamp || v.gps_time || null;
       var waktuIso = null;
       if (waktuRaw){
         var d = new Date(waktuRaw);
         if (!isNaN(d.getTime())) waktuIso = d.toISOString();
       }
-      if (!waktuIso) waktuIso = new Date().toISOString(); // fallback: waktu Apps Script menarik data ini
 
       dataMap[plate] = { km: odometerKm, lokasi: lokasi, status: status, waktu: waktuIso };
     });
@@ -3178,9 +3189,16 @@ function syncOdometerFromCartrack(){
       var d = nopolNorm ? dataMap[nopolNorm] : null;
       if (!d) return;
       patchPayload[idx + '/kmSaatIni'] = d.km;
-      if (d.lokasi) patchPayload[idx + '/gpsLokasi'] = d.lokasi;
+      // "gpsLokasi" & "gpsWaktuUpdate" SENGAJA ditulis bersamaan (satu syarat: ada waktu ASLI dari
+      // Cartrack) supaya kolom "Lokasi Terakhir" & "Waktu Update" di Monitoring Armada selalu
+      // menggambarkan momen fix GPS yang SAMA -- tidak ada lagi kombinasi "waktu segar, lokasi beku".
+      // Kalau ronde ini tidak ada waktu/lokasi valid sama sekali dari Cartrack, dua-duanya dibiarkan
+      // memakai nilai lama (bukan ditimpa kosong atau dipalsukan "sekarang").
+      if (d.waktu && d.lokasi){
+        patchPayload[idx + '/gpsLokasi'] = d.lokasi;
+        patchPayload[idx + '/gpsWaktuUpdate'] = d.waktu;
+      }
       if (d.status) patchPayload[idx + '/gpsStatus'] = d.status;
-      patchPayload[idx + '/gpsWaktuUpdate'] = d.waktu;
       updatedCount++;
     });
 
