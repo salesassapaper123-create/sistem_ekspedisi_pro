@@ -9624,7 +9624,8 @@ function renderTable(){
   const fStatus = document.getElementById('filterStatus').value;
   const fAngkutan = document.getElementById('filterAngkutan').value;
 
-  let list = records.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+  // Urutan tanggal NAIK (lama -> baru) -- tanggal terbaru tampil PALING BAWAH, sesuai permintaan user.
+  let list = records.slice().sort((a,b) => (a.tanggal < b.tanggal ? -1 : 1));
   if(fTgl) list = list.filter(r => r.tanggal === fTgl);
   else if(fBln) list = list.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
   if(fStatus) list = list.filter(r => normalizeStatus(r.status) === fStatus);
