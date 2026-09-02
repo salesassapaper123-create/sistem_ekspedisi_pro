@@ -1457,7 +1457,7 @@
           <div class="panel-head">
             <div>
               <h2>Rekap data DO</h2>
-              <p>Seluruh DO tersimpan, urut dari tanggal terbaru</p>
+              <p>Seluruh DO tersimpan, urut dari tanggal terlama ke terbaru (data terbaru di paling bawah)</p>
             </div>
           </div>
           <div class="panel-body">
@@ -1493,7 +1493,14 @@
                 </select>
               </div>
               <button class="btn btn-secondary" id="btnClearFilter">Reset filter</button>
+              <button class="btn btn-secondary" id="btnRekapExportExcel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Export Excel
+              </button>
+              <button class="btn btn-secondary" id="btnRekapExportPdf">Cetak / Simpan PDF</button>
+              <span class="hint" id="rekapExportStatus" style="align-self:center;"></span>
             </div>
+            <p class="hint" style="margin:8px 0 0;">Export/cetak mengikuti filter yang sedang aktif di atas.</p>
             <div id="tableWrap"></div>
           </div>
         </div>
@@ -4914,6 +4921,16 @@ function tujuanList(r){
   }
   if(rows.length === 0) rows.push('-');
   return rows.map(x => `<div>${x}</div>`).join('');
+}
+/* Versi teks polos dari tujuanList() -- dipakai untuk Export Excel/Cetak PDF Rekap Data DO, karena
+   sel Excel/tabel cetak nggak bisa nampung beberapa <div> baris seperti tampilan layar. Digabung
+   pakai " | " biar tetap kebaca semua rute (BK/Roll/OCC) dalam satu baris. */
+function tujuanListText(r){
+  const rows = [];
+  if(recKirimBK(r) && (r.tujuanMuat || r.tujuanBongkar)) rows.push(`${r.tujuanMuat || '-'} -> ${r.tujuanBongkar || '-'}`);
+  if(recKirimRoll(r) && (r.tujuanMuat2 || r.tujuanBongkar2)) rows.push(`${r.tujuanMuat2 || '-'} -> ${r.tujuanBongkar2 || '-'}`);
+  if(recKirimOCC(r) && (r.tujuanMuat3 || r.tujuanBongkar3)) rows.push(`${r.tujuanMuat3 || '-'} -> ${r.tujuanBongkar3 || '-'}`);
+  return rows.length ? rows.join(' | ') : '-';
 }
 function armadaLabel(jenis){
   const map = {tronton:'Tronton', engkel:'Engkel', cdd:'CDD', lainnya:'Lainnya'};
@@ -9669,7 +9686,10 @@ function renderBiayaOperasionalCard(){
 }
 
 /* ---------- REKAP TABLE ---------- */
-function renderTable(){
+/* Filter Rekap Data DO -- SATU SUMBER KEBENARAN dipakai bareng oleh tampilan tabel (renderTable) &
+   fitur Export Excel/Cetak PDF, supaya hasil export SELALU persis sama dengan yang terlihat di layar
+   (termasuk filter yang lagi aktif & urutan tanggal). (Sesi kedelapanpuluhdua) */
+function getRekapDOFilteredList(){
   const q = (document.getElementById('searchBox').value || '').toLowerCase();
   const fTgl = document.getElementById('filterTanggal').value;
   const fBln = document.getElementById('filterBulan').value;
@@ -9686,7 +9706,26 @@ function renderTable(){
   if(fAngkutan) list = list.filter(r => (r.jenisAngkutan || 'organik') === fAngkutan);
   if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota]
     .some(v => (v||'').toLowerCase().includes(q)));
-
+  return list;
+}
+/* Ringkasan filter yang sedang aktif, buat ditulis di judul file Excel/PDF supaya jelas ini rekap
+   hasil filter apa (bukan cuma "semua data"). */
+function getRekapDOFilterLabel(){
+  const parts = [];
+  const q = (document.getElementById('searchBox').value || '').trim();
+  const fTgl = document.getElementById('filterTanggal').value;
+  const fBln = document.getElementById('filterBulan').value;
+  const fStatus = document.getElementById('filterStatus').value;
+  const fAngkutan = document.getElementById('filterAngkutan').value;
+  if(fTgl) parts.push('Tanggal: ' + fmtDate(fTgl));
+  else if(fBln) parts.push('Bulan: ' + bulanLabel(fBln));
+  if(fStatus) parts.push('Status: ' + ((STATUS_META[fStatus] || {}).label || fStatus));
+  if(fAngkutan) parts.push('Angkutan: ' + (fAngkutan === 'vendor' ? 'Vendor Luar' : 'Organik'));
+  if(q) parts.push('Cari: "' + q + '"');
+  return parts.length ? parts.join(' | ') : 'Semua data';
+}
+function renderTable(){
+  const list = getRekapDOFilteredList();
   const wrap = document.getElementById('tableWrap');
   if(list.length === 0){ wrap.innerHTML = emptyState('Tidak ada data yang cocok.'); return; }
 
@@ -9835,6 +9874,234 @@ document.getElementById('btnClearFilter').addEventListener('click', function(){
   document.getElementById('filterAngkutan').value='';
   renderTable();
 });
+
+/* ---------- REKAP DATA DO -- Export Excel & Cetak/Export PDF (Sesi kedelapanpuluhdua) ----------
+   Kolom & baris TOTAL persis meniru tabel di layar (renderTable), dan selalu mengikuti filter yang
+   sedang aktif (getRekapDOFilteredList / getRekapDOFilterLabel di atas). Pola ZIP-XLSX & jendela
+   cetak sama persis dengan "Monitoring Organik" / "Laporan Pengiriman" (makeZip, XS, LAPORAN_XLSX_STYLES_XML). ---- */
+const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','Kota/Vendor','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Pendapatan (Rp)','Status'];
+const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,16,15,17,12,36,14,17,14,16,16];
+function buildRekapDOSheetXml(filterLabel, list){
+  const nCols = REKAPDO_XLSX_HEADERS.length;
+  const headerRowIdx = 4;
+  const firstDataRow = headerRowIdx + 1;
+  const lastDataRow = firstDataRow + list.length - 1;
+  const totalRowIdx = lastDataRow + 1;
+
+  let rowsXml = '';
+  rowsXml += `<row r="1"><c r="A1" t="inlineStr" s="${XS.TITLE}"><is><t>${esc('REKAP DATA DO')}</t></is></c></row>`;
+  rowsXml += `<row r="2"><c r="A2" t="inlineStr" s="${XS.SUB}"><is><t>${esc('Filter: ' + filterLabel)}</t></is></c></row>`;
+  rowsXml += `<row r="3"></row>`;
+  let headerCells = '';
+  REKAPDO_XLSX_HEADERS.forEach((h,i) => { headerCells += `<c r="${xlsxColLetter(i+1)}${headerRowIdx}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
+  rowsXml += `<row r="${headerRowIdx}">${headerCells}</row>`;
+
+  list.forEach((r, i) => {
+    const rowIdx = firstDataRow + i;
+    const alt = i % 2 === 1;
+    const sText = alt ? XS.CELL_ALT : XS.CELL;
+    const sNum = alt ? XS.NUM_ALT : XS.NUM;
+    const sCur = alt ? XS.CUR_ALT : XS.CUR;
+    const isVendor = r.jenisAngkutan === 'vendor';
+    const textVals = [
+      fmtDate(r.tanggal),
+      r.nopol || '-',
+      armadaLabel(r.jenisArmada),
+      isVendor ? 'Vendor Luar' : 'Organik',
+      isVendor ? (r.vendorNama || '-') : (r.kota || '-'),
+      r.sopir || '-',
+    ];
+    let cells = '';
+    textVals.forEach((v, ci) => {
+      cells += `<c r="${xlsxColLetter(ci+1)}${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(String(v))}</t></is></c>`;
+    });
+    cells += `<c r="G${rowIdx}" s="${sCur}"><v>${Number(r.uangJalan)||0}</v></c>`;
+    cells += `<c r="H${rowIdx}" s="${sCur}"><v>${Number(r.biayaLain)||0}</v></c>`;
+    cells += `<c r="I${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(jenisLabel(r))}</t></is></c>`;
+    cells += `<c r="J${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(tujuanListText(r))}</t></is></c>`;
+    const t1 = r.tonase1 ? Number(r.tonase1) : null;
+    cells += t1 != null ? `<c r="K${rowIdx}" s="${sNum}"><v>${t1}</v></c>` : `<c r="K${rowIdx}" s="${sNum}"/>`;
+    const t2 = r.tonase2 ? Number(r.tonase2) : null;
+    cells += t2 != null ? `<c r="L${rowIdx}" s="${sNum}"><v>${t2}</v></c>` : `<c r="L${rowIdx}" s="${sNum}"/>`;
+    const t3 = r.tonase3 ? Number(r.tonase3) : null;
+    cells += t3 != null ? `<c r="M${rowIdx}" s="${sNum}"><v>${t3}</v></c>` : `<c r="M${rowIdx}" s="${sNum}"/>`;
+    const pend = r.status === 'selesai' ? (Number(r.pendapatan) || 0) : null;
+    cells += pend != null ? `<c r="N${rowIdx}" s="${sCur}"><v>${pend}</v></c>` : `<c r="N${rowIdx}" s="${sCur}"/>`;
+    cells += `<c r="O${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc((STATUS_META[normalizeStatus(r.status)] || {}).label || '-')}</t></is></c>`;
+    rowsXml += `<row r="${rowIdx}">${cells}</row>`;
+  });
+
+  const sumUang = list.reduce((s,r) => s + (Number(r.uangJalan)||0), 0);
+  const sumBiaya = list.reduce((s,r) => s + (Number(r.biayaLain)||0), 0);
+  const sumT1 = list.reduce((s,r) => s + (Number(r.tonase1)||0), 0);
+  const sumT2 = list.reduce((s,r) => s + (Number(r.tonase2)||0), 0);
+  const sumT3 = list.reduce((s,r) => s + (Number(r.tonase3)||0), 0);
+  const sumPend = list.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
+  let totalCells = `<c r="A${totalRowIdx}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>${esc('TOTAL (' + list.length + ' DO)')}</t></is></c>`;
+  for(let ci = 2; ci <= 6; ci++) totalCells += `<c r="${xlsxColLetter(ci)}${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="G${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(G${firstDataRow}:G${lastDataRow})</f><v>${sumUang}</v></c>`;
+  totalCells += `<c r="H${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(H${firstDataRow}:H${lastDataRow})</f><v>${sumBiaya}</v></c>`;
+  totalCells += `<c r="I${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="J${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="K${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(K${firstDataRow}:K${lastDataRow})</f><v>${sumT1}</v></c>`;
+  totalCells += `<c r="L${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(L${firstDataRow}:L${lastDataRow})</f><v>${sumT2}</v></c>`;
+  totalCells += `<c r="M${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(M${firstDataRow}:M${lastDataRow})</f><v>${sumT3}</v></c>`;
+  totalCells += `<c r="N${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(N${firstDataRow}:N${lastDataRow})</f><v>${sumPend}</v></c>`;
+  totalCells += `<c r="O${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
+
+  const colsXml = REKAPDO_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const dimensionRef = `A1:${xlsxColLetter(nCols)}${totalRowIdx}`;
+  const lastCol = xlsxColLetter(nCols);
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="${dimensionRef}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colsXml}</cols>
+<sheetData>${rowsXml}</sheetData>
+<mergeCells count="2"><mergeCell ref="A1:${lastCol}1"/><mergeCell ref="A2:${lastCol}2"/></mergeCells>
+</worksheet>`;
+}
+function exportRekapDOExcel(){
+  const list = getRekapDOFilteredList();
+  if(list.length === 0){ alert('Tidak ada data DO yang cocok dengan filter saat ini untuk diexport.'); return; }
+  const filterLabel = getRekapDOFilterLabel();
+  const statusEl = document.getElementById('rekapExportStatus');
+  if(statusEl) statusEl.textContent = 'Menyiapkan file Excel...';
+  try{
+    const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+    const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+    const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Rekap Data DO" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+    const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+    const sheetXml = buildRekapDOSheetXml(filterLabel, list);
+
+    const zipBytes = makeZip([
+      { name: '[Content_Types].xml', data: contentTypesXml },
+      { name: '_rels/.rels', data: rootRelsXml },
+      { name: 'xl/workbook.xml', data: workbookXml },
+      { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
+      { name: 'xl/styles.xml', data: LAPORAN_XLSX_STYLES_XML },
+      { name: 'xl/worksheets/sheet1.xml', data: sheetXml },
+    ]);
+
+    const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const todayIso = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = `rekap_data_do_${todayIso}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Rekap Data DO (Excel) berhasil diunduh', 'success');
+  }catch(err){
+    alert('Gagal membuat file Excel: ' + err.message);
+  }finally{
+    if(statusEl) statusEl.textContent = '';
+  }
+}
+document.getElementById('btnRekapExportExcel').addEventListener('click', exportRekapDOExcel);
+
+/* ---- Cetak / Export PDF -- buka jendela cetak (sama pola dgn Monitoring Organik/Laporan Sisa PO),
+   lalu pakai fitur "Simpan sebagai PDF" bawaan browser saat mencetak. ---- */
+function buildRekapDOPrintHtml(filterLabel, list){
+  const bodyHtml = list.map(r => {
+    const isVendor = r.jenisAngkutan === 'vendor';
+    const statusLabel = (STATUS_META[normalizeStatus(r.status)] || {}).label || '-';
+    return `<tr>
+      <td>${esc(fmtDate(r.tanggal))}</td>
+      <td>${esc(r.nopol || '-')}</td>
+      <td>${esc(armadaLabel(r.jenisArmada))}</td>
+      <td>${esc(isVendor ? 'Vendor Luar' : 'Organik')}</td>
+      <td>${esc(isVendor ? (r.vendorNama || '-') : (r.kota || '-'))}</td>
+      <td>${esc(r.sopir || '-')}</td>
+      <td style="text-align:right;">${rupiah(Number(r.uangJalan)||0)}</td>
+      <td style="text-align:right;">${rupiah(Number(r.biayaLain)||0)}</td>
+      <td>${esc(jenisLabel(r))}</td>
+      <td>${esc(tujuanListText(r))}</td>
+      <td style="text-align:right;">${r.tonase1 ? Number(r.tonase1).toLocaleString('id-ID') : '-'}</td>
+      <td style="text-align:right;">${r.tonase2 ? Number(r.tonase2).toLocaleString('id-ID') : '-'}</td>
+      <td style="text-align:right;">${r.tonase3 ? Number(r.tonase3).toLocaleString('id-ID') : '-'}</td>
+      <td style="text-align:right;">${r.status === 'selesai' ? rupiah(Number(r.pendapatan)||0) : '-'}</td>
+      <td>${esc(statusLabel)}</td>
+    </tr>`;
+  }).join('');
+
+  const sumUang = list.reduce((s,r) => s + (Number(r.uangJalan)||0), 0);
+  const sumBiaya = list.reduce((s,r) => s + (Number(r.biayaLain)||0), 0);
+  const sumT1 = list.reduce((s,r) => s + (Number(r.tonase1)||0), 0);
+  const sumT2 = list.reduce((s,r) => s + (Number(r.tonase2)||0), 0);
+  const sumT3 = list.reduce((s,r) => s + (Number(r.tonase3)||0), 0);
+  const sumPend = list.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
+  const footHtml = `<tr style="font-weight:700; background:#e5f0da !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
+    <td colspan="6" style="text-align:right;">TOTAL (${list.length} DO)</td>
+    <td style="text-align:right;">${rupiah(sumUang)}</td>
+    <td style="text-align:right;">${rupiah(sumBiaya)}</td>
+    <td colspan="2"></td>
+    <td style="text-align:right;">${sumT1.toLocaleString('id-ID')}</td>
+    <td style="text-align:right;">${sumT2.toLocaleString('id-ID')}</td>
+    <td style="text-align:right;">${sumT3.toLocaleString('id-ID')}</td>
+    <td style="text-align:right;">${rupiah(sumPend)}</td>
+    <td></td>
+  </tr>`;
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Rekap Data DO</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm 8mm; }
+  *{ box-sizing:border-box; }
+  body{ font-family: Arial, Helvetica, sans-serif; color:#1a1f29; margin:0; padding:0; }
+  h1{ font-size:18px; margin:0 0 2px; color:#1B2A4A; }
+  .sub{ font-size:11px; color:#5b6472; margin:0 0 14px; font-style:italic; }
+  table{ width:100%; border-collapse:collapse; font-size:9px; margin-bottom:6px; }
+  th, td{ border:1px solid #333; padding:5px 6px; text-align:left; }
+  th{ background:#1B2A4A !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; color:#fff; text-transform:uppercase; font-size:8px; letter-spacing:.03em; }
+</style>
+</head><body>
+  <h1>Rekap Data DO</h1>
+  <p class="sub">Filter: ${esc(filterLabel)}</p>
+  <table>
+    <thead><tr>
+      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Angkutan</th><th>Kota/Vendor</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya Lain-lain</th><th>Jenis</th><th>Rute Muat &rarr; Bongkar</th><th>Tonase BK (Kg)</th><th>Tonase Roll Assa (Kg)</th><th>Tonase OCC (Kg)</th><th>Pendapatan</th><th>Status</th>
+    </tr></thead>
+    <tbody>${bodyHtml}${footHtml}</tbody>
+  </table>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };<\/script>
+</body></html>`;
+}
+function exportRekapDOPdf(){
+  const list = getRekapDOFilteredList();
+  if(list.length === 0){ alert('Tidak ada data DO yang cocok dengan filter saat ini untuk dicetak.'); return; }
+  const filterLabel = getRekapDOFilterLabel();
+  const html = buildRekapDOPrintHtml(filterLabel, list);
+  const win = window.open('', '_blank');
+  if(!win){
+    alert('Popup diblokir oleh browser. Izinkan pop-up untuk halaman ini, lalu coba lagi — jendela cetak akan terbuka dengan pilihan "Simpan sebagai PDF".');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  showToast('Jendela cetak dibuka — pilih tujuan "Simpan sebagai PDF" untuk mengunduh, atau langsung Cetak', 'success');
+}
+document.getElementById('btnRekapExportPdf').addEventListener('click', exportRekapDOPdf);
 
 /* ---------- LAPORAN PENGIRIMAN: PERIODE BEBAS (dari tanggal – sampai tanggal) ---------- */
 function toIsoDate(d){ return d.toISOString().slice(0,10); }
