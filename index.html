@@ -1544,6 +1544,10 @@
                   <p class="hint" style="margin-top:4px;">Otomatis: Tronton = 2 sumbu (10 ban), Engkel = 1 sumbu (6 ban), keduanya + 1 cadangan. Untuk CDD/Lainnya isi manual sesuai kondisi kendaraan sebenarnya.</p>
                 </div>
                 <div class="field">
+                  <label for="kiTahun">Tahun <span class="hint">(opsional)</span></label>
+                  <input type="number" id="kiTahun" min="1980" max="2100" step="1" placeholder="cth. 2020">
+                </div>
+                <div class="field">
                   <label for="kiSupir">A/N</label>
                   <input type="text" id="kiSupir" placeholder="cth. Budi Santoso">
                 </div>
@@ -6566,10 +6570,11 @@ function renderKendaraan(){
   if(kendaraanList.length === 0){
     wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan lewat menu Administrasi &gt; Input Data Kendaraan.');
   }else{
-    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nopol</th><th>Jenis Armada</th><th>A/N</th><th>Rute &amp; Area</th><th>Kapasitas Muatan</th><th>No. Mesin</th><th>No. Rangka</th><th>Bak (P-L-T)</th><th></th></tr></thead><tbody>${kendaraanList.map(k => `
+    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nopol</th><th>Jenis Armada</th><th>Tahun</th><th>A/N</th><th>Rute &amp; Area</th><th>Kapasitas Muatan</th><th>No. Mesin</th><th>No. Rangka</th><th>Bak (P-L-T)</th><th></th></tr></thead><tbody>${kendaraanList.map(k => `
       <tr>
         <td><span class="plate-cell">${esc(k.nopol)}</span></td>
         <td>${esc(armadaLabel(k.jenisArmada))}</td>
+        <td class="sv-num">${esc(k.tahun || '-')}</td>
         <td class="sv-left">${esc(k.supir || '-')}</td>
         <td class="sv-left">${esc(k.rute || '-')}</td>
         <td class="sv-num">${k.kapasitas ? Number(k.kapasitas).toLocaleString('id-ID') + ' ton' : '-'}</td>
@@ -6620,6 +6625,7 @@ function buildKendaraanFromFields(prefix){
     nopol: document.getElementById(prefix + 'Nopol').value.trim().toUpperCase(),
     jenisArmada: document.getElementById(prefix + 'JenisArmada').value,
     jumlahSumbuBelakang: Number(document.getElementById(prefix + 'JumlahSumbuBelakang').value) || 1, // dasar Monitoring Ban (lihat kendaraanRearAxles()) -- otomatis diisi sesuai jenis armada lewat listener di bawah, tetap bisa diedit manual utk CDD/Lainnya
+    tahun: document.getElementById(prefix + 'Tahun').value.trim(),
     supir: document.getElementById(prefix + 'Supir').value.trim(),
     rute: document.getElementById(prefix + 'Rute').value.trim(),
     kapasitas: document.getElementById(prefix + 'Kapasitas').value.trim(),
@@ -6675,6 +6681,7 @@ function editKendaraan(id){
   document.getElementById('kiNopol').value = k.nopol || '';
   document.getElementById('kiJenisArmada').value = k.jenisArmada || 'tronton';
   document.getElementById('kiJumlahSumbuBelakang').value = k.jumlahSumbuBelakang || (k.jenisArmada === 'tronton' ? 2 : 1);
+  document.getElementById('kiTahun').value = k.tahun || '';
   document.getElementById('kiSupir').value = k.supir || '';
   document.getElementById('kiRute').value = k.rute || '';
   document.getElementById('kiKapasitas').value = k.kapasitas || '';
