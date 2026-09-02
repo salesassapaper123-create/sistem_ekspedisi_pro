@@ -1271,12 +1271,22 @@
                   <input type="text" id="doNoPKB" placeholder="cth. PKB-001/VIII/2026">
                 </div>
                 <div class="field">
-                  <label for="nopol" id="nopolLabel">Nopol</label>
-                  <input type="text" id="nopol" placeholder="cth. B 1234 XYZ" required style="text-transform:uppercase;">
+                  <label for="nopolOrganik" id="nopolLabel">Nopol</label>
+                  <!-- Angkutan Organik: WAJIB pilih dari dropdown (bukan ketik bebas) supaya tidak salah ketik/typo nopol --
+                       daftarnya diambil dari Data Armada, lihat populateDoNopolSopirDropdowns(). -->
+                  <select id="nopolOrganik" required>
+                    <option value="">-- Pilih nopol --</option>
+                  </select>
+                  <!-- Vendor Luar: armada bukan milik sendiri, jadi TIDAK ada di Data Armada -- tetap ketik bebas seperti sebelumnya. -->
+                  <input type="text" id="nopolVendor" placeholder="cth. B 1234 XYZ" style="display:none; text-transform:uppercase;" required>
+                  <p class="hint" id="nopolOrganikHint" style="margin:6px 0 0;">Kalau nopol belum ada di daftar, tambahkan dulu lewat menu Administrasi &gt; Input Data Kendaraan.</p>
                 </div>
                 <div class="field">
-                  <label for="sopir" id="sopirLabel">Nama sopir</label>
-                  <input type="text" id="sopir" placeholder="cth. Budi Santoso">
+                  <label for="sopirOrganik" id="sopirLabel">Nama sopir</label>
+                  <select id="sopirOrganik">
+                    <option value="">-- Pilih sopir --</option>
+                  </select>
+                  <input type="text" id="sopirVendor" placeholder="cth. Budi Santoso" style="display:none;">
                 </div>
                 <div class="field full" id="vendorRuteBlock" style="grid-column:1 / -1; display:none;">
                   <label for="doVendorRute">Rute / tujuan vendor</label>
@@ -3933,6 +3943,7 @@ function attachFirebaseListenersInner(){
       if(v === 'monitoring-ban') renderMonitoringBan();
       if(v === 'dashboard'){ renderWaLegalBanner(); renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5); renderBanDashboardSummary(); }
       if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap'); // update live begitu GPS Cartrack menulis lokasi/status baru ke /kendaraan
+      if(v === 'input') populateDoNopolSopirDropdowns(); // dropdown Nopol (Organik) di Input PKB ikut terbaru kalau ada kendaraan baru ditambah/dihapus
       if(banDetailTargetId) renderBanDetailModalBody(kendaraanList.find(x => x.id === banDetailTargetId) || null); // modal Kelola Ban sedang terbuka -> ikut refresh (mis. KM live dari GPS Cartrack berubah)
       updatePeringatanBadge();
     }else if(val == null){
@@ -3948,6 +3959,7 @@ function attachFirebaseListenersInner(){
         if(v === 'monitoring-ban') renderMonitoringBan();
         if(v === 'dashboard'){ renderWaLegalBanner(); renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5); renderBanDashboardSummary(); }
         if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
+        if(v === 'input') populateDoNopolSopirDropdowns();
         updatePeringatanBadge();
       }
     }
@@ -3985,6 +3997,7 @@ function attachFirebaseListenersInner(){
       localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
       const v = currentViewName();
       if(v === 'driver') renderDriver();
+      if(v === 'input') populateDoNopolSopirDropdowns(); // dropdown Nama Sopir (Organik) di Input PKB ikut terbaru kalau ada driver baru ditambah/dihapus
     }else if(val == null){
       if(driverList.length > 0 && !sudahPernahSinkron){
         fbPush('driver', driverList);
@@ -3993,6 +4006,7 @@ function attachFirebaseListenersInner(){
         localStorage.setItem(DRIVER_KEY, JSON.stringify(driverList));
         const v = currentViewName();
         if(v === 'driver') renderDriver();
+        if(v === 'input') populateDoNopolSopirDropdowns();
       }
     }
   });
@@ -4955,7 +4969,7 @@ function goTo(view){
     jenisFilterWrap.style.display = (view === 'dashboard' && isAdminJf) ? 'inline-flex' : 'none';
   }
   if(view === 'dashboard') renderDashboard();
-  if(view === 'input'){ populateDoNoCODropdown(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); }
+  if(view === 'input'){ populateDoNoCODropdown(); populateDoNopolSopirDropdowns(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); }
   if(view === 'rekap') renderTable();
   if(view === 'kendaraan') renderKendaraan();
   if(view === 'legalitas') renderLegalitas();
@@ -5133,9 +5147,67 @@ const SIDEBAR_COLLAPSED_KEY = 'ekspedisi_pro_sidebar_collapsed';
 })();
 
 /* ---------- INPUT FORM ---------- */
-document.getElementById('nopol').addEventListener('input', function(){
+document.getElementById('nopolVendor').addEventListener('input', function(){
   this.value = this.value.toUpperCase();
 });
+
+/* ---------- Dropdown Nopol & Nama Sopir (Angkutan Organik) di Input PKB ----------
+   Sengaja dibuat SELECT (bukan input teks/datalist) khusus untuk Angkutan Organik supaya nopol &
+   nama sopir TIDAK BISA salah ketik/typo sama sekali -- akar penyebab beberapa bug sebelumnya
+   (Utilisasi Armada >100%, Driver/Rute kosong di Monitoring Armada) adalah field nopol yang bebas
+   ketik tanpa dibatasi daftar. Untuk Vendor Luar TETAP ketik bebas (nopolVendor/sopirVendor) karena
+   armada & sopir vendor bukan bagian dari Data Armada/Driver milik sendiri. */
+function populateDoNopolSopirDropdowns(){
+  const selNopol = document.getElementById('nopolOrganik');
+  const selSopir = document.getElementById('sopirOrganik');
+  if(selNopol){
+    const cur = selNopol.value;
+    const opts = kendaraanList.slice().sort((a,b) => (a.nopol||'').localeCompare(b.nopol||''))
+      .map(k => `<option value="${esc(k.nopol)}">${esc(k.nopol)}</option>`).join('');
+    selNopol.innerHTML = '<option value="">-- Pilih nopol --</option>' + opts;
+    selectClosestOption(selNopol, cur);
+  }
+  if(selSopir){
+    const cur = selSopir.value;
+    const opts = driverList.slice().sort((a,b) => (a.nama||'').localeCompare(b.nama||''))
+      .map(d => `<option value="${esc(d.nama)}">${esc(d.nama)}</option>`).join('');
+    selSopir.innerHTML = '<option value="">-- Pilih sopir --</option>' + opts;
+    selectClosestOption(selSopir, cur);
+  }
+}
+/* Pilih opsi di <select> yang paling cocok dengan rawVal -- coba PERSIS dulu, kalau tidak ketemu
+   coba dibandingkan dengan normalisasi nopol (huruf besar + tanpa spasi, konsisten dengan normNopol())
+   supaya data lama yang formatnya beda tipis (mis. "d 8265 uh" vs "D 8265 UH") tetap otomatis
+   terpilih dengan benar saat DO lama dibuka untuk diedit. */
+function selectClosestOption(selectEl, rawVal){
+  if(!rawVal){ selectEl.value = ''; return; }
+  const opts = Array.from(selectEl.options);
+  const exact = opts.find(o => o.value === rawVal);
+  if(exact){ selectEl.value = rawVal; return; }
+  const norm = normNopol(rawVal);
+  const fuzzy = opts.find(o => normNopol(o.value) === norm && norm !== '');
+  selectEl.value = fuzzy ? fuzzy.value : '';
+}
+/* Nilai nopol/sopir yang sedang aktif di form -- ambil dari dropdown (Organik) atau input bebas (Vendor). */
+function getDONopolVal(){
+  return currentJenisAngkutan() === 'vendor'
+    ? document.getElementById('nopolVendor').value.trim()
+    : document.getElementById('nopolOrganik').value.trim();
+}
+function getDOSopirVal(){
+  return currentJenisAngkutan() === 'vendor'
+    ? document.getElementById('sopirVendor').value.trim()
+    : document.getElementById('sopirOrganik').value.trim();
+}
+/* Isi KEDUA field (dropdown Organik & input Vendor) sekaligus dengan nilai record yang sedang diedit --
+   supaya nilainya tetap benar mana pun yang akhirnya ditampilkan oleh toggleAngkutanSections(). */
+function setDONopolSopirVal(nopolVal, sopirVal){
+  populateDoNopolSopirDropdowns();
+  selectClosestOption(document.getElementById('nopolOrganik'), nopolVal || '');
+  document.getElementById('nopolVendor').value = nopolVal || '';
+  selectClosestOption(document.getElementById('sopirOrganik'), sopirVal || '');
+  document.getElementById('sopirVendor').value = sopirVal || '';
+}
 /* Tampilkan hanya blok tujuan muat/bongkar sesuai checkbox BK / Roll yang dipilih */
 function toggleJenisSections(){
   const bk = document.getElementById('cbBK').checked;
@@ -5226,6 +5298,15 @@ function toggleAngkutanSections(){
   document.getElementById('biayaLainBlock').style.display = isVendor ? 'none' : '';
   document.getElementById('nopolLabel').textContent = isVendor ? 'Nopol (armada vendor)' : 'Nopol';
   document.getElementById('sopirLabel').textContent = isVendor ? 'Nama sopir vendor' : 'Nama sopir';
+  // Organik: dropdown WAJIB pilih dari Data Armada/Driver (tidak bisa salah ketik).
+  // Vendor luar: input teks bebas seperti sebelumnya (armada/sopir vendor tidak ada di Data Armada/Driver).
+  document.getElementById('nopolOrganik').style.display = isVendor ? 'none' : '';
+  document.getElementById('nopolOrganik').required = !isVendor;
+  document.getElementById('nopolVendor').style.display = isVendor ? '' : 'none';
+  document.getElementById('nopolOrganikHint').style.display = isVendor ? 'none' : '';
+  document.getElementById('sopirOrganik').style.display = isVendor ? 'none' : '';
+  document.getElementById('sopirVendor').style.display = isVendor ? '' : 'none';
+  if(!isVendor) populateDoNopolSopirDropdowns(); // pastikan daftar selalu terbaru (mis. ada kendaraan/driver baru ditambah)
   if(isVendor){
     populateDoVendorRuteDropdown();
     document.getElementById('biayaLain').value = '';
@@ -6110,8 +6191,8 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   const fieldsData = {
     tanggal: tanggal,
     noPKB: document.getElementById('doNoPKB').value.trim(),
-    nopol: document.getElementById('nopol').value.trim(),
-    sopir: document.getElementById('sopir').value.trim(),
+    nopol: getDONopolVal(),
+    sopir: getDOSopirVal(),
     kirimBK: kirimBK,
     kirimRoll: kirimRoll,
     kirimOCC: kirimOCC,
@@ -6175,8 +6256,7 @@ function editRecordDO(id){
 
   document.getElementById('tanggal').value = rec.tanggal || '';
   document.getElementById('doNoPKB').value = rec.noPKB || '';
-  document.getElementById('nopol').value = rec.nopol || '';
-  document.getElementById('sopir').value = rec.sopir || '';
+  setDONopolSopirVal(rec.nopol || '', rec.sopir || '');
   document.getElementById('cbBK').checked = recKirimBK(rec);
   document.getElementById('cbRoll').checked = recKirimRoll(rec);
   document.getElementById('cbOCC').checked = recKirimOCC(rec);
@@ -8784,7 +8864,7 @@ function generateMargin(){
     const pendapatanArmada = doArmada.reduce((s,r) => s + (Number(r.pendapatan)||0), 0);
     const uangJalanArmada = doArmada.reduce((s,r) => s + (Number(r.uangJalan)||0), 0);
     const biayaArmada = biayaBulan.filter(m => {
-      const kd = kendaraanList.find(x => x.nopol === m.nopol);
+      const kd = kendaraanList.find(x => normNopol(x.nopol) === normNopol(m.nopol));
       return (kd ? kd.jenisArmada : 'lainnya') === key;
     }).reduce((s,m) => s + (Number(m.biaya)||0), 0);
     return {key, pendapatanArmada, uangJalanArmada, biayaArmada, laba: pendapatanArmada - uangJalanArmada - biayaArmada};
@@ -9083,6 +9163,9 @@ const DASH_ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stro
 const DASH_ICON_ALERT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>';
 const DASH_ICON_INFO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>';
 
+/* Normalisasi nopol agar perbandingan konsisten (huruf besar + tanpa spasi) -- pola yang sama dipakai di sinkronisasi Cartrack & pencarian svNopol */
+function normNopol(s){ return String(s || '').trim().toUpperCase().replace(/\s+/g,''); }
+
 /* ---- Baris 1: 5 kartu statistik utama, dibandingkan dengan bulan lalu ---- */
 function renderStatCardsV2(){
   const wrap = document.getElementById('statGrid5');
@@ -9093,12 +9176,17 @@ function renderStatCardsV2(){
   const curMaint = maintenanceList.filter(m => dashInRange(m.tanggal, p.curStart, p.curEnd));
   const prevMaint = maintenanceList.filter(m => dashInRange(m.tanggal, p.prevStart, p.prevEnd));
   const totalArmada = kendaraanList.length;
+  // PENTING: nopol di form input DO bebas ketik (tanpa datalist), jadi bisa beda huruf besar/kecil & spasi
+  // dari nopol yang terdaftar di Data Armada. Kalau dihitung mentah-mentah, jumlah nopol UNIK di DO bisa
+  // lebih banyak dari total armada terdaftar -> Utilisasi Armada bisa lewat 100%. Makanya di sini nopol
+  // dinormalisasi DAN hanya nopol yang benar-benar terdaftar di Data Armada yang dihitung.
+  const fleetNopolSet = new Set(kendaraanList.map(k => normNopol(k.nopol)).filter(Boolean));
 
   const ritaseCur = curRecords.length, ritasePrev = prevRecords.length;
   const tonaseCur = curRecords.reduce((s, r) => s + dashRecTonase(r), 0) / 1000;
   const tonasePrev = prevRecords.reduce((s, r) => s + dashRecTonase(r), 0) / 1000;
-  const utilCur = totalArmada ? (new Set(curRecords.map(r => r.nopol)).size / totalArmada * 100) : 0;
-  const utilPrev = totalArmada ? (new Set(prevRecords.map(r => r.nopol)).size / totalArmada * 100) : 0;
+  const utilCur = totalArmada ? (new Set(curRecords.map(r => normNopol(r.nopol)).filter(n => fleetNopolSet.has(n))).size / totalArmada * 100) : 0;
+  const utilPrev = totalArmada ? (new Set(prevRecords.map(r => normNopol(r.nopol)).filter(n => fleetNopolSet.has(n))).size / totalArmada * 100) : 0;
   const breakdownCur = totalArmada ? (curMaint.length / totalArmada * 100) : 0;
   const breakdownPrev = totalArmada ? (prevMaint.length / totalArmada * 100) : 0;
   const selesaiCur = curRecords.length ? (curRecords.filter(r => r.status === 'selesai').length / curRecords.length * 100) : 0;
@@ -9234,9 +9322,14 @@ function waktuLalu(iso){
   const hari = Math.floor(jam / 24);
   return `${hari} hari lalu`;
 }
-/* DO/record terakhir milik satu nopol -- sumber Driver & Rute/Tujuan (bukan dari GPS). */
+/* DO/record terakhir milik satu nopol -- sumber Driver & Rute/Tujuan (bukan dari GPS).
+   Dibandingkan pakai normNopol() (bukan `===` mentah) karena nopol di form Input DO diketik bebas
+   tanpa datalist -- kalau dibandingkan mentah-mentah, beda huruf besar/kecil atau spasi antara yang
+   diketik di DO vs yang terdaftar di Data Armada bikin Driver & Rute/Tujuan tidak ketemu (tampil "-")
+   walau kendaraan itu sebenarnya sudah punya DO. */
 function dashVehicleLatestRecord(nopol){
-  const recs = records.filter(r => r.nopol === nopol).sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
+  const target = normNopol(nopol);
+  const recs = records.filter(r => normNopol(r.nopol) === target).sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
   return recs[0] || null;
 }
 function gpsStatusBadge(status){
