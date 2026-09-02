@@ -2997,14 +2997,23 @@ function syncOdometerFromCartrack(){
 
     // CATATAN PENTING: struktur respons (nama field lokasi/status/odometer) bisa berbeda tergantung
     // versi API akun Cartrack Anda. Jalankan function ini SEKALI lewat menu "Jalankan" di Apps Script,
-    // lalu buka "Log eksekusi" / "Executions" -> lihat baris "SUKSES ambil data, contoh isi:" di bawah
-    // untuk lihat nama field yang SEBENARNYA dipakai akun Anda, lalu sesuaikan baris-baris yang dicoba
-    // (registration/latitude/longitude/address/ignition/dst di bawah ini) kalau ternyata tidak cocok.
-    Logger.log('SUKSES ambil data, contoh isi: ' + JSON.stringify(result).substring(0, 500));
+    // lalu buka "Log eksekusi" / "Executions" -> lihat baris "SUKSES ambil data, SEMUA field kendaraan
+    // pertama:" di bawah untuk lihat nama field yang SEBENARNYA dipakai akun Anda (termasuk field
+    // lokasi/koordinat/status kalau ada), lalu sesuaikan baris-baris yang dicoba (registration/
+    // latitude/longitude/address/ignition/dst di bawah ini) kalau ternyata tidak cocok.
     var vehicles = result.data || result.vehicles || result;
     if (!Array.isArray(vehicles)){
-      Logger.log('GAGAL: format data kendaraan tidak dikenali (bukan array). Cek Logger.log di atas untuk lihat struktur asli, lalu sesuaikan baris "var vehicles = ...".');
+      Logger.log('GAGAL: format data kendaraan tidak dikenali (bukan array). Isi respons: ' + JSON.stringify(result).substring(0, 800));
       return;
+    }
+    // Log SATU kendaraan LENGKAP (bukan array penuh dipotong 500 karakter seperti sebelumnya --
+    // itu kepotong di tengah objek pertama, jadi field yang muncul belakangan mis. lokasi/koordinat
+    // ikut tidak kelihatan). Juga dicetak daftar NAMA field-nya saja supaya gampang dibaca sekilas.
+    if (vehicles.length > 0){
+      Logger.log('SUKSES ambil data, total ' + vehicles.length + ' kendaraan. Daftar NAMA FIELD kendaraan pertama: ' + Object.keys(vehicles[0]).join(', '));
+      Logger.log('SUKSES ambil data, SEMUA field kendaraan pertama: ' + JSON.stringify(vehicles[0]));
+    } else {
+      Logger.log('SUKSES ambil data, tapi array kendaraan KOSONG (0 kendaraan). Isi respons: ' + JSON.stringify(result).substring(0, 800));
     }
 
     var dataMap = {};
