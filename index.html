@@ -3890,7 +3890,7 @@ function attachFirebaseListenersInner(){
       const v = currentViewName();
       if(v === 'dashboard') renderDashboard();
       const selEl = document.getElementById('setDashJenisAngkutanDefault');
-      if(selEl) selEl.value = appSettings.dashJenisAngkutanDefault || 'organik';
+      if(selEl) selEl.value = getDashJenisFilter();
     }else if(val == null){
       fbPush('appSettings', appSettings); // Firebase masih kosong (pertama kali pakai) -> unggah default lokal
     }
@@ -8969,7 +8969,11 @@ function dashRecTonase(r){
    per-pengiriman (Sisa PO, Ringkasan Pengiriman BK1/Cust Luar, Monitoring Armada/Ban, Biaya
    Operasional yang sudah membandingkan Organik vs Vendor berdampingan sendiri). */
 function getDashJenisFilter(){
-  return (appSettings && appSettings.dashJenisAngkutanDefault) || 'organik';
+  // PENTING: string kosong '' itu VALID & bermakna "Semua Angkutan" (lihat opsi value="" di
+  // #setDashJenisAngkutanDefault) -- jangan pakai `||` di sini, karena '' dianggap falsy dan akan
+  // salah jatuh ke 'organik' terus walau admin sudah sengaja memilih "Semua Angkutan".
+  if(appSettings && appSettings.dashJenisAngkutanDefault != null) return appSettings.dashJenisAngkutanDefault;
+  return 'organik';
 }
 function dashFilterRecords(recs){
   const f = getDashJenisFilter();
