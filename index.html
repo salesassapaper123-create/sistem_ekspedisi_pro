@@ -2840,6 +2840,11 @@
               </select>
               <p class="hint" style="line-height:1.6; margin-top:8px;">Menentukan basis data untuk 5 kartu statistik utama, grafik tren Ritase/Tonase, Top Kota, dan Order Terbaru di Dashboard -- berlaku untuk SEMUA akun yang membuka Dashboard, tidak bisa diganti sendiri oleh akun selain admin. Kartu lain (Sisa PO, Ringkasan Pengiriman, Monitoring Armada/Ban, Biaya Operasional) tidak mengikuti pengaturan ini karena basis datanya berbeda.</p>
             </div>
+            <div class="field" style="max-width:420px; margin-bottom:14px;">
+              <label for="setNextNoPKB">Nomor PKB berikutnya (otomatis)</label>
+              <input type="number" id="setNextNoPKB" min="1" step="1" placeholder="cth. 1421">
+              <p class="hint" style="line-height:1.6; margin-top:8px;">Nomor ini otomatis diisi ke field "No. PKB" setiap kali buka Input PKB untuk DO baru (bukan mode Edit), lalu otomatis maju +1 setiap kali DO baru berhasil disimpan -- tidak perlu diketik manual lagi. Field No. PKB di Input PKB tetap bisa diubah manual kalau sewaktu-waktu perlu lompat nomor. Ubah angka di sini kalau perlu reset/lompat nomor urutnya.</p>
+            </div>
             <div class="login-error" id="setUmumSuccess" style="text-align:left; color:var(--green-600);"></div>
             <div class="btn-row">
               <button type="button" class="btn btn-primary" id="btnSimpanSetUmum">Simpan pengaturan</button>
@@ -3982,12 +3987,15 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['appSettings']) return;
     const val = snap.val();
     if(val && typeof val === 'object'){
-      appSettings = Object.assign({ dashJenisAngkutanDefault: 'organik' }, val);
+      appSettings = Object.assign({ dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421 }, val);
       localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(appSettings));
       const v = currentViewName();
       if(v === 'dashboard') renderDashboard();
       const selEl = document.getElementById('setDashJenisAngkutanDefault');
       if(selEl) selEl.value = getDashJenisFilter();
+      const nextNoPKBEl = document.getElementById('setNextNoPKB');
+      if(nextNoPKBEl) nextNoPKBEl.value = appSettings.nextNoPKB;
+      if(v === 'input') prefillNoPKB(); // perangkat lain ubah nomor -> ikut sinkron kalau sedang buka DO baru (bukan mode edit)
     }else if(val == null){
       fbPush('appSettings', appSettings); // Firebase masih kosong (pertama kali pakai) -> unggah default lokal
     }
@@ -4199,9 +4207,11 @@ let hppAsumsi = loadHpp();
    dengan pola yang sudah ada di aplikasi ini. dashJenisAngkutanDefault menentukan Jenis Angkutan apa
    yang jadi basis kartu/tabel Dashboard yang berbasis data DO per pengiriman (lihat dashFilterRecords). */
 const APP_SETTINGS_KEY = 'ekspedisi_pro_app_settings';
+// nextNoPKB: nomor urut No. PKB berikutnya yang otomatis diisi di Input PKB (DO baru) -- default 1421
+// karena user sudah pakai nomor manual sampai 1420 (Sesi ketujuhpuluhdelapan), lihat prefillNoPKB()/bumpNextNoPKB().
 function loadAppSettings(){
-  try{ return Object.assign({ dashJenisAngkutanDefault: 'organik' }, JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)) || {}); }
-  catch(e){ return { dashJenisAngkutanDefault: 'organik' }; }
+  try{ return Object.assign({ dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421 }, JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)) || {}); }
+  catch(e){ return { dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421 }; }
 }
 function saveAppSettings(){ localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(appSettings)); fbPush('appSettings', appSettings); }
 let appSettings = loadAppSettings();
@@ -4979,7 +4989,7 @@ function goTo(view){
     jenisFilterWrap.style.display = (view === 'dashboard' && isAdminJf) ? 'inline-flex' : 'none';
   }
   if(view === 'dashboard') renderDashboard();
-  if(view === 'input'){ populateDoNoCODropdown(); populateDoNopolSopirDropdowns(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); }
+  if(view === 'input'){ populateDoNoCODropdown(); populateDoNopolSopirDropdowns(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); if(!editingId && !document.getElementById('doNoPKB').value) prefillNoPKB(); }
   if(view === 'rekap') renderTable();
   if(view === 'kendaraan') renderKendaraan();
   if(view === 'legalitas') renderLegalitas();
@@ -5021,6 +5031,8 @@ function goTo(view){
     if(adminOnlyWrap) adminOnlyWrap.style.display = isAdmin ? '' : 'none';
     const settingsTabsEl = document.getElementById('settingsTabs');
     if(settingsTabsEl) settingsTabsEl.style.display = isAdmin ? '' : 'none';
+    const nextNoPKBEl = document.getElementById('setNextNoPKB');
+    if(nextNoPKBEl) nextNoPKBEl.value = appSettings.nextNoPKB || 1421;
     setSettingsTab('profil');
     if(isAdmin) renderAccountList();
     const setUmumEl = document.getElementById('setDashJenisAngkutanDefault');
@@ -6250,6 +6262,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
       id: newId,
     }, fieldsData));
     savedRecordId = newId;
+    bumpNextNoPKB(fieldsData.noPKB); // majukan nomor PKB berikutnya (DO baru saja, bukan edit)
     showToast('Data DO berhasil disimpan', 'success');
   }
   save();
@@ -6321,6 +6334,28 @@ function editRecordDO(id){
   goTo('input');
 }
 
+/* ---------- No. PKB otomatis berurut (untuk DO BARU saja, TIDAK untuk mode Edit) ----------
+   User sudah menomori manual sampai 1420 -- appSettings.nextNoPKB (default 1421, lihat loadAppSettings())
+   dipakai sebagai nomor urut berikutnya. Field TETAP bisa diedit manual (bukan readonly) kalau user
+   perlu lompat nomor atau pakai format lain, tapi begitu DO baru berhasil disimpan, nomornya otomatis
+   maju lewat bumpNextNoPKB(). */
+function prefillNoPKB(){
+  const el = document.getElementById('doNoPKB');
+  if(el && !editingId) el.value = String(appSettings.nextNoPKB || 1421);
+}
+function bumpNextNoPKB(savedNoPKB){
+  const digits = String(savedNoPKB || '').replace(/[^\d]/g, '');
+  if(!digits) return;
+  const num = parseInt(digits, 10);
+  // cuma maju ke depan, tidak pernah mundur -- jaga-jaga kalau user sempat isi manual nomor lebih kecil
+  if(!isNaN(num) && (num + 1) > (Number(appSettings.nextNoPKB) || 0)){
+    appSettings.nextNoPKB = num + 1;
+    saveAppSettings();
+    const nextNoPKBEl = document.getElementById('setNextNoPKB');
+    if(nextNoPKBEl) nextNoPKBEl.value = appSettings.nextNoPKB;
+  }
+}
+
 function cancelEditDO(){
   editingId = null;
   document.getElementById('formDO').reset();
@@ -6330,6 +6365,7 @@ function cancelEditDO(){
   toggleAngkutanSections();
   resetJenisBarangRows([]);
   populateDoNoCODropdown('');
+  prefillNoPKB();
   document.getElementById('inputDOTitle').textContent = 'Input PKB';
   document.getElementById('btnSubmitDOLabel').textContent = 'Simpan DO';
   document.getElementById('btnCancelEdit').style.display = 'none';
@@ -6344,6 +6380,7 @@ document.getElementById('btnReset').addEventListener('click', function(){
   toggleAngkutanSections();
   resetJenisBarangRows([]);
   populateDoNoCODropdown('');
+  prefillNoPKB();
 });
 document.getElementById('btnCancelEdit').addEventListener('click', cancelEditDO);
 
@@ -9625,7 +9662,9 @@ function renderTable(){
   const fAngkutan = document.getElementById('filterAngkutan').value;
 
   // Urutan tanggal NAIK (lama -> baru) -- tanggal terbaru tampil PALING BAWAH, sesuai permintaan user.
-  let list = records.slice().sort((a,b) => (a.tanggal < b.tanggal ? -1 : 1));
+  // Pakai localeCompare (bukan perbandingan < / > manual) supaya tanggal yang PERSIS SAMA dianggap
+  // "sama" (return 0), bukan dipaksa selalu tukar posisi -- lebih stabil & jelas urutannya.
+  let list = records.slice().sort((a,b) => String(a.tanggal || '').localeCompare(String(b.tanggal || '')));
   if(fTgl) list = list.filter(r => r.tanggal === fTgl);
   else if(fBln) list = list.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
   if(fStatus) list = list.filter(r => normalizeStatus(r.status) === fStatus);
@@ -11563,6 +11602,8 @@ document.getElementById('formAddAccount').addEventListener('submit', async funct
 document.getElementById('btnSimpanSetUmum').addEventListener('click', function(){
   const val = document.getElementById('setDashJenisAngkutanDefault').value;
   appSettings.dashJenisAngkutanDefault = val;
+  const nextNoPKBRaw = parseInt(document.getElementById('setNextNoPKB').value, 10);
+  if(!isNaN(nextNoPKBRaw) && nextNoPKBRaw > 0) appSettings.nextNoPKB = nextNoPKBRaw;
   saveAppSettings();
   renderDashJenisLabel(); // kalau Dashboard sedang aktif di tab lain/perangkat lain, ikut sinkron via listener Firebase
   const okEl = document.getElementById('setUmumSuccess');
