@@ -1278,7 +1278,11 @@
                     <option value="">-- Pilih nopol --</option>
                   </select>
                   <!-- Vendor Luar: armada bukan milik sendiri, jadi TIDAK ada di Data Armada -- tetap ketik bebas seperti sebelumnya. -->
-                  <input type="text" id="nopolVendor" placeholder="cth. B 1234 XYZ" style="display:none; text-transform:uppercase;" required>
+                  <!-- "required" SENGAJA tidak ditulis statis di sini -- diatur dinamis lewat toggleAngkutanSections()
+                       (nopolVendor.required = isVendor). Field yang required TAPI disembunyikan (display:none)
+                       membuat SELURUH form gagal disubmit tanpa pesan error apa pun (browser tidak bisa fokus
+                       ke field tersembunyi -- "not focusable"), makanya harus dinamis, bukan statis. -->
+                  <input type="text" id="nopolVendor" placeholder="cth. B 1234 XYZ" style="display:none; text-transform:uppercase;">
                   <p class="hint" id="nopolOrganikHint" style="margin:6px 0 0;">Kalau nopol belum ada di daftar, tambahkan dulu lewat menu Administrasi &gt; Input Data Kendaraan.</p>
                 </div>
                 <div class="field">
@@ -5303,6 +5307,7 @@ function toggleAngkutanSections(){
   document.getElementById('nopolOrganik').style.display = isVendor ? 'none' : '';
   document.getElementById('nopolOrganik').required = !isVendor;
   document.getElementById('nopolVendor').style.display = isVendor ? '' : 'none';
+  document.getElementById('nopolVendor').required = isVendor;
   document.getElementById('nopolOrganikHint').style.display = isVendor ? 'none' : '';
   document.getElementById('sopirOrganik').style.display = isVendor ? 'none' : '';
   document.getElementById('sopirVendor').style.display = isVendor ? '' : 'none';
