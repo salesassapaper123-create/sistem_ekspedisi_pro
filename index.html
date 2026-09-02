@@ -1321,7 +1321,13 @@
                 </div>
                 <div class="field" id="uangJalanBlock">
                   <label for="uangJalan" id="uangJalanLabel">Uang jalan driver (Rp)</label>
-                  <input type="number" id="uangJalan" min="0" step="1000" placeholder="cth. 250000">
+                  <!-- Sengaja type="text" (bukan number) supaya boleh dikosongkan atau diisi "-" -- dulu
+                       type="number" + step="1000" bikin browser menolak submit form kalau nilainya bukan
+                       kelipatan 1000 pas dari 0 (mis. isi manual di luar kelipatan 1000, atau ketik "-"),
+                       muncul seolah "wajib minimal 1000". Nilai kosong / "-" / karakter non-angka lainnya
+                       dianggap 0 saat disimpan, lewat parseRupiahLoose() (fungsi yang sama dipakai di field
+                       tarif Ongkos Borongan lain). -->
+                  <input type="text" id="uangJalan" placeholder="cth. 250000 (boleh kosong atau &quot;-&quot;)">
                 </div>
                 <div class="field" id="biayaLainBlock">
                   <label for="biayaLain">Biaya lain-lain (Rp)</label>
@@ -6177,7 +6183,8 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     }
     uangJalanValRaw = Math.round(vendorTarifPerKgVal * totalTonaseBarangVal);
   }else{
-    uangJalanValRaw = document.getElementById('uangJalan').value === '' ? 0 : parseFloat(document.getElementById('uangJalan').value);
+    // parseRupiahLoose: kosong / "-" / karakter non-angka lain -> 0, digit yang ada tetap diambil.
+    uangJalanValRaw = parseRupiahLoose(document.getElementById('uangJalan').value);
     if(isFrancoVal && (!uangJalanValRaw || uangJalanValRaw <= 0)){
       errEl.textContent = 'Tarif ongkos vendor wajib diisi (pilih rute dari Ongkos Borongan, atau isi manual).';
       return;
