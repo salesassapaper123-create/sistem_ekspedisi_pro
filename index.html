@@ -1090,22 +1090,20 @@
         <!-- Pil "Periode" (bulan berjalan, khusus Dashboard) -- dinaikkan sejajar satu baris dengan
              judul halaman (bukan lagi di baris terpisah dengan jarak kosong di bawahnya); disembunyikan
              otomatis di halaman selain Dashboard lewat goTo(). -->
-        <!-- Filter "Jenis angkutan" khusus Dashboard -- default "Angkutan Organik" karena tujuan
-             utama Dashboard ini memantau armada organik sendiri, tapi tetap bisa dipindah ke
-             "Semua" atau "Vendor Luar" kapan saja. Berlaku untuk kartu/tabel yang basisnya data DO
-             per pengiriman (5 kartu statistik, grafik tren Ritase/Tonase, Top Kota, Order Terbaru)
-             -- TIDAK untuk kartu yang basisnya bukan per-pengiriman (Sisa PO, Ringkasan Pengiriman
+        <!-- Label "Jenis angkutan" khusus Dashboard -- INFORMASI SAJA (tidak bisa diklik/diganti dari
+             sini), supaya siapa pun yang buka Dashboard tetap tahu basis datanya lagi apa. Nilainya
+             diatur & disimpan HANYA oleh admin lewat Pengaturan > tab "Pengaturan Umum" (tersimpan ke
+             Firebase, berlaku sama untuk semua akun/perangkat) -- lihat appSettings.dashJenisAngkutanDefault
+             & fungsi renderDashJenisLabel(). Berlaku untuk kartu/tabel yang basisnya data DO per
+             pengiriman (5 kartu statistik, grafik tren Ritase/Tonase, Top Kota, Order Terbaru) --
+             TIDAK untuk kartu yang basisnya bukan per-pengiriman (Sisa PO, Ringkasan Pengiriman
              BK1/Cust Luar, Monitoring Armada/Ban, Biaya Operasional yang memang sudah membandingkan
              Organik vs Vendor berdampingan). -->
-        <div class="dash-period-badge" id="dashJenisFilterWrap" style="margin-right:8px;">
+        <div class="dash-period-badge" id="dashJenisFilterWrap" style="margin-right:8px;" title="Diatur admin lewat Pengaturan > Pengaturan Umum">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="15" height="10" rx="2"/><path d="M18 10h3l2 3v4h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
           <span>
             <span class="period-lbl">Jenis angkutan</span>
-            <select id="dashJenisAngkutanFilter" style="border:none; background:transparent; padding:0; font-size:13px; font-weight:700; color:var(--text); cursor:pointer; width:auto; -webkit-appearance:none; appearance:none;">
-              <option value="organik" selected>Angkutan Organik</option>
-              <option value="">Semua Angkutan</option>
-              <option value="vendor">Vendor Luar</option>
-            </select>
+            <span class="period-val" id="dashJenisAngkutanLabel">Angkutan Organik</span>
           </span>
         </div>
         <div class="dash-period-badge" id="dashPeriodBadgeWrap">
@@ -2697,6 +2695,7 @@
       <div class="view" data-view="pengaturan">
         <div class="settings-tabs" id="settingsTabs">
           <button type="button" class="settings-tab active" data-settings-tab="profil">Profil Saya</button>
+          <button type="button" class="settings-tab" data-settings-tab="umum">Pengaturan Umum</button>
           <button type="button" class="settings-tab" data-settings-tab="notif-wa">Notifikasi WA</button>
           <button type="button" class="settings-tab" data-settings-tab="setup-wa">Setup WA Otomatis</button>
           <button type="button" class="settings-tab" data-settings-tab="keamanan">Keamanan Sistem</button>
@@ -2741,6 +2740,29 @@
           </div>
         </div>
         <div id="pengaturanAdminOnly">
+        <div class="panel" data-settings-panel="umum">
+          <div class="panel-head">
+            <div>
+              <h2>Pengaturan Umum</h2>
+              <p>Pengaturan tingkat sistem yang berlaku untuk semua akun -- tersimpan ke Firebase, jadi berlaku sama di semua perangkat</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="field" style="max-width:420px; margin-bottom:14px;">
+              <label for="setDashJenisAngkutanDefault">Jenis angkutan default di Dashboard</label>
+              <select id="setDashJenisAngkutanDefault">
+                <option value="organik">Angkutan Organik</option>
+                <option value="">Semua Angkutan (Organik + Vendor Luar)</option>
+                <option value="vendor">Vendor Luar</option>
+              </select>
+              <p class="hint" style="line-height:1.6; margin-top:8px;">Menentukan basis data untuk 5 kartu statistik utama, grafik tren Ritase/Tonase, Top Kota, dan Order Terbaru di Dashboard -- berlaku untuk SEMUA akun yang membuka Dashboard, tidak bisa diganti sendiri oleh akun selain admin. Kartu lain (Sisa PO, Ringkasan Pengiriman, Monitoring Armada/Ban, Biaya Operasional) tidak mengikuti pengaturan ini karena basis datanya berbeda.</p>
+            </div>
+            <div class="login-error" id="setUmumSuccess" style="text-align:left; color:var(--green-600);"></div>
+            <div class="btn-row">
+              <button type="button" class="btn btn-primary" id="btnSimpanSetUmum">Simpan pengaturan</button>
+            </div>
+          </div>
+        </div>
         <div class="panel" data-settings-panel="notif-wa">
           <div class="panel-head">
             <div>
@@ -3849,6 +3871,26 @@ function attachFirebaseListenersInner(){
     }
   });
 
+  // Pengaturan aplikasi tingkat sistem (object tunggal, bukan array/koleksi) -- lihat catatan di
+  // definisi appSettings. Begitu admin mengubah & menyimpan lewat tab "Pengaturan Umum", perangkat
+  // lain yang sedang membuka Dashboard ikut ter-update live tanpa perlu reload.
+  fbDb.ref('appSettings').on('value', snap => {
+    if(fbPendingWrites['appSettings']) return;
+    const val = snap.val();
+    if(val && typeof val === 'object'){
+      appSettings = Object.assign({ dashJenisAngkutanDefault: 'organik' }, val);
+      localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(appSettings));
+      const v = currentViewName();
+      if(v === 'dashboard') renderDashboard();
+      const selEl = document.getElementById('setDashJenisAngkutanDefault');
+      if(selEl) selEl.value = appSettings.dashJenisAngkutanDefault || 'organik';
+    }else if(val == null){
+      fbPush('appSettings', appSettings); // Firebase masih kosong (pertama kali pakai) -> unggah default lokal
+    }
+  }, err => {
+    console.warn('Gagal membaca appSettings dari Firebase (memakai nilai lokal/default):', err);
+  });
+
   fbDb.ref('driver').on('value', snap => {
     if(fbPendingWrites['driver']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
@@ -4043,6 +4085,20 @@ const PO_KEY = 'ekspedisi_pro_po';
 let poList = loadPO();
 const HPP_KEY = 'ekspedisi_pro_hpp_asumsi';
 let hppAsumsi = loadHpp();
+/* Pengaturan aplikasi tingkat sistem (bukan per-akun) -- object tunggal, BUKAN array seperti koleksi
+   lain, disimpan di node Firebase "appSettings" (otomatis tercakup aturan $other yang sudah ada di
+   Security Rules, tidak perlu perubahan Rules). HANYA admin yang bisa mengubahnya lewat tab
+   "Pengaturan Umum" di halaman Pengaturan -- pembatasan ini murni di sisi tampilan (sama seperti
+   tab admin-only lain: Notifikasi WA, Setup WA, dst), bukan ditegakkan di Security Rules, konsisten
+   dengan pola yang sudah ada di aplikasi ini. dashJenisAngkutanDefault menentukan Jenis Angkutan apa
+   yang jadi basis kartu/tabel Dashboard yang berbasis data DO per pengiriman (lihat dashFilterRecords). */
+const APP_SETTINGS_KEY = 'ekspedisi_pro_app_settings';
+function loadAppSettings(){
+  try{ return Object.assign({ dashJenisAngkutanDefault: 'organik' }, JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)) || {}); }
+  catch(e){ return { dashJenisAngkutanDefault: 'organik' }; }
+}
+function saveAppSettings(){ localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(appSettings)); fbPush('appSettings', appSettings); }
+let appSettings = loadAppSettings();
 
 /* PENTING — perbaikan bug "tombol Hapus tidak berfungsi, data masih muncul lagi":
    Beberapa data (mis. kendaraan/driver yang diinput manual lewat Firebase Console, atau berasal dari
@@ -4856,6 +4912,10 @@ function goTo(view){
     if(settingsTabsEl) settingsTabsEl.style.display = isAdmin ? '' : 'none';
     setSettingsTab('profil');
     if(isAdmin) renderAccountList();
+    const setUmumEl = document.getElementById('setDashJenisAngkutanDefault');
+    if(setUmumEl) setUmumEl.value = getDashJenisFilter();
+    const setUmumSuccessEl = document.getElementById('setUmumSuccess');
+    if(setUmumSuccessEl) setUmumSuccessEl.textContent = '';
   }
 }
 const NAV_MODAL_OPENERS = {};
@@ -5508,7 +5568,7 @@ function applyDataInputRestrictionToNav(){
   // tampilan; Firebase Rules sendiri sudah menolak akun non-admin menulis field-field akun lain,
   // tapi tab-tab ini sebelumnya tetap kelihatan & bisa dibuka meski aksinya toh akan ditolak server.
   const admin = isAdminUser();
-  const ADMIN_ONLY_SETTINGS_TABS = ['notif-wa', 'setup-wa', 'keamanan', 'akun', 'tarif'];
+  const ADMIN_ONLY_SETTINGS_TABS = ['umum', 'notif-wa', 'setup-wa', 'keamanan', 'akun', 'tarif'];
   ADMIN_ONLY_SETTINGS_TABS.forEach(tab => {
     const btn = document.querySelector(`.settings-tab[data-settings-tab="${tab}"]`);
     if(btn) btn.style.display = admin ? '' : 'none';
@@ -8827,6 +8887,7 @@ document.getElementById('btnHppMarginGenerate').addEventListener('click', genera
 function renderDashboard(){
   renderWaLegalBanner();
   renderDashPeriodBadges();
+  renderDashJenisLabel();
   renderStatCardsV2();
   renderSisaPoOutstandingCard();
   renderPengirimanSummaryCard();
@@ -8890,24 +8951,29 @@ function dashInRange(tanggal, start, end){
 function dashRecTonase(r){
   return (Number(r.tonase1) || 0) + (Number(r.tonase2) || 0) + (Number(r.tonase3) || 0);
 }
-/* Filter "Jenis angkutan" khusus Dashboard (lihat select #dashJenisAngkutanFilter di topbar) --
-   default "organik" karena tujuan utama Dashboard ini memantau armada organik sendiri. Dipakai
-   oleh kartu/tabel yang basisnya data DO per pengiriman (statistik utama, tren, Top Kota, Order
-   Terbaru) -- TIDAK dipakai kartu yang basisnya bukan per-pengiriman (Sisa PO, Ringkasan
-   Pengiriman BK1/Cust Luar, Monitoring Armada/Ban, Biaya Operasional yang sudah membandingkan
-   Organik vs Vendor berdampingan sendiri). */
+/* Basis "Jenis angkutan" khusus Dashboard -- diatur & disimpan HANYA oleh admin lewat Pengaturan >
+   tab "Pengaturan Umum" (appSettings.dashJenisAngkutanDefault, tersimpan ke Firebase, berlaku sama
+   untuk semua akun/perangkat). Dipakai oleh kartu/tabel yang basisnya data DO per pengiriman
+   (statistik utama, tren, Top Kota, Order Terbaru) -- TIDAK dipakai kartu yang basisnya bukan
+   per-pengiriman (Sisa PO, Ringkasan Pengiriman BK1/Cust Luar, Monitoring Armada/Ban, Biaya
+   Operasional yang sudah membandingkan Organik vs Vendor berdampingan sendiri). */
 function getDashJenisFilter(){
-  const el = document.getElementById('dashJenisAngkutanFilter');
-  return el ? el.value : 'organik';
+  return (appSettings && appSettings.dashJenisAngkutanDefault) || 'organik';
 }
 function dashFilterRecords(recs){
   const f = getDashJenisFilter();
   return f ? recs.filter(r => (r.jenisAngkutan || 'organik') === f) : recs;
 }
-(function initDashJenisFilter(){
-  const el = document.getElementById('dashJenisAngkutanFilter');
-  if(el) el.addEventListener('change', renderDashboard);
-})();
+function dashJenisFilterLabel(f){
+  if(f === 'vendor') return 'Vendor Luar';
+  if(f === '') return 'Semua Angkutan';
+  return 'Angkutan Organik';
+}
+/* Label info (bukan kontrol) di topbar Dashboard -- lihat #dashJenisAngkutanLabel di HTML. */
+function renderDashJenisLabel(){
+  const el = document.getElementById('dashJenisAngkutanLabel');
+  if(el) el.textContent = dashJenisFilterLabel(getDashJenisFilter());
+}
 /* Badge naik/turun persen dibanding bulan lalu -- arah saja (naik=hijau, turun=merah),
    bukan penilaian baik/buruk (mis. Rate Perbaikan turun itu bagus, tapi tetap ditampilkan
    merah karena arahnya turun -- konsisten & mudah dibaca, tidak butuh logika berbeda per kartu). */
@@ -9058,12 +9124,17 @@ function renderAlertNotifCard(){
    maupun halaman penuh Monitoring Armada (tanpa limit). ---- */
 const DASH_ICON_PIN = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; flex-shrink:0;"><path d="M12 21s-7-5.686-7-11a7 7 0 0 1 14 0c0 5.314-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
 /* "X menit/jam/hari lalu" dari timestamp ISO -- dipakai untuk kolom Waktu Update GPS. */
-function waktuLalu(iso){
+/* Selisih waktu dalam MENIT (angka mentah, bukan teks) -- dipakai bersama oleh waktuLalu() (teks)
+   dan renderMonitoringArmadaCard() (untuk menentukan warna peringatan basi/tidaknya data GPS). */
+function waktuLaluMinutes(iso){
   if(!iso) return null;
   const then = new Date(iso).getTime();
   if(isNaN(then)) return null;
-  const diffMs = Date.now() - then;
-  const menit = Math.floor(diffMs / 60000);
+  return Math.floor((Date.now() - then) / 60000);
+}
+function waktuLalu(iso){
+  const menit = waktuLaluMinutes(iso);
+  if(menit === null) return null;
   if(menit < 1) return 'baru saja';
   if(menit < 60) return `${menit} menit lalu`;
   const jam = Math.floor(menit / 60);
@@ -9098,14 +9169,25 @@ function renderMonitoringArmadaCard(containerId, limit){
       const rec = dashVehicleLatestRecord(k.nopol);
       const driver = rec ? esc(rec.sopir || '-') : '<span style="color:var(--text-faint);">-</span>';
       const rute = rec ? tujuanList(rec) : '<span style="color:var(--text-faint);">-</span>';
+      const menit = waktuLaluMinutes(k.gpsWaktuUpdate);
       const waktu = waktuLalu(k.gpsWaktuUpdate);
+      // "Waktu Update" ini adalah jam PERANGKAT GPS di kendaraan itu SENDIRI terakhir mengirim
+      // posisi ke server Cartrack (field location.updated dari API mereka) -- BUKAN jam terakhir
+      // sinkronisasi aplikasi ini dijalankan. Kalau tetap "X jam lalu" walau baru saja sinkron manual
+      // dijalankan, itu tandanya GPS device kendaraan itu sendiri belum kirim sinyal baru ke Cartrack
+      // (mesin mati lama, tidak ada sinyal, dll) -- bukan aplikasi/sinkronisasi yang gagal. Diberi
+      // warna makin mencolok (kuning -> merah) semakin lama basinya, supaya kelihatan sekilas tanpa
+      // perlu baca teksnya, dan tooltip menjelaskan kenapa.
+      let waktuColor = 'var(--text-muted)', waktuTitle = 'Jam GPS kendaraan ini terakhir kirim posisi ke Cartrack';
+      if(menit !== null && menit >= 120){ waktuColor = 'var(--red-600)'; waktuTitle = 'GPS kendaraan ini sudah lebih dari 2 jam tidak kirim posisi baru ke Cartrack -- bukan berarti sinkronisasi aplikasi gagal, tapi perangkat GPS-nya sendiri (cek mesin/sinyal Cartrack kendaraan ini)'; }
+      else if(menit !== null && menit >= 30){ waktuColor = 'var(--amber-600)'; waktuTitle = 'GPS kendaraan ini sudah 30+ menit tidak kirim posisi baru ke Cartrack'; }
       return `<tr>
         <td><span class="plate-cell">${esc(k.nopol)}</span></td>
         <td>${driver}</td>
         <td class="sv-left">${rute}</td>
         <td>${gpsStatusBadge(k.gpsStatus)}</td>
         <td class="sv-left">${k.gpsLokasi ? esc(k.gpsLokasi) : '<span style="color:var(--text-faint);">-</span>'}</td>
-        <td>${waktu ? `<span style="color:var(--text-muted); font-size:12px; white-space:nowrap;">${DASH_ICON_PIN} ${waktu}</span>` : '<span style="color:var(--text-faint);">-</span>'}</td>
+        <td>${waktu ? `<span style="color:${waktuColor}; font-size:12px; font-weight:${menit !== null && menit >= 30 ? '700' : '400'}; white-space:nowrap;" title="${esc(waktuTitle)}">${DASH_ICON_PIN} ${waktu}</span>` : '<span style="color:var(--text-faint);">-</span>'}</td>
       </tr>`;
     }).join('')}
   </tbody></table>`;
@@ -10931,6 +11013,18 @@ document.getElementById('formAddAccount').addEventListener('submit', async funct
   }
 });
 
+// Simpan "Pengaturan Umum" (admin-only) -- lihat tab "umum" di Pengaturan & appSettings.
+// Pembatasan admin-only di sini murni tampilan (tab-nya sendiri sudah disembunyikan dari akun
+// non-admin lewat ADMIN_ONLY_SETTINGS_TABS), konsisten dengan tab admin-only lain di halaman ini.
+document.getElementById('btnSimpanSetUmum').addEventListener('click', function(){
+  const val = document.getElementById('setDashJenisAngkutanDefault').value;
+  appSettings.dashJenisAngkutanDefault = val;
+  saveAppSettings();
+  renderDashJenisLabel(); // kalau Dashboard sedang aktif di tab lain/perangkat lain, ikut sinkron via listener Firebase
+  const okEl = document.getElementById('setUmumSuccess');
+  if(okEl) okEl.textContent = 'Pengaturan berhasil disimpan.';
+  showToast('Pengaturan umum berhasil disimpan', 'success');
+});
 document.getElementById('formPassword').addEventListener('submit', async function(e){
   e.preventDefault();
   const acc = currentAccount();
