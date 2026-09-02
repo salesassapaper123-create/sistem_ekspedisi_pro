@@ -1035,6 +1035,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
             Laporan Sisa PO
           </button>
+          <button class="nav-item nav-sub" data-view="laporan-monitoring-organik">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="15" height="10" rx="2"/><path d="M18 10h3l2 3v4h-5"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="17.5" cy="17.5" r="1.5"/></svg>
+            Monitoring Organik (Nopol/Sopir)
+          </button>
         </div>
       </div>
 
@@ -2711,6 +2715,45 @@
         </div>
       </div>
 
+      <!-- LAPORAN MONITORING ORGANIK (Nopol/Sopir) -- versi periodik (tanggal bisa diatur bebas) dari
+           kartu "Monitoring Ritase & Tonase per Kendaraan" di Dashboard, supaya bisa direkap per periode
+           bebas & diekspor ke Excel/PDF/cetak, bukan cuma terpaku ke "bulan berjalan". -->
+      <div class="view" data-view="laporan-monitoring-organik">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Monitoring Organik (Nopol/Sopir)</h2>
+              <p>Rekap Ritase &amp; Tonase per kendaraan + sopir, khusus Angkutan Organik</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="flex-wrap:wrap;">
+              <div class="field">
+                <label for="monOrgDari">Dari tanggal</label>
+                <input type="date" id="monOrgDari">
+              </div>
+              <div class="field">
+                <label for="monOrgSampai">Sampai tanggal</label>
+                <input type="date" id="monOrgSampai">
+              </div>
+              <button class="btn btn-primary" id="btnMonOrgGenerate">Tampilkan laporan</button>
+              <button class="btn btn-secondary" id="btnMonOrgExportExcel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Export Excel
+              </button>
+              <button class="btn btn-secondary" id="btnMonOrgExportPdf">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Export PDF
+              </button>
+              <button class="btn btn-secondary" id="btnMonOrgPrint">Cetak</button>
+              <span class="hint" id="monOrgExportStatus" style="align-self:center;"></span>
+            </div>
+            <p class="hint" id="monOrgPeriodLabel" style="margin:0 0 10px;"></p>
+            <div id="monOrgWrap"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- PENGATURAN -->
       <div class="view" data-view="pengaturan">
         <div class="settings-tabs" id="settingsTabs">
@@ -3306,6 +3349,7 @@ function syncOdometerFromCartrack(){
                   <label class="acc-menu-chk"><input type="checkbox" data-view="biayapengeluaran"> Biaya Pengeluaran Organik</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="biayapengeluaran-vendor"> Biaya Pengeluaran Vendor Luar</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="laporan-sisapo"> Laporan Sisa PO</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="laporan-monitoring-organik"> Monitoring Organik (Nopol/Sopir)</label>
                 </div>
               </div>
               <div class="btn-row" style="justify-content:flex-end; margin-top:18px;">
@@ -4917,6 +4961,7 @@ function goTo(view){
   if(view === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
   if(view === 'monitoring-ban') renderMonitoringBan();
   if(view === 'laporan-sisapo') initLaporanSisaPoView();
+  if(view === 'laporan-monitoring-organik') initLaporanMonitoringOrganikView();
   if(view === 'pengaturan'){
     const acc = currentAccount();
     if(acc){
@@ -5538,13 +5583,13 @@ function dataInputRestrictedForCurrentUser(){
    Konsekuensinya: akun non-admin yang SUDAH ADA sebelum perubahan ini (dan belum pernah diatur lewat
    "Atur Menu") juga ikut kena default ketat ini -- admin perlu membuka "Atur Menu" sekali untuk
    masing-masing akun tsb dan memberi akses yang sesuai (bisa pakai tombol preset atau "Pilih Semua"). */
-const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo'];
+const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
 const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
-const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor'];
+const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-monitoring-organik'];
 /* Preset siap-pakai untuk tombol di modal "Atur Menu" -- cuma pengisi awal checklist, admin masih
    boleh centang/hapus centang manual sebelum menyimpan. */
 const MENU_PRESET_OWNER = LEGACY_ADMINISTRASI_VIEWS.slice(); // owner: lihat semua laporan/monitoring, tanpa form Input
-const MENU_PRESET_STAFF_INPUT = ['po', 'po-monitoring', 'borongan', 'service', 'maintenance', 'ritase', 'monitoring-armada', 'monitoring-ban', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-sisapo']; // staff input: fokus input & data master, tanpa laporan/monitoring keuangan
+const MENU_PRESET_STAFF_INPUT = ['po', 'po-monitoring', 'borongan', 'service', 'maintenance', 'ritase', 'monitoring-armada', 'monitoring-ban', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-sisapo', 'laporan-monitoring-organik']; // staff input: fokus input & data master, tanpa laporan/monitoring keuangan
 function effectiveHiddenMenus(acc){
   if(!acc || accountRole(acc) === 'admin') return new Set();
   let hidden;
@@ -9322,11 +9367,13 @@ function renderOrderTerbaruTable(){
    (r.poId -> poList) customer-nya BUKAN BK 1 (isBK1Customer() bernilai false, dimensi yang sama
    dipakai kartu Sisa PO/Ringkasan Pengiriman). DO Roll yang TIDAK terhubung PO tidak dihitung ke
    Buyer Luar (tidak ada info customer-nya), tapi Tonase Roll totalnya tetap masuk ke kolom "Tonase
-   Roll" biasa (Roll Buyer Luar adalah SUBSET dari Tonase Roll, bukan tambahan di luar itu). Periode
-   = "bulan berjalan" yang sama dipakai seluruh Dashboard (dashboardPeriodRanges()). */
-function computeMonitoringOrganikNopolSopir(){
-  const p = dashboardPeriodRanges();
-  const data = records.filter(r => dashInRange(r.tanggal, p.curStart, p.curEnd) && (r.jenisAngkutan || 'organik') === 'organik');
+   Roll" biasa (Roll Buyer Luar adalah SUBSET dari Tonase Roll, bukan tambahan di luar itu).
+   startDate/endDate: rentang tanggal DO ('tanggal', format ISO yyyy-mm-dd) yang dihitung -- kartu
+   Dashboard selalu memanggil dengan "bulan berjalan" (dashboardPeriodRanges()), sedangkan halaman
+   Laporan > "Monitoring Organik (Nopol/Sopir)" memanggil dengan rentang bebas pilihan user, supaya
+   basis perhitungannya SELALU sama persis di kedua tempat (satu fungsi, satu sumber kebenaran). */
+function computeMonitoringOrganikNopolSopir(startDate, endDate){
+  const data = records.filter(r => dashInRange(r.tanggal, startDate, endDate) && (r.jenisAngkutan || 'organik') === 'organik');
   const isRollBuyerLuar = r => {
     if(!recKirimRoll(r) || !r.poId) return false;
     const po = poList.find(x => String(x.id) === String(r.poId));
@@ -9351,20 +9398,18 @@ function computeMonitoringOrganikNopolSopir(){
     sopirRows: Object.values(ng.sopirs).sort((a,b) => a.sopir.localeCompare(b.sopir)),
   }));
 }
-function renderMonitoringOrganikTable(){
-  const wrap = document.getElementById('dashMonitoringOrganikWrap');
-  if(!wrap) return;
-  const periodLbl = document.getElementById('dashMonitoringOrganikPeriodLabel');
-  if(periodLbl) periodLbl.textContent = dashboardPeriodRanges().curLabel;
-  const groups = computeMonitoringOrganikNopolSopir();
-  if(groups.length === 0){ wrap.innerHTML = emptyState('Belum ada DO Angkutan Organik pada periode ini.'); return; }
-  const COL = { ritOcc:'#fde3d4', ritBk:'#d7ecc7', ritRoll:'#dde2f5', ton:'#fff6b0' };
+const MONORG_COL = { ritOcc:'#fde3d4', ritBk:'#d7ecc7', ritRoll:'#dde2f5', ton:'#fff6b0' };
+/* Bangun HTML tabel (dengan Nopol rowspan per sopir + baris TOTAL KIRIMAN) dari hasil
+   computeMonitoringOrganikNopolSopir() -- dipakai bersama oleh kartu Dashboard & layar Laporan >
+   "Monitoring Organik (Nopol/Sopir)" supaya tampilannya selalu identik di kedua tempat. */
+function buildMonitoringOrganikTableHtml(groups){
+  const COL = MONORG_COL;
   let bodyRows = '';
   groups.forEach(ng => {
     const rowspan = ng.sopirRows.length;
     ng.sopirRows.forEach((g, i) => {
       bodyRows += '<tr>';
-      if(i === 0) bodyRows += `<td class="sv-left" rowspan="${rowspan}" style="background:#fde3d4; vertical-align:middle;"><span class="plate-cell">${esc(ng.nopol)}</span></td>`;
+      if(i === 0) bodyRows += `<td class="sv-left" rowspan="${rowspan}" style="background:${COL.ritOcc}; vertical-align:middle;"><span class="plate-cell">${esc(ng.nopol)}</span></td>`;
       bodyRows += `
         <td class="sv-left">${esc(g.sopir)}</td>
         <td class="mono sv-num" style="background:${COL.ritOcc};">${g.ritOCC || '-'}</td>
@@ -9378,7 +9423,7 @@ function renderMonitoringOrganikTable(){
     });
   });
   const sum = fn => groups.reduce((s,ng) => s + ng.sopirRows.reduce((s2,g) => s2 + fn(g), 0), 0);
-  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:900px;">
+  return `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:900px;">
     <thead><tr>
       <th>Nopol</th><th>Sopir</th>
       <th style="background:${COL.ritOcc}; color:var(--text);">Total Ritase OCC</th>
@@ -9401,6 +9446,16 @@ function renderMonitoringOrganikTable(){
       <td class="mono sv-num">${sum(g=>g.tonRollBL).toLocaleString('id-ID')}</td>
     </tr></tfoot>
   </table></div>`;
+}
+function renderMonitoringOrganikTable(){
+  const wrap = document.getElementById('dashMonitoringOrganikWrap');
+  if(!wrap) return;
+  const p = dashboardPeriodRanges();
+  const periodLbl = document.getElementById('dashMonitoringOrganikPeriodLabel');
+  if(periodLbl) periodLbl.textContent = p.curLabel;
+  const groups = computeMonitoringOrganikNopolSopir(p.curStart, p.curEnd);
+  if(groups.length === 0){ wrap.innerHTML = emptyState('Belum ada DO Angkutan Organik pada periode ini.'); return; }
+  wrap.innerHTML = buildMonitoringOrganikTableHtml(groups);
 }
 
 /* ---- Kartu "Biaya Operasional" -- basis hitung SAMA PERSIS dengan laporan Biaya
@@ -10785,6 +10840,249 @@ function exportLaporanSisaPoPdf(){
 }
 document.getElementById('btnLapSisaPoExportPdf').addEventListener('click', exportLaporanSisaPoPdf);
 document.getElementById('btnLapSisaPoPrint').addEventListener('click', exportLaporanSisaPoPdf);
+
+/* ==================================================================================
+   LAPORAN MONITORING ORGANIK (Nopol/Sopir) — versi periodik (tanggal bebas dipilih) dari kartu
+   "Monitoring Ritase & Tonase per Kendaraan (Angkutan Organik)" di Dashboard (yang terpaku ke bulan
+   berjalan). Pakai FUNGSI PERHITUNGAN YANG SAMA PERSIS (computeMonitoringOrganikNopolSopir()) &
+   FUNGSI TAMPILAN TABEL YANG SAMA PERSIS (buildMonitoringOrganikTableHtml()) dengan kartu Dashboard,
+   supaya angkanya selalu konsisten di dua tempat -- cuma rentang tanggalnya yang beda (bebas pilih
+   di sini, vs "bulan berjalan" otomatis di Dashboard). Export Excel/PDF/Cetak memakai pola & util
+   yang sama dengan Laporan Sisa PO (makeZip/xlsxColLetter, jendela cetak window.open + print()).
+   ================================================================================== */
+function getMonitoringOrganikPeriodInfo(){
+  return getRangePeriod('monOrgDari', 'monOrgSampai');
+}
+function generateLaporanMonitoringOrganik(){
+  const period = getMonitoringOrganikPeriodInfo();
+  const labelEl = document.getElementById('monOrgPeriodLabel');
+  const wrap = document.getElementById('monOrgWrap');
+  if(!period){
+    if(labelEl) labelEl.textContent = '';
+    wrap.innerHTML = emptyState('Pilih periode terlebih dahulu.');
+    return;
+  }
+  if(labelEl) labelEl.innerHTML = `Periode: <b>${esc(period.label)}</b>`;
+  const groups = computeMonitoringOrganikNopolSopir(period.startDate, period.endDate);
+  if(groups.length === 0){
+    wrap.innerHTML = emptyState('Tidak ada DO Angkutan Organik pada periode ini.');
+    return;
+  }
+  wrap.innerHTML = buildMonitoringOrganikTableHtml(groups);
+}
+function initLaporanMonitoringOrganikView(){
+  defaultThisMonthRange('monOrgDari', 'monOrgSampai');
+  generateLaporanMonitoringOrganik();
+}
+document.getElementById('btnMonOrgGenerate').addEventListener('click', generateLaporanMonitoringOrganik);
+
+function getMonitoringOrganikDataForExport(){
+  const period = getMonitoringOrganikPeriodInfo();
+  if(!period){ alert('Pilih periode terlebih dahulu.'); return null; }
+  const groups = computeMonitoringOrganikNopolSopir(period.startDate, period.endDate);
+  if(groups.length === 0){ alert('Tidak ada data DO Angkutan Organik untuk diexport pada periode ini.'); return null; }
+  const slug = period.startDate === period.endDate ? period.startDate : `${period.startDate}_sd_${period.endDate}`;
+  return { period: Object.assign({}, period, { slug }), groups };
+}
+
+/* ---- Export Excel (.xlsx) -- satu sheet, satu baris per Nopol+Sopir (tanpa merge sel, supaya
+   gampang dipakai lagi untuk olah data/pivot lanjutan di Excel), + baris TOTAL KIRIMAN dengan rumus
+   SUM hidup. Pakai util ZIP & style (XS/LAPORAN_XLSX_STYLES_XML) yang SAMA dengan Rekap Ritase per
+   Nopol -- style-nya generik (judul/subjudul/header/sel/total), tidak perlu style baru. ---- */
+const MONORG_XLSX_HEADERS = ['Nopol','Sopir','Ritase OCC','Ritase BK','Ritase Roll Buyer Luar','Tonase OCC (Kg)','Tonase BK (Kg)','Tonase Roll (Kg)','Tonase Roll Buyer Luar (Kg)'];
+const MONORG_XLSX_WIDTHS = [12,14,11,11,18,14,14,14,20];
+function buildMonitoringOrganikSheetXml(periodLabel, groups){
+  const flatRows = [];
+  groups.forEach(ng => ng.sopirRows.forEach(g => flatRows.push(Object.assign({ nopol: ng.nopol }, g))));
+  const nCols = MONORG_XLSX_HEADERS.length;
+  const headerRowIdx = 4;
+  const firstDataRow = headerRowIdx + 1;
+  const lastDataRow = firstDataRow + flatRows.length - 1;
+  const totalRowIdx = lastDataRow + 1;
+
+  let rowsXml = '';
+  rowsXml += `<row r="1"><c r="A1" t="inlineStr" s="${XS.TITLE}"><is><t>${esc('MONITORING RITASE & TONASE PER KENDARAAN (ANGKUTAN ORGANIK)')}</t></is></c></row>`;
+  rowsXml += `<row r="2"><c r="A2" t="inlineStr" s="${XS.SUB}"><is><t>${esc('Periode: ' + periodLabel)}</t></is></c></row>`;
+  rowsXml += `<row r="3"></row>`;
+  let headerCells = '';
+  MONORG_XLSX_HEADERS.forEach((h,i) => { headerCells += `<c r="${xlsxColLetter(i+1)}${headerRowIdx}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
+  rowsXml += `<row r="${headerRowIdx}">${headerCells}</row>`;
+
+  flatRows.forEach((g, i) => {
+    const rowIdx = firstDataRow + i;
+    const alt = i % 2 === 1;
+    const sText = alt ? XS.CELL_ALT : XS.CELL;
+    const sNum = alt ? XS.NUM_ALT : XS.NUM;
+    let cells = '';
+    cells += `<c r="A${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(g.nopol)}</t></is></c>`;
+    cells += `<c r="B${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(g.sopir)}</t></is></c>`;
+    cells += `<c r="C${rowIdx}" s="${sNum}"><v>${g.ritOCC}</v></c>`;
+    cells += `<c r="D${rowIdx}" s="${sNum}"><v>${g.ritBK}</v></c>`;
+    cells += `<c r="E${rowIdx}" s="${sNum}"><v>${g.ritRollBL}</v></c>`;
+    cells += `<c r="F${rowIdx}" s="${sNum}"><v>${g.tonOCC}</v></c>`;
+    cells += `<c r="G${rowIdx}" s="${sNum}"><v>${g.tonBK}</v></c>`;
+    cells += `<c r="H${rowIdx}" s="${sNum}"><v>${g.tonRoll}</v></c>`;
+    cells += `<c r="I${rowIdx}" s="${sNum}"><v>${g.tonRollBL}</v></c>`;
+    rowsXml += `<row r="${rowIdx}">${cells}</row>`;
+  });
+
+  const sum = field => flatRows.reduce((s,g) => s + g[field], 0);
+  let totalCells = `<c r="A${totalRowIdx}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>TOTAL KIRIMAN</t></is></c>`;
+  totalCells += `<c r="B${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="C${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(C${firstDataRow}:C${lastDataRow})</f><v>${sum('ritOCC')}</v></c>`;
+  totalCells += `<c r="D${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(D${firstDataRow}:D${lastDataRow})</f><v>${sum('ritBK')}</v></c>`;
+  totalCells += `<c r="E${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(E${firstDataRow}:E${lastDataRow})</f><v>${sum('ritRollBL')}</v></c>`;
+  totalCells += `<c r="F${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(F${firstDataRow}:F${lastDataRow})</f><v>${sum('tonOCC')}</v></c>`;
+  totalCells += `<c r="G${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(G${firstDataRow}:G${lastDataRow})</f><v>${sum('tonBK')}</v></c>`;
+  totalCells += `<c r="H${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(H${firstDataRow}:H${lastDataRow})</f><v>${sum('tonRoll')}</v></c>`;
+  totalCells += `<c r="I${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(I${firstDataRow}:I${lastDataRow})</f><v>${sum('tonRollBL')}</v></c>`;
+  rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
+
+  const colsXml = MONORG_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const dimensionRef = `A1:${xlsxColLetter(nCols)}${totalRowIdx}`;
+  const lastCol = xlsxColLetter(nCols);
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="${dimensionRef}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colsXml}</cols>
+<sheetData>${rowsXml}</sheetData>
+<mergeCells count="2"><mergeCell ref="A1:${lastCol}1"/><mergeCell ref="A2:${lastCol}2"/></mergeCells>
+</worksheet>`;
+}
+function exportMonitoringOrganikExcel(){
+  const ready = getMonitoringOrganikDataForExport();
+  if(!ready) return;
+  const { period, groups } = ready;
+  const statusEl = document.getElementById('monOrgExportStatus');
+  if(statusEl) statusEl.textContent = 'Menyiapkan file Excel...';
+  try{
+    const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+    const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+    const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Monitoring Organik" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+    const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+    const sheetXml = buildMonitoringOrganikSheetXml(period.label, groups);
+
+    const zipBytes = makeZip([
+      { name: '[Content_Types].xml', data: contentTypesXml },
+      { name: '_rels/.rels', data: rootRelsXml },
+      { name: 'xl/workbook.xml', data: workbookXml },
+      { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
+      { name: 'xl/styles.xml', data: LAPORAN_XLSX_STYLES_XML },
+      { name: 'xl/worksheets/sheet1.xml', data: sheetXml },
+    ]);
+
+    const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `monitoring_organik_${period.slug}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Laporan Monitoring Organik (Excel) berhasil diunduh', 'success');
+  }catch(err){
+    alert('Gagal membuat file Excel: ' + err.message);
+  }finally{
+    if(statusEl) statusEl.textContent = '';
+  }
+}
+document.getElementById('btnMonOrgExportExcel').addEventListener('click', exportMonitoringOrganikExcel);
+
+/* ---- Export PDF / Cetak -- sama seperti Laporan Sisa PO: buka jendela cetak berisi tabel rapi
+   (Nopol rowspan per sopir + baris TOTAL KIRIMAN, warna kolom sama seperti tampilan layar & kartu
+   Dashboard), lalu pakai fitur "Simpan sebagai PDF" bawaan browser saat mencetak. ---- */
+function buildMonitoringOrganikPrintHtml(periodLabel, groups){
+  const COL = MONORG_COL;
+  const cellStyle = bg => `background:${bg} !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;`;
+  let bodyHtml = '';
+  groups.forEach(ng => {
+    const rowspan = ng.sopirRows.length;
+    ng.sopirRows.forEach((g, i) => {
+      bodyHtml += '<tr>';
+      if(i === 0) bodyHtml += `<td rowspan="${rowspan}" style="${cellStyle(COL.ritOcc)} vertical-align:middle; font-weight:700;">${esc(ng.nopol)}</td>`;
+      bodyHtml += `
+        <td>${esc(g.sopir)}</td>
+        <td style="text-align:right; ${cellStyle(COL.ritOcc)}">${g.ritOCC || '-'}</td>
+        <td style="text-align:right; ${cellStyle(COL.ritBk)}">${g.ritBK || '-'}</td>
+        <td style="text-align:right; ${cellStyle(COL.ritRoll)}">${g.ritRollBL || '-'}</td>
+        <td style="text-align:right; ${cellStyle(COL.ton)}">${g.tonOCC ? g.tonOCC.toLocaleString('id-ID') : '-'}</td>
+        <td style="text-align:right; ${cellStyle(COL.ton)}">${g.tonBK ? g.tonBK.toLocaleString('id-ID') : '-'}</td>
+        <td style="text-align:right; ${cellStyle(COL.ton)}">${g.tonRoll ? g.tonRoll.toLocaleString('id-ID') : '-'}</td>
+        <td style="text-align:right; ${cellStyle(COL.ton)}">${g.tonRollBL ? g.tonRollBL.toLocaleString('id-ID') : '-'}</td>`;
+      bodyHtml += '</tr>';
+    });
+  });
+  const sum = fn => groups.reduce((s,ng) => s + ng.sopirRows.reduce((s2,g) => s2 + fn(g), 0), 0);
+  const footHtml = `<tr style="font-weight:700; ${cellStyle('#e5f0da')}">
+    <td colspan="2" style="text-align:center;">TOTAL KIRIMAN</td>
+    <td style="text-align:right;">${sum(g=>g.ritOCC)}</td>
+    <td style="text-align:right;">${sum(g=>g.ritBK)}</td>
+    <td style="text-align:right;">${sum(g=>g.ritRollBL)}</td>
+    <td style="text-align:right;">${sum(g=>g.tonOCC).toLocaleString('id-ID')}</td>
+    <td style="text-align:right;">${sum(g=>g.tonBK).toLocaleString('id-ID')}</td>
+    <td style="text-align:right;">${sum(g=>g.tonRoll).toLocaleString('id-ID')}</td>
+    <td style="text-align:right;">${sum(g=>g.tonRollBL).toLocaleString('id-ID')}</td>
+  </tr>`;
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Monitoring Organik - ${esc(periodLabel)}</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm 10mm; }
+  *{ box-sizing:border-box; }
+  body{ font-family: Arial, Helvetica, sans-serif; color:#1a1f29; margin:0; padding:0; }
+  h1{ font-size:18px; margin:0 0 2px; color:#1B2A4A; }
+  .sub{ font-size:11px; color:#5b6472; margin:0 0 14px; font-style:italic; }
+  table{ width:100%; border-collapse:collapse; font-size:10px; margin-bottom:6px; }
+  th, td{ border:1px solid #333; padding:6px 7px; text-align:left; }
+  th{ background:#1B2A4A !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; color:#fff; text-transform:uppercase; font-size:9px; letter-spacing:.03em; }
+</style>
+</head><body>
+  <h1>Monitoring Ritase &amp; Tonase per Kendaraan (Angkutan Organik)</h1>
+  <p class="sub">Periode: ${esc(periodLabel)}</p>
+  <table>
+    <thead><tr>
+      <th>Nopol</th><th>Sopir</th><th>Ritase OCC</th><th>Ritase BK</th><th>Ritase Roll Buyer Luar</th><th>Tonase OCC (Kg)</th><th>Tonase BK (Kg)</th><th>Tonase Roll (Kg)</th><th>Tonase Roll Buyer Luar (Kg)</th>
+    </tr></thead>
+    <tbody>${bodyHtml}${footHtml}</tbody>
+  </table>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 250); };<\/script>
+</body></html>`;
+}
+function exportMonitoringOrganikPdf(){
+  const ready = getMonitoringOrganikDataForExport();
+  if(!ready) return;
+  const { period, groups } = ready;
+  const html = buildMonitoringOrganikPrintHtml(period.label, groups);
+  const win = window.open('', '_blank');
+  if(!win){
+    alert('Popup diblokir oleh browser. Izinkan pop-up untuk halaman ini, lalu coba lagi — jendela cetak akan terbuka dengan pilihan "Simpan sebagai PDF".');
+    return;
+  }
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+  showToast('Jendela cetak dibuka — pilih tujuan "Simpan sebagai PDF" untuk mengunduh, atau langsung Cetak', 'success');
+}
+document.getElementById('btnMonOrgExportPdf').addEventListener('click', exportMonitoringOrganikPdf);
+document.getElementById('btnMonOrgPrint').addEventListener('click', exportMonitoringOrganikPdf);
 
 /* ---------- LOGIN / AUTH (Firebase Authentication Email/Password, maks 5 akun) ---------- (Sesi ketigapuluhtujuh) */
 const ACCOUNTS_KEY = 'ekspedisi_pro_accounts_legacy'; // cache lokal node 'accounts' LAMA -- baca-saja, cuma untuk pencocokan migrasi
