@@ -10696,15 +10696,16 @@ function generateBiayaPengeluaran(){
     uWrap.innerHTML = emptyState('Tidak ada data uang jalan driver / biaya lain-lain pada periode ini.');
   }else{
     const sorted2 = doWithUangJalan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
-    uWrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya lain-lain</th></tr></thead><tbody>${sorted2.map(r => `
+    uWrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Driver</th><th>Rute</th><th>Uang Jalan</th><th>Biaya lain-lain</th></tr></thead><tbody>${sorted2.map(r => `
       <tr>
         <td>${fmtDate(r.tanggal)}</td>
         <td><span class="plate-cell">${esc(r.nopol)}</span></td>
         <td class="sv-left">${esc(r.sopir || '-')}</td>
+        <td class="sv-left">${tujuanList(r)}</td>
         <td class="mono sv-num">${rupiah(Number(r.uangJalan) || 0)}</td>
         <td class="mono sv-num">${rupiah(Number(r.biayaLain) || 0)}</td>
       </tr>`).join('')}</tbody>
-      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="3" class="sv-left">TOTAL</td><td class="mono sv-num">${rupiah(totalUangJalan)}</td><td class="mono sv-num">${rupiah(totalBiayaLain)}</td></tr></tfoot></table>`;
+      <tfoot><tr style="font-weight:700; background:#fafbfc;"><td colspan="4" class="sv-left">TOTAL</td><td class="mono sv-num">${rupiah(totalUangJalan)}</td><td class="mono sv-num">${rupiah(totalBiayaLain)}</td></tr></tfoot></table>`;
   }
 }
 function initBiayaPengeluaranView(){
