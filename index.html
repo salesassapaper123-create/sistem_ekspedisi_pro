@@ -947,6 +947,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
             Monitoring Sisa PO
           </button>
+          <!-- Sesi kesembilanpuluhdua: menu baru "Rekap Pengiriman ke Cust" -->
+          <button class="nav-item nav-sub" data-view="rekap-pengiriman-cust">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+            Rekap Pengiriman ke Cust
+          </button>
         </div>
       </div>
 
@@ -1770,6 +1775,35 @@
           </div>
           <div class="panel-body">
             <div id="poMonitoringTableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REKAP PENGIRIMAN KE CUSTOMER (Sesi kesembilanpuluhdua) -- daftar DO yang terkait ke suatu PO
+           (No PO), dikelompokkan per Customer (nama customer dari PO tsb), dengan kolom Tgl Pengiriman,
+           No PO, Ukuran, Tonase per baris. Filter periode berdasarkan tanggal DO (tanggal pengiriman),
+           auto tampil ulang begitu diganti (pola sama dengan filter periode di Konfirmasi PO). -->
+      <div class="view" data-view="rekap-pengiriman-cust">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Rekap pengiriman ke customer</h2>
+              <p>Daftar pengiriman (DO) yang terkait ke suatu PO, dikelompokkan per Customer</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="margin-bottom:16px;">
+              <div class="field">
+                <label>Filter tanggal</label>
+                <input type="date" id="rpcFilterTanggal">
+              </div>
+              <div class="field">
+                <label>Filter bulan</label>
+                <input type="month" id="rpcFilterBulan">
+              </div>
+              <button class="btn btn-secondary" id="btnRpcClearFilter">Reset filter</button>
+            </div>
+            <div id="rekapPengirimanCustWrap"></div>
           </div>
         </div>
       </div>
@@ -3428,6 +3462,7 @@ function syncOdometerFromCartrack(){
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px; margin-top:14px;">PO</div>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="po"> Konfirmasi PO</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="po-monitoring"> Monitoring Sisa PO</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="rekap-pengiriman-cust"> Rekap Pengiriman ke Cust</label>
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px; margin-top:14px;">Ekspedisi</div>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="rekap"> Rekap Data DO</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="borongan"> Ongkos Borongan</label>
@@ -3966,6 +4001,7 @@ function attachFirebaseListenersInner(){
       if(v === 'dashboard') renderDashboard();
       if(v === 'peringatan') renderPeringatan();
       if(v === 'po-monitoring') renderPOMonitoring(); // tonase terkirim/sisa dihitung dari data DO, jadi ikut refresh saat DO berubah
+      if(v === 'rekap-pengiriman-cust') renderRekapPengirimanCust();
       if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap'); // Driver/Rute di Monitoring Armada ikut ambil dari DO terbaru
       if(v === 'input') updateDoNoCOHint();
       updatePeringatanBadge();
@@ -3982,6 +4018,7 @@ function attachFirebaseListenersInner(){
         if(v === 'dashboard') renderDashboard();
         if(v === 'peringatan') renderPeringatan();
         if(v === 'po-monitoring') renderPOMonitoring();
+        if(v === 'rekap-pengiriman-cust') renderRekapPengirimanCust();
         if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
         if(v === 'input') updateDoNoCOHint();
         updatePeringatanBadge();
@@ -4000,6 +4037,7 @@ function attachFirebaseListenersInner(){
       if(v === 'dashboard') renderDashboard();
       if(v === 'peringatan') renderPeringatan();
       if(v === 'po-monitoring') renderPOMonitoring();
+      if(v === 'rekap-pengiriman-cust') renderRekapPengirimanCust();
       if(v === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
       updatePeringatanBadge();
     }
@@ -4232,6 +4270,7 @@ function attachFirebaseListenersInner(){
       const v = currentViewName();
       if(v === 'po') renderPO();
       if(v === 'po-monitoring') renderPOMonitoring();
+      if(v === 'rekap-pengiriman-cust') renderRekapPengirimanCust();
       if(v === 'input') populateDoNoCODropdown();
       updatePoBadge();
       updatePeringatanBadge();
@@ -4244,6 +4283,7 @@ function attachFirebaseListenersInner(){
         const v = currentViewName();
         if(v === 'po') renderPO();
         if(v === 'po-monitoring') renderPOMonitoring();
+        if(v === 'rekap-pengiriman-cust') renderRekapPengirimanCust();
         if(v === 'input') populateDoNoCODropdown();
         updatePoBadge();
         updatePeringatanBadge();
@@ -5027,7 +5067,7 @@ function updateUserTopbarInfo(acc){
   if(roleLbl) roleLbl.textContent = accountRole(acc) === 'admin' ? 'Admin' : 'Staf';
 }
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada', 'monitoring-ban':'Monitoring Ban'};
+const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'rekap-pengiriman-cust':'Rekap Pengiriman ke Customer', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada', 'monitoring-ban':'Monitoring Ban'};
 /* Subjudul kecil di bawah judul halaman (topbar) -- murni visual/deskriptif, mengikuti foto
    referensi dashboard "Accurate Expedition" yang menaruh satu baris ringkasan di bawah tiap judul
    halaman. View yang tidak terdaftar di sini cukup tidak menampilkan subjudul (elemennya kosong). */
@@ -5035,6 +5075,7 @@ const subtitles = {
   dashboard:'Ringkasan performa operasional ekspedisi', input:'Input data pengiriman & buat PKB baru',
   rekap:'Rekap seluruh data DO yang sudah diinput', 'po-input':'Input SO baru & upload dokumen PO customer',
   po:'Daftar PO masuk & status konfirmasinya', 'po-monitoring':'Pantau sisa tonase PO yang sudah dikonfirmasi',
+  'rekap-pengiriman-cust':'Rekap pengiriman per customer, dikelompokkan per nama customer',
   borongan:'Rekap ongkos kirim borongan vendor luar', service:'Jadwal & status service berkala armada',
   maintenance:'Riwayat & status perbaikan armada', ritase:'Rekap ritase per kendaraan',
   kendaraan:'Daftar seluruh armada terdaftar', 'kendaraan-input':'Tambahkan data armada baru',
@@ -5085,6 +5126,7 @@ function goTo(view){
   if(view === 'borongan') renderBoronganTables();
   if(view === 'po') renderPO();
   if(view === 'po-monitoring') renderPOMonitoring();
+  if(view === 'rekap-pengiriman-cust') renderRekapPengirimanCust();
   if(view === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
   if(view === 'monitoring-ban') renderMonitoringBan();
   if(view === 'laporan-sisapo') initLaporanSisaPoView();
@@ -5789,9 +5831,9 @@ function dataInputRestrictedForCurrentUser(){
    Konsekuensinya: akun non-admin yang SUDAH ADA sebelum perubahan ini (dan belum pernah diatur lewat
    "Atur Menu") juga ikut kena default ketat ini -- admin perlu membuka "Atur Menu" sekali untuk
    masing-masing akun tsb dan memberi akses yang sesuai (bisa pakai tombol preset atau "Pilih Semua"). */
-const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
+const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','rekap-pengiriman-cust','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
 const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
-const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-monitoring-organik'];
+const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'rekap-pengiriman-cust', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-monitoring-organik'];
 /* Preset siap-pakai untuk tombol di modal "Atur Menu" -- cuma pengisi awal checklist, admin masih
    boleh centang/hapus centang manual sebelum menyimpan. */
 const MENU_PRESET_OWNER = LEGACY_ADMINISTRASI_VIEWS.slice(); // owner: lihat semua laporan/monitoring, tanpa form Input
@@ -8051,6 +8093,72 @@ function computePOTerpakai(po, excludeRecordId){
 }
 function computePOSisa(po, excludeRecordId){
   return (Number(po.tonase)||0) - computePOTerpakai(po, excludeRecordId);
+}
+
+/* ---------- REKAP PENGIRIMAN KE CUSTOMER (Sesi kesembilanpuluhdua) — menu baru di grup PO ----------
+   Daftar setiap DO yang terkait ke suatu PO (r.poId terisi), diambil datanya (No PO, Ukuran, Customer)
+   dari PO terkait, dikelompokkan per nama Customer (mirip pola rowspan-per-grup yang sudah dipakai di
+   Ritase per Nopol / Monitoring Organik). DO yang TIDAK terkait PO (poId kosong) tidak dihitung ke sini
+   karena kolom "No PO" tidak akan ada isinya. Tidak difilter status pengiriman (sama seperti
+   computePOTerpakai — DO dihitung begitu tersimpan, apapun status pengirimannya saat ini), HANYA
+   difilter periode tanggal DO (tanggal pengiriman) kalau diisi. */
+function computeRekapPengirimanCust(fTgl, fBln){
+  const data = records.filter(r => {
+    if(!r.poId) return false;
+    if(fTgl) return r.tanggal === fTgl;
+    if(fBln) return r.tanggal && r.tanggal.startsWith(fBln);
+    return true;
+  });
+  const byCust = {};
+  data.forEach(r => {
+    const po = poList.find(p => String(p.id) === String(r.poId));
+    const custKey = (po && po.namaCustomer) ? po.namaCustomer : '(PO tidak ditemukan)';
+    if(!byCust[custKey]) byCust[custKey] = { customer: custKey, rows: [] };
+    byCust[custKey].rows.push({
+      tanggal: r.tanggal,
+      noPO: po ? (po.noPO || '-') : '-',
+      ukuran: po ? (po.ukuran || '-') : '-',
+      tonase: recTotalTonase(r),
+    });
+  });
+  return Object.values(byCust).sort((a,b) => a.customer.localeCompare(b.customer)).map(g => Object.assign({}, g, {
+    rows: g.rows.slice().sort((a,b) => String(a.tanggal||'').localeCompare(String(b.tanggal||''))),
+  }));
+}
+function buildRekapPengirimanCustTableHtml(groups){
+  let bodyRows = '';
+  groups.forEach(g => {
+    const rowspan = g.rows.length;
+    g.rows.forEach((row, i) => {
+      bodyRows += '<tr>';
+      if(i === 0) bodyRows += `<td class="sv-left" rowspan="${rowspan}" style="vertical-align:middle; font-weight:600;">${esc(g.customer)}</td>`;
+      bodyRows += `
+        <td>${fmtDate(row.tanggal)}</td>
+        <td class="mono">${esc(row.noPO)}</td>
+        <td>${esc(row.ukuran)}</td>
+        <td class="mono sv-num">${row.tonase ? Number(row.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>`;
+      bodyRows += '</tr>';
+    });
+  });
+  const grandTotal = groups.reduce((s,g) => s + g.rows.reduce((s2,row) => s2 + row.tonase, 0), 0);
+  const totalKiriman = groups.reduce((s,g) => s + g.rows.length, 0);
+  return `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:700px;">
+    <thead><tr><th>Customer</th><th>Tgl Pengiriman</th><th>No PO</th><th>Ukuran</th><th>Tonase</th></tr></thead>
+    <tbody>${bodyRows}</tbody>
+    <tfoot><tr style="font-weight:700; background:#fafbfc;">
+      <td colspan="4" class="sv-left">TOTAL (${totalKiriman} pengiriman)</td>
+      <td class="mono sv-num">${grandTotal.toLocaleString('id-ID')} kg</td>
+    </tr></tfoot>
+  </table></div>`;
+}
+function renderRekapPengirimanCust(){
+  const wrap = document.getElementById('rekapPengirimanCustWrap');
+  if(!wrap) return;
+  const fTgl = document.getElementById('rpcFilterTanggal') ? document.getElementById('rpcFilterTanggal').value : '';
+  const fBln = document.getElementById('rpcFilterBulan') ? document.getElementById('rpcFilterBulan').value : '';
+  const groups = computeRekapPengirimanCust(fTgl, fBln);
+  if(groups.length === 0){ wrap.innerHTML = emptyState('Belum ada pengiriman (DO) yang terkait PO pada periode ini.'); return; }
+  wrap.innerHTML = buildRekapPengirimanCustTableHtml(groups);
 }
 /* Isi ulang dropdown "PO terkait (No CO)" di form Input DO — hanya PO yang sudah Dikonfirmasi (ACC)
    yang bisa dipilih. selectedPoId dipakai saat membuka form dalam mode edit DO. */
@@ -11929,6 +12037,18 @@ if(btnPoClearFilter) btnPoClearFilter.addEventListener('click', function(){
   if(poFilterTanggalEl) poFilterTanggalEl.value = '';
   if(poFilterBulanEl) poFilterBulanEl.value = '';
   renderPO();
+});
+/* Filter periode di Rekap Pengiriman ke Customer (Sesi kesembilanpuluhdua) -- pola sama persis
+   dengan filter periode di Konfirmasi PO di atas. */
+const rpcFilterTanggalEl = document.getElementById('rpcFilterTanggal');
+const rpcFilterBulanEl = document.getElementById('rpcFilterBulan');
+const btnRpcClearFilter = document.getElementById('btnRpcClearFilter');
+if(rpcFilterTanggalEl) rpcFilterTanggalEl.addEventListener('change', function(){ if(this.value && rpcFilterBulanEl) rpcFilterBulanEl.value=''; renderRekapPengirimanCust(); });
+if(rpcFilterBulanEl) rpcFilterBulanEl.addEventListener('change', function(){ if(this.value && rpcFilterTanggalEl) rpcFilterTanggalEl.value=''; renderRekapPengirimanCust(); });
+if(btnRpcClearFilter) btnRpcClearFilter.addEventListener('click', function(){
+  if(rpcFilterTanggalEl) rpcFilterTanggalEl.value = '';
+  if(rpcFilterBulanEl) rpcFilterBulanEl.value = '';
+  renderRekapPengirimanCust();
 });
 
 document.getElementById('btnShowAddAccount').addEventListener('click', function(){
