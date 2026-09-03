@@ -1178,7 +1178,10 @@
             <div class="dash-card-body"><div id="dashSisaPoWrap"></div></div>
           </div>
           <div class="dash-card">
-            <div class="dash-card-head"><h3>Ringkasan Pengiriman</h3></div>
+            <div class="dash-card-head">
+              <h3>Ringkasan Pengiriman</h3>
+              <a href="javascript:void(0)" class="dash-lihat-semua" data-goto="rekap-pengiriman-cust">Lihat Semua</a>
+            </div>
             <div class="dash-card-body"><div id="dashPengirimanWrap"></div></div>
           </div>
           <div class="dash-card">
@@ -3956,12 +3959,45 @@ async function provisionAccountRecord(uid, email, nama){
    di-clear SENDIRI oleh handler ini persis saat ia melihat transisi "user=null" yang sedang ditunggu
    -- bukan oleh kode register secara langsung -- supaya selalu benar terlepas dari urutan asli. */
 let suppressAuthStateHandler = false;
+
+/* ---- Auto-logout otomatis setelah 8 jam sejak login (permintaan keamanan user) ----
+   Basisnya WAKTU LOGIN, bukan waktu tidak aktif (idle) -- jadi tetap logout otomatis persis 8 jam
+   sejak masuk meskipun user terus aktif memakai sistem. Timestamp login disimpan di localStorage
+   (bukan cuma variabel di memori) supaya tetap dihitung dengan benar walau halaman di-refresh atau
+   tab ditutup-buka lagi -- kalau ternyata pas dibuka lagi sudah lewat 8 jam, langsung logout tanpa
+   sempat menampilkan app. Selama app terbuka, dicek berkala tiap 1 menit oleh
+   startSessionTimeoutWatcher() supaya tetap ke-logout otomatis walau tab dibiarkan terbuka lama
+   tanpa di-refresh. */
+const SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000; // 8 jam
+const SESSION_LOGIN_TS_KEY = 'ekspedisi_pro_login_ts';
+const SESSION_EXPIRED_MSG = 'Sesi login sudah lebih dari 8 jam -- demi keamanan, silakan masuk kembali.';
+let sessionExpiredMsgPending = false;
+let sessionTimeoutWatcherStarted = false;
+function startSessionTimeoutWatcher(){
+  if(sessionTimeoutWatcherStarted) return;
+  sessionTimeoutWatcherStarted = true;
+  setInterval(() => {
+    const ts = Number(localStorage.getItem(SESSION_LOGIN_TS_KEY));
+    if(!ts || isNaN(ts)) return; // tidak sedang login (mis. sudah logout duluan) -- tidak ada yang perlu dicek
+    if(Date.now() - ts >= SESSION_TIMEOUT_MS){
+      sessionExpiredMsgPending = true;
+      firebase.auth().signOut().catch(() => {}); // memicu onAuthStateChanged(null) -> ditangani cabang !user di handleAuthStateChange
+    }
+  }, 60 * 1000); // cek tiap 1 menit -- cukup responsif, tidak membebani
+}
+
 async function handleAuthStateChange(user){
   if(suppressAuthStateHandler){
     if(!user) suppressAuthStateHandler = false; // konsumsi transisi logout yang kita picu sendiri di alur register, lalu berhenti menekan
     return;
   }
-  if(!user){ showLogin(); return; }
+  if(!user){
+    localStorage.removeItem(SESSION_LOGIN_TS_KEY);
+    const msg = sessionExpiredMsgPending ? SESSION_EXPIRED_MSG : undefined;
+    sessionExpiredMsgPending = false;
+    showLogin(msg);
+    return;
+  }
   await accountsV2LoadedPromise;
   const rec = accountsByUid[user.uid];
   if(!rec || rec.approved !== true){
@@ -3976,6 +4012,19 @@ async function handleAuthStateChange(user){
       : 'Sesi login tidak valid lagi, silakan masuk kembali.');
     return;
   }
+  // Cek/aktifkan sesi 8 jam -- lihat komentar startSessionTimeoutWatcher() di atas.
+  const existingLoginTs = Number(localStorage.getItem(SESSION_LOGIN_TS_KEY));
+  if(!existingLoginTs || isNaN(existingLoginTs)){
+    localStorage.setItem(SESSION_LOGIN_TS_KEY, String(Date.now())); // login baru -- mulai hitung dari sekarang
+  }else if(Date.now() - existingLoginTs >= SESSION_TIMEOUT_MS){
+    // Sesi lama (mis. tab dibiarkan terbuka semalaman lalu di-refresh) ternyata sudah lewat 8 jam --
+    // langsung logout, jangan sempat menampilkan app dulu.
+    localStorage.removeItem(SESSION_LOGIN_TS_KEY);
+    sessionExpiredMsgPending = true;
+    await firebase.auth().signOut();
+    return;
+  }
+  startSessionTimeoutWatcher();
   showApp();
 }
 
@@ -9619,7 +9668,7 @@ function renderPengirimanSummaryCard(){
       <div class="dash-mini-row" style="justify-content:space-between;"><span class="dash-mini-row-lbl">Hasil Pengiriman -- BK 1 (${bk1PO.length} PO)</span></div>
       <div class="dash-mini-num" style="font-size:19px;">${bk1Ton.toLocaleString('id-ID', { maximumFractionDigits: 1 })} Ton</div>
     </div>
-    <button type="button" class="btn btn-secondary" data-goto="po-monitoring" style="width:100%; justify-content:center; margin-top:12px;">Lihat Detail &rarr;</button>
+    <button type="button" class="btn btn-secondary" data-goto="rekap-pengiriman-cust" style="width:100%; justify-content:center; margin-top:12px;">Lihat Detail &rarr;</button>
   `;
 }
 
