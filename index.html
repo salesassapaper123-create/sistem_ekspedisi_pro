@@ -1801,6 +1801,12 @@
                 <label>Filter bulan</label>
                 <input type="month" id="rpcFilterBulan">
               </div>
+              <div class="field">
+                <label>Customer</label>
+                <select id="rpcFilterCustomer" style="min-width:200px;">
+                  <option value="">Semua Customer</option>
+                </select>
+              </div>
               <button class="btn btn-secondary" id="btnRpcClearFilter">Reset filter</button>
             </div>
             <div id="rekapPengirimanCustWrap"></div>
@@ -8095,69 +8101,108 @@ function computePOSisa(po, excludeRecordId){
   return (Number(po.tonase)||0) - computePOTerpakai(po, excludeRecordId);
 }
 
-/* ---------- REKAP PENGIRIMAN KE CUSTOMER (Sesi kesembilanpuluhdua) — menu baru di grup PO ----------
-   Daftar setiap DO yang terkait ke suatu PO (r.poId terisi), diambil datanya (No PO, Ukuran, Customer)
-   dari PO terkait, dikelompokkan per nama Customer (mirip pola rowspan-per-grup yang sudah dipakai di
-   Ritase per Nopol / Monitoring Organik). DO yang TIDAK terkait PO (poId kosong) tidak dihitung ke sini
-   karena kolom "No PO" tidak akan ada isinya. Tidak difilter status pengiriman (sama seperti
-   computePOTerpakai — DO dihitung begitu tersimpan, apapun status pengirimannya saat ini), HANYA
-   difilter periode tanggal DO (tanggal pengiriman) kalau diisi. */
-function computeRekapPengirimanCust(fTgl, fBln){
+/* ---------- REKAP PENGIRIMAN KE CUSTOMER (Sesi kesembilanpuluhdua, kolom Jumlah Roll +
+   dropdown Customer di Sesi kesembilanpuluhtiga) — menu baru di grup PO ----------
+   Daftar setiap DO yang terkait ke suatu PO (r.poId terisi), diambil datanya (No PO, Customer) dari
+   PO terkait, dikelompokkan per nama Customer (rowspan, mirip pola Ritase per Nopol / Monitoring
+   Organik). DO yang TIDAK terkait PO (poId kosong) tidak dihitung ke sini karena kolom "No PO" tidak
+   akan ada isinya. Tidak difilter status pengiriman (sama seperti computePOTerpakai — DO dihitung
+   begitu tersimpan, apapun status pengirimannya saat ini), HANYA difilter periode tanggal DO (tanggal
+   pengiriman) & customer kalau diisi.
+   Kolom Ukuran & Jumlah Roll SEKARANG per baris barang (item), bukan cuma teks "Ukuran" polos dari PO
+   -- diambil dari rincian "Jenis Barang" DO (r.jenisBarangDetail: {nama, jumlahRoll, tonase} per
+   baris, dipakai juga di Input PKB & cetak PKB — satu sumber kebenaran). Satu DO bisa jadi beberapa
+   baris (1 per jenis barang/ukuran), dengan Tgl Pengiriman & No PO di-rowspan supaya tidak berulang.
+   Kalau rincian tonase per barang TIDAK lengkap (data lama/legacy, sebelum fitur Jumlah Roll ada) --
+   fallback ke 1 baris memakai Ukuran dari PO & tonase total DO, supaya total tidak salah hitung. */
+function computeRekapPengirimanCust(fTgl, fBln, fCust){
   const data = records.filter(r => {
     if(!r.poId) return false;
-    if(fTgl) return r.tanggal === fTgl;
-    if(fBln) return r.tanggal && r.tanggal.startsWith(fBln);
+    if(fTgl && r.tanggal !== fTgl) return false;
+    if(fBln && (!r.tanggal || !r.tanggal.startsWith(fBln))) return false;
     return true;
   });
   const byCust = {};
   data.forEach(r => {
     const po = poList.find(p => String(p.id) === String(r.poId));
     const custKey = (po && po.namaCustomer) ? po.namaCustomer : '(PO tidak ditemukan)';
-    if(!byCust[custKey]) byCust[custKey] = { customer: custKey, rows: [] };
-    byCust[custKey].rows.push({
-      tanggal: r.tanggal,
-      noPO: po ? (po.noPO || '-') : '-',
-      ukuran: po ? (po.ukuran || '-') : '-',
-      tonase: recTotalTonase(r),
-    });
+    if(fCust && custKey !== fCust) return;
+    if(!byCust[custKey]) byCust[custKey] = { customer: custKey, shipments: [] };
+    /* Fallback berjenjang sama persis dengan yang dipakai buildPkbHtml (lihat komentar di sana):
+       jenisBarangDetail (format terbaru, ada jumlahRoll) -> jenisBarangList (nama saja, format lama)
+       -> jenisBarang (string tunggal, format paling lama). */
+    const barangDetailVal = (r.jenisBarangDetail && r.jenisBarangDetail.length)
+      ? r.jenisBarangDetail
+      : ((r.jenisBarangList && r.jenisBarangList.length) ? r.jenisBarangList.map(nama => ({nama, jumlahRoll:null, tonase:null})) : (r.jenisBarang ? [{nama:r.jenisBarang, jumlahRoll:null, tonase:null}] : []));
+    const itemsTonaseLengkap = barangDetailVal.length > 0 && barangDetailVal.every(it => it.tonase !== null && it.tonase !== undefined && it.tonase !== '' && Number(it.tonase) > 0);
+    let items;
+    if(itemsTonaseLengkap){
+      items = barangDetailVal.map(it => ({ ukuran: it.nama || (po ? po.ukuran : '-') || '-', jumlahRoll: (it.jumlahRoll !== null && it.jumlahRoll !== undefined && it.jumlahRoll !== '' && Number(it.jumlahRoll) > 0) ? Number(it.jumlahRoll) : null, tonase: Number(it.tonase) }));
+    }else{
+      // Data lama/tidak lengkap per-item -- tetap 1 baris per DO supaya total tonase tidak salah, tapi jumlah roll (kalau kebetulan ada) tetap dijumlahkan.
+      const totalRollFallback = barangDetailVal.reduce((s,it) => s + (Number(it.jumlahRoll)||0), 0);
+      items = [{ ukuran: po ? (po.ukuran || '-') : '-', jumlahRoll: totalRollFallback > 0 ? totalRollFallback : null, tonase: recTotalTonase(r) }];
+    }
+    byCust[custKey].shipments.push({ tanggal: r.tanggal, noPO: po ? (po.noPO || '-') : '-', items });
   });
   return Object.values(byCust).sort((a,b) => a.customer.localeCompare(b.customer)).map(g => Object.assign({}, g, {
-    rows: g.rows.slice().sort((a,b) => String(a.tanggal||'').localeCompare(String(b.tanggal||''))),
+    shipments: g.shipments.slice().sort((a,b) => String(a.tanggal||'').localeCompare(String(b.tanggal||''))),
   }));
 }
 function buildRekapPengirimanCustTableHtml(groups){
   let bodyRows = '';
   groups.forEach(g => {
-    const rowspan = g.rows.length;
-    g.rows.forEach((row, i) => {
-      bodyRows += '<tr>';
-      if(i === 0) bodyRows += `<td class="sv-left" rowspan="${rowspan}" style="vertical-align:middle; font-weight:600;">${esc(g.customer)}</td>`;
-      bodyRows += `
-        <td>${fmtDate(row.tanggal)}</td>
-        <td class="mono">${esc(row.noPO)}</td>
-        <td>${esc(row.ukuran)}</td>
-        <td class="mono sv-num">${row.tonase ? Number(row.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>`;
-      bodyRows += '</tr>';
+    const custRowspan = g.shipments.reduce((s,sh) => s + sh.items.length, 0);
+    let custFirst = true;
+    g.shipments.forEach(sh => {
+      const shRowspan = sh.items.length;
+      sh.items.forEach((item, i) => {
+        bodyRows += '<tr>';
+        if(custFirst){ bodyRows += `<td class="sv-left" rowspan="${custRowspan}" style="vertical-align:middle; font-weight:600;">${esc(g.customer)}</td>`; custFirst = false; }
+        if(i === 0) bodyRows += `<td rowspan="${shRowspan}" style="vertical-align:middle;">${fmtDate(sh.tanggal)}</td><td class="mono" rowspan="${shRowspan}" style="vertical-align:middle;">${esc(sh.noPO)}</td>`;
+        bodyRows += `
+          <td>${esc(item.ukuran)}</td>
+          <td class="mono sv-num">${item.jumlahRoll ? Number(item.jumlahRoll).toLocaleString('id-ID') + ' roll' : '-'}</td>
+          <td class="mono sv-num">${item.tonase ? Number(item.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>`;
+        bodyRows += '</tr>';
+      });
     });
   });
-  const grandTotal = groups.reduce((s,g) => s + g.rows.reduce((s2,row) => s2 + row.tonase, 0), 0);
-  const totalKiriman = groups.reduce((s,g) => s + g.rows.length, 0);
-  return `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:700px;">
-    <thead><tr><th>Customer</th><th>Tgl Pengiriman</th><th>No PO</th><th>Ukuran</th><th>Tonase</th></tr></thead>
+  const grandTotalTonase = groups.reduce((s,g) => s + g.shipments.reduce((s2,sh) => s2 + sh.items.reduce((s3,it) => s3 + it.tonase, 0), 0), 0);
+  const grandTotalRoll = groups.reduce((s,g) => s + g.shipments.reduce((s2,sh) => s2 + sh.items.reduce((s3,it) => s3 + (Number(it.jumlahRoll)||0), 0), 0), 0);
+  const totalKiriman = groups.reduce((s,g) => s + g.shipments.length, 0);
+  return `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:820px;">
+    <thead><tr><th>Customer</th><th>Tgl Pengiriman</th><th>No PO</th><th>Ukuran</th><th>Jumlah Roll</th><th>Tonase</th></tr></thead>
     <tbody>${bodyRows}</tbody>
     <tfoot><tr style="font-weight:700; background:#fafbfc;">
       <td colspan="4" class="sv-left">TOTAL (${totalKiriman} pengiriman)</td>
-      <td class="mono sv-num">${grandTotal.toLocaleString('id-ID')} kg</td>
+      <td class="mono sv-num">${grandTotalRoll ? grandTotalRoll.toLocaleString('id-ID') + ' roll' : '-'}</td>
+      <td class="mono sv-num">${grandTotalTonase.toLocaleString('id-ID')} kg</td>
     </tr></tfoot>
   </table></div>`;
+}
+/* Isi ulang dropdown "Filter Customer" -- daftar customer diambil dari SELURUH pengiriman yang
+   terkait PO (tidak ikut kena filter tanggal/bulan yang sedang aktif), supaya pilihan customer di
+   dropdown tidak "menghilang-hilang" saat filter periode diganti. Pilihan yang sedang aktif tetap
+   dipertahankan kalau masih ada di daftar. */
+function populateRpcCustomerDropdown(){
+  const sel = document.getElementById('rpcFilterCustomer');
+  if(!sel) return;
+  const want = sel.value;
+  const allGroups = computeRekapPengirimanCust('', '', '');
+  const custNames = allGroups.map(g => g.customer);
+  sel.innerHTML = '<option value="">Semua Customer</option>' + custNames.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  sel.value = custNames.includes(want) ? want : '';
 }
 function renderRekapPengirimanCust(){
   const wrap = document.getElementById('rekapPengirimanCustWrap');
   if(!wrap) return;
+  populateRpcCustomerDropdown();
   const fTgl = document.getElementById('rpcFilterTanggal') ? document.getElementById('rpcFilterTanggal').value : '';
   const fBln = document.getElementById('rpcFilterBulan') ? document.getElementById('rpcFilterBulan').value : '';
-  const groups = computeRekapPengirimanCust(fTgl, fBln);
-  if(groups.length === 0){ wrap.innerHTML = emptyState('Belum ada pengiriman (DO) yang terkait PO pada periode ini.'); return; }
+  const fCust = document.getElementById('rpcFilterCustomer') ? document.getElementById('rpcFilterCustomer').value : '';
+  const groups = computeRekapPengirimanCust(fTgl, fBln, fCust);
+  if(groups.length === 0){ wrap.innerHTML = emptyState('Belum ada pengiriman (DO) yang terkait PO pada periode/customer ini.'); return; }
   wrap.innerHTML = buildRekapPengirimanCustTableHtml(groups);
 }
 /* Isi ulang dropdown "PO terkait (No CO)" di form Input DO — hanya PO yang sudah Dikonfirmasi (ACC)
@@ -12042,12 +12087,15 @@ if(btnPoClearFilter) btnPoClearFilter.addEventListener('click', function(){
    dengan filter periode di Konfirmasi PO di atas. */
 const rpcFilterTanggalEl = document.getElementById('rpcFilterTanggal');
 const rpcFilterBulanEl = document.getElementById('rpcFilterBulan');
+const rpcFilterCustomerEl = document.getElementById('rpcFilterCustomer');
 const btnRpcClearFilter = document.getElementById('btnRpcClearFilter');
 if(rpcFilterTanggalEl) rpcFilterTanggalEl.addEventListener('change', function(){ if(this.value && rpcFilterBulanEl) rpcFilterBulanEl.value=''; renderRekapPengirimanCust(); });
 if(rpcFilterBulanEl) rpcFilterBulanEl.addEventListener('change', function(){ if(this.value && rpcFilterTanggalEl) rpcFilterTanggalEl.value=''; renderRekapPengirimanCust(); });
+if(rpcFilterCustomerEl) rpcFilterCustomerEl.addEventListener('change', function(){ renderRekapPengirimanCust(); });
 if(btnRpcClearFilter) btnRpcClearFilter.addEventListener('click', function(){
   if(rpcFilterTanggalEl) rpcFilterTanggalEl.value = '';
   if(rpcFilterBulanEl) rpcFilterBulanEl.value = '';
+  if(rpcFilterCustomerEl) rpcFilterCustomerEl.value = '';
   renderRekapPengirimanCust();
 });
 
