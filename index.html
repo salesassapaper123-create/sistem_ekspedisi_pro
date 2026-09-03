@@ -1720,6 +1720,20 @@
             </button>
           </div>
           <div class="panel-body">
+            <!-- Sesi kesembilanpuluhsatu: filter periode (berdasarkan Tgl CO), sama pola dengan filter
+                 tanggal/bulan di Rekap Data DO -- auto tampil ulang begitu diganti, tidak perlu tombol
+                 "Tampilkan" karena tabel PO ini memang selalu tampil semua (bukan halaman laporan). -->
+            <div class="toolbar" style="margin-bottom:16px;">
+              <div class="field">
+                <label>Filter tanggal</label>
+                <input type="date" id="poFilterTanggal">
+              </div>
+              <div class="field">
+                <label>Filter bulan</label>
+                <input type="month" id="poFilterBulan">
+              </div>
+              <button class="btn btn-secondary" id="btnPoClearFilter">Reset filter</button>
+            </div>
             <div id="poImportWrap" style="display:none; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--border);">
               <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:8px;">
                 <div style="min-width:240px;">
@@ -8139,13 +8153,32 @@ function renderPO(){
     wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Administrasi &gt; Input SO &amp; Upload PO.');
     return;
   }
-  const sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
-  /* Total tonase masuk = jumlah semua tonase PO yang tercatat di daftar ini (semua status) */
+  /* Sesi kesembilanpuluhsatu: filter periode (berdasarkan Tgl CO) -- pola sama dengan filter
+     tanggal/bulan di Rekap Data DO (saling meniadakan, langsung filter ulang tanpa tombol). */
+  const poFTgl = document.getElementById('poFilterTanggal') ? document.getElementById('poFilterTanggal').value : '';
+  const poFBln = document.getElementById('poFilterBulan') ? document.getElementById('poFilterBulan').value : '';
+  let sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
+  if(poFTgl) sorted = sorted.filter(p => p.tanggalCO === poFTgl);
+  else if(poFBln) sorted = sorted.filter(p => p.tanggalCO && p.tanggalCO.startsWith(poFBln));
+  if(sorted.length === 0){
+    wrap.innerHTML = emptyState('Tidak ada SO/PO pada periode yang dipilih.');
+    return;
+  }
+  /* Total tonase masuk = jumlah semua tonase PO yang tercatat di daftar ini (semua status, sesuai filter periode) */
   const totalTonaseMasuk = sorted.reduce((sum,p) => sum + (Number(p.tonase)||0), 0);
+  /* Sesi kesembilanpuluhsatu: kolom "Total Pengiriman" & "Sisa PO" (dihitung live dari computePOTerpakai/
+     computePOSisa, sama fungsinya yang sudah dipakai dropdown "PO terkait" di form Input DO) -- MENGGANTIKAN
+     kolom lama "Sisa Tidak Terkirim" (yang dulu cuma terisi untuk PO berstatus Ditutup, sekarang nilainya
+     selalu tampil live untuk semua PO). Khusus admin, sesuai permintaan user -- staff yang cuma berhak
+     konfirmasi PO (bisaKonfirmasi tapi bukan admin) TIDAK melihat 2 kolom ini sama sekali. */
+  let totalPengirimanSum = 0, totalSisaSum = 0;
   wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
-      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase</th><th>Harga</th><th>Status PO</th><th>Foto PO</th><th>Status</th><th>Sisa Tidak Terkirim</th><th></th>
+      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase</th>${admin ? '<th>Total Pengiriman</th><th>Sisa PO</th>' : ''}<th>Harga</th><th>Status PO</th><th>Foto PO</th><th>Status</th><th></th>
     </tr></thead><tbody>${sorted.map(p => {
       const sisaPO = computePOSisa(p);
+      const terpakai = computePOTerpakai(p);
+      totalPengirimanSum += terpakai;
+      totalSisaSum += sisaPO;
       const poHabis = p.status === 'dikonfirmasi' && p.tonase && sisaPO <= 0;
       const closed = !!p.closed;
       return `
@@ -8158,11 +8191,12 @@ function renderPO(){
         <td>${esc(p.gsm || '-')}</td>
         <td>${esc(p.ukuran || '-')}</td>
         <td class="sv-num">${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        ${admin ? `<td class="sv-num">${terpakai ? Number(terpakai).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num" style="${sisaPO < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? Number(sisaPO).toLocaleString('id-ID') + ' kg' : '-'}</td>` : ''}
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
         <td>${p.statusKirim ? esc(p.statusKirim) : '-'}</td>
         <td>${p.fotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
         <td>${poStatusBadge(p.status || 'menunggu')}${poHabis ? `<div style="margin-top:4px;"><span class="badge badge-done"><span class="badge-dot"></span>PO Habis</span></div>` : ''}${closed ? `<div style="margin-top:4px;"><span class="badge badge-legal-warn"><span class="badge-dot"></span>Ditutup</span></div>` : ''}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
-        <td class="sv-num" style="${closed && sisaPO > 0 ? 'color:#c0392b; font-weight:700;' : ''}">${closed ? (sisaPO > 0 ? Number(sisaPO).toLocaleString('id-ID') + ' kg' : '0 kg (habis)') : '-'}</td>
         <td class="row-actions">
           ${(admin || bisaKonfirmasi) ? `
             <button type="button" class="icon-btn edit po-edit" data-id="${p.id}" title="Edit data PO">
@@ -8191,7 +8225,8 @@ function renderPO(){
     }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
       <td colspan="7" class="sv-left">TOTAL TONASE MASUK</td>
       <td class="sv-num">${totalTonaseMasuk.toLocaleString('id-ID')} kg</td>
-      <td colspan="6"></td>
+      ${admin ? `<td class="sv-num">${totalPengirimanSum.toLocaleString('id-ID')} kg</td><td class="sv-num">${totalSisaSum.toLocaleString('id-ID')} kg</td>` : ''}
+      <td colspan="5"></td>
     </tr></tfoot></table></div>`;
 
   wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', function(){
@@ -11881,6 +11916,19 @@ if(btnHapusSemuaPO) btnHapusSemuaPO.addEventListener('click', function(){
       showToast('Semua data Konfirmasi PO berhasil dihapus', 'danger');
     }
   }
+});
+/* Filter periode (Tgl CO) di Konfirmasi PO (Sesi kesembilanpuluhsatu) -- isi salah satu otomatis
+   mengosongkan yang lain (tanggal spesifik vs sebulan penuh saling meniadakan), sama pola dengan
+   filter tanggal/bulan di Rekap Data DO. Langsung filter ulang tabel, tidak perlu tombol "Tampilkan". */
+const poFilterTanggalEl = document.getElementById('poFilterTanggal');
+const poFilterBulanEl = document.getElementById('poFilterBulan');
+const btnPoClearFilter = document.getElementById('btnPoClearFilter');
+if(poFilterTanggalEl) poFilterTanggalEl.addEventListener('change', function(){ if(this.value && poFilterBulanEl) poFilterBulanEl.value=''; renderPO(); });
+if(poFilterBulanEl) poFilterBulanEl.addEventListener('change', function(){ if(this.value && poFilterTanggalEl) poFilterTanggalEl.value=''; renderPO(); });
+if(btnPoClearFilter) btnPoClearFilter.addEventListener('click', function(){
+  if(poFilterTanggalEl) poFilterTanggalEl.value = '';
+  if(poFilterBulanEl) poFilterBulanEl.value = '';
+  renderPO();
 });
 
 document.getElementById('btnShowAddAccount').addEventListener('click', function(){
