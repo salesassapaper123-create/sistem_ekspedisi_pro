@@ -2119,6 +2119,12 @@
           <div class="panel-head">
             <div>
               <h2>Ritase per nopol (rekap)</h2>
+              <!-- Sesi kedelapanpuluhsembilan: isi halaman ini diganti total dari rekap per-Nopol
+                   semua jenis angkutan (dengan Pendapatan & hapus-per-nopol) menjadi tabel Monitoring
+                   Angkutan Organik per Nopol+Sopir yang sama persis dengan kartu Dashboard "Monitoring
+                   Ritase & Tonase per Kendaraan (Angkutan Organik)" -- atas permintaan user, memakai
+                   rentang tanggal bebas pilihan sendiri (bukan cuma bulan berjalan). -->
+              <p>Khusus Angkutan Organik, dipecah per Nopol &amp; Sopir (Ritase &amp; Tonase OCC/BK/Roll) &mdash; format sama dengan kartu Dashboard, untuk rentang tanggal bebas</p>
             </div>
           </div>
           <div class="panel-body">
@@ -10341,27 +10347,24 @@ function defaultThisMonthRange(fromId, toId){
   toEl.value = iso(now);
 }
 
-/* ---------- RITASE PER NOPOL (REKAP) — Monitoring ---------- */
+/* ---------- RITASE PER NOPOL (REKAP) — Monitoring ----------
+   Sesi kedelapanpuluhsembilan: isinya diganti total (permintaan user) dari rekap per-Nopol lama
+   (buildRekapNopolTable -- semua jenis angkutan, ada Pendapatan & tombol hapus per nopol) menjadi
+   tabel Monitoring Angkutan Organik per Nopol+Sopir (computeMonitoringOrganikNopolSopir +
+   buildMonitoringOrganikTableHtml) yang sama persis dengan kartu Dashboard "Monitoring Ritase &
+   Tonase per Kendaraan (Angkutan Organik)" dan halaman Laporan > "Monitoring Organik
+   (Nopol/Sopir)" -- satu fungsi/sumber kebenaran yang sama dipakai di 3 tempat, bedanya cuma
+   rentang tanggalnya: kartu Dashboard = bulan berjalan, halaman ini & Laporan = bebas pilih sendiri.
+   Kolom Total Pendapatan (Rp) & tombol hapus-per-nopol yang dulu ada di halaman ini SUDAH TIDAK ADA
+   lagi di format baru ini (dikonfirmasi ke user sebelum diganti). */
 function generateRitase(){
   const period = getRangePeriod('ritaseDari', 'ritaseSampai');
   const wrap = document.getElementById('ritaseWrap');
   if(!wrap) return;
   if(!period){ wrap.innerHTML = emptyState('Pilih periode terlebih dahulu.'); return; }
-  const data = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate);
-  if(data.length === 0){ wrap.innerHTML = emptyState('Tidak ada data DO pada periode ini.'); return; }
-  const admin = isAdminUser();
-  wrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>` + buildRekapNopolTable(data, { allowDelete: admin });
-  if(admin){
-    wrap.querySelectorAll('.rekap-nopol-del').forEach(btn => btn.addEventListener('click', function(){
-      const nopol = this.dataset.nopol;
-      if(confirm(`Hapus SEMUA data DO nopol ${nopol} pada periode ${period.label}? Tindakan ini tidak bisa dibatalkan.`)){
-        records = records.filter(r => !(r.nopol === nopol && r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate));
-        save();
-        generateRitase();
-        showToast(`Semua data DO nopol ${nopol} pada periode ini berhasil dihapus`, 'danger');
-      }
-    }));
-  }
+  const groups = computeMonitoringOrganikNopolSopir(period.startDate, period.endDate);
+  if(groups.length === 0){ wrap.innerHTML = emptyState('Belum ada DO Angkutan Organik pada periode ini.'); return; }
+  wrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Periode: <b>${esc(period.label)}</b></p>` + buildMonitoringOrganikTableHtml(groups);
 }
 function initRitaseView(){
   defaultThisMonthRange('ritaseDari', 'ritaseSampai');
