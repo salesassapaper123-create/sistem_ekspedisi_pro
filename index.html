@@ -78,10 +78,11 @@
   }
   .brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px; border-bottom:1px solid var(--navy-700); margin-bottom:14px;}
   .brand-mark{
-    /* Sesi kedelapanpuluhenam: latar putih (bukan lagi kotak biru polos) supaya logo LINTAS asli
-       (dominan navy/biru) tetap kontras jelas di atas sidebar yang gelap. */
-    width:34px; height:34px; border-radius:9px; background:#fff;
-    display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:4px;
+    /* Sesi kedelapanpuluhtujuh: ganti ke varian logo putih/silver (dirancang untuk latar gelap) --
+       jadi latar kotak TIDAK perlu putih lagi (dulu supaya logo navy kontras di sidebar gelap).
+       Sekarang transparan, menyatu langsung dengan latar sidebar (--navy-900). */
+    width:34px; height:34px; border-radius:9px; background:transparent;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:2px;
   }
   .brand-mark svg{width:19px; height:19px; stroke:#fff;}
   .brand-name{color:#fff; font-weight:700; font-size:15px; letter-spacing:.01em;}
@@ -189,9 +190,10 @@
     box-shadow:0 8px 20px rgba(47,128,198,.45);
   }
   .login-mark svg{width:24px; height:24px;}
-  /* Logo LINTAS asli (Sesi kedelapanpuluhenam) -- menggantikan .login-mark (kotak ikon truk generik) +
-     <h1> teks "LINTAS" polos. Filter drop-shadow tipis putih supaya logo (dominan biru tua/terang)
-     tetap kelihatan jelas kontras di atas kartu login yang gelap/transparan. */
+  /* Logo LINTAS asli (Sesi kedelapanpuluhenam, diganti varian putih/silver di Sesi kedelapanpuluhtujuh)
+     -- menggantikan .login-mark (kotak ikon truk generik) + <h1> teks "LINTAS" polos. Filter
+     drop-shadow gelap supaya tepi logo (dominan putih/silver) tetap kelihatan jelas & tidak
+     "menyatu" dengan foto latar / kartu login yang gelap-transparan. */
   .login-logo-img{display:block; width:100%; max-width:230px; height:auto; margin:0 auto 10px;
     filter:drop-shadow(0 2px 10px rgba(0,0,0,.35));}
   .login-card h1{font-size:19px; margin:0 0 4px; color:#fff; letter-spacing:.01em;}
@@ -833,7 +835,10 @@
   <div class="login-scrim"></div>
   <div class="login-card" id="loginCard">
     <img src="./logo-lintas-wordmark.png" alt="LINTAS - Lingga Integrated Transport Administration System" class="login-logo-img">
-    <p class="login-slogan">Lingga Integrated Transport Administration System</p>
+    <!-- Sesi kedelapanpuluhtujuh: <p class="login-slogan"> teks "Lingga Integrated Transport
+         Administration System" dihapus dari sini -- sekarang REDUNDAN karena logo baru (varian
+         putih/silver) sudah menampilkan sendiri tulisan "lingga" + tagline "Integrated Transport
+         Administration System" di dalam gambarnya. -->
     <p id="authSubtitle">Masuk untuk mengakses sistem</p>
 
     <div class="auth-tabs">
