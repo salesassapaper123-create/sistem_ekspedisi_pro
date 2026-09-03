@@ -7,12 +7,12 @@
    di cache). File index.html sendiri dicoba ambil dari INTERNET dulu tiap kali dibuka (supaya selalu
    dapat versi kode terbaru begitu diupload ulang); cache cuma dipakai sebagai cadangan kalau memang
    sedang offline. */
-const CACHE_NAME = 'lintas-shell-v2';
+const CACHE_NAME = 'lintas-shell-v3';
 const SHELL_FILES = [
   './index.html',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png',
+  './icon192.png',
+  './icon512.png',
 ];
 
 self.addEventListener('install', (event) => {

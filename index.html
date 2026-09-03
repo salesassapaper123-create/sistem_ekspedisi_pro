@@ -12,8 +12,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LINTAS">
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<link rel="apple-touch-icon" href="./appletouchicon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -834,7 +834,7 @@
 <div class="login-screen" id="loginScreen">
   <div class="login-scrim"></div>
   <div class="login-card" id="loginCard">
-    <img src="./logo-lintas-wordmark.png" alt="LINTAS - Lingga Integrated Transport Administration System" class="login-logo-img">
+    <img src="./logolintaswordmark.png" alt="LINTAS - Lingga Integrated Transport Administration System" class="login-logo-img">
     <!-- Sesi kedelapanpuluhtujuh: <p class="login-slogan"> teks "Lingga Integrated Transport
          Administration System" dihapus dari sini -- sekarang REDUNDAN karena logo baru (varian
          putih/silver) sudah menampilkan sendiri tulisan "lingga" + tagline "Integrated Transport
@@ -914,7 +914,7 @@
     </button>
     <div class="brand">
       <div class="brand-mark">
-        <img src="./brand-mark.png" alt="LINTAS" style="width:100%; height:100%; object-fit:contain;">
+        <img src="./brandmark.png" alt="LINTAS" style="width:100%; height:100%; object-fit:contain;">
       </div>
       <div>
         <div class="brand-name">LINTAS</div>
@@ -11987,14 +11987,15 @@ document.getElementById('btnLogout').addEventListener('click', function(){
 if(!fbDb){ showLogin(); }
 </script>
 <script>
-/* Registrasi Service Worker (Sesi kedelapanpuluhempat) -- terpisah dari script utama di atas SENGAJA,
-   supaya bagian ini tetap jalan berdiri sendiri apapun yang terjadi di app utama. Kalau file
-   service-worker.js belum sempat diupload/gagal dimuat (mis. dibuka dari file lokal, bukan lewat
+/* Registrasi Service Worker (Sesi kedelapanpuluhempat; nama file diganti ke "serviceworker.js" tanpa
+   strip di Sesi kedelapanpuluhdelapan -- lihat catatan di README) -- terpisah dari script utama di
+   atas SENGAJA, supaya bagian ini tetap jalan berdiri sendiri apapun yang terjadi di app utama. Kalau
+   file serviceworker.js belum sempat diupload/gagal dimuat (mis. dibuka dari file lokal, bukan lewat
    https://), didiamkan saja (try/catch) -- app tetap jalan normal seperti biasa, cuma tanpa fitur
    "Install aplikasi" & tanpa cache offline. */
 if('serviceWorker' in navigator){
   window.addEventListener('load', function(){
-    navigator.serviceWorker.register('./service-worker.js').catch(function(err){
+    navigator.serviceWorker.register('./serviceworker.js').catch(function(err){
       console.warn('Service worker gagal didaftarkan (situs tetap jalan normal):', err);
     });
   });
