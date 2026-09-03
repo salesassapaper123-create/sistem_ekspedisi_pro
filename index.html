@@ -8149,74 +8149,65 @@ function computeRekapPengirimanCust(fTgl, fBln, fCust){
     shipments: g.shipments.slice().sort((a,b) => String(a.tanggal||'').localeCompare(String(b.tanggal||''))),
   }));
 }
-/* Jumlahkan semua item (dari semua pengiriman) milik 1 grup customer, dikelompokkan per Ukuran --
-   supaya ukuran yang sama tidak berulang-ulang per baris pengiriman (permintaan user: data jadi
-   terlalu panjang kalau per pengiriman). Diurutkan pakai natural sort (numeric:true) supaya
-   "ML68-100" tampil sebelum "ML68-130", bukan urutan string biasa. */
-function computeUkuranSummaryForGroup(g){
-  const byUkuran = {};
+/* Susun ulang 1 grup customer jadi struktur bertingkat Customer > No PO > Ukuran, dengan Jumlah Roll
+   & Tonase DIJUMLAHKAN kalau kombinasi No PO + Ukuran yang sama muncul lagi di pengiriman lain
+   (mis. BK1 kirim ukuran 112 hari ini 10 roll, besok kirim ukuran 112 lagi utk PO yang sama --
+   digabung jadi 1 baris, total-nya yang bertambah, bukan barisnya). Beda No PO tetap baris terpisah.
+   No PO diurutkan berdasarkan tanggal pengiriman paling awal (kronologis); Ukuran diurutkan natural
+   sort (numeric:true) supaya "ML68-100" tampil sebelum "ML68-130". */
+function computeCustNoPoUkuranAgg(g){
+  const byNoPO = {};
+  const noPOOrder = [];
   g.shipments.forEach(sh => {
+    const key = sh.noPO || '-';
+    if(!byNoPO[key]){ byNoPO[key] = { noPO: key, earliestTanggal: sh.tanggal, ukurans: {} }; noPOOrder.push(key); }
+    else if(sh.tanggal && (!byNoPO[key].earliestTanggal || sh.tanggal < byNoPO[key].earliestTanggal)) byNoPO[key].earliestTanggal = sh.tanggal;
     sh.items.forEach(item => {
-      const key = item.ukuran || '-';
-      if(!byUkuran[key]) byUkuran[key] = { ukuran: key, jumlahRoll: 0, tonase: 0 };
-      byUkuran[key].jumlahRoll += (Number(item.jumlahRoll) || 0);
-      byUkuran[key].tonase += (Number(item.tonase) || 0);
+      const uKey = item.ukuran || '-';
+      if(!byNoPO[key].ukurans[uKey]) byNoPO[key].ukurans[uKey] = { ukuran: uKey, jumlahRoll: 0, tonase: 0 };
+      byNoPO[key].ukurans[uKey].jumlahRoll += (Number(item.jumlahRoll) || 0);
+      byNoPO[key].ukurans[uKey].tonase += (Number(item.tonase) || 0);
     });
   });
-  return Object.values(byUkuran).sort((a,b) => a.ukuran.localeCompare(b.ukuran, undefined, {numeric:true}));
+  return noPOOrder.map(k => byNoPO[k])
+    .sort((a,b) => String(a.earliestTanggal||'').localeCompare(String(b.earliestTanggal||'')))
+    .map(po => ({
+      noPO: po.noPO,
+      ukurans: Object.values(po.ukurans).sort((a,b) => a.ukuran.localeCompare(b.ukuran, undefined, {numeric:true})),
+    }));
 }
 function buildRekapPengirimanCustTableHtml(groups){
-  const showCustHeading = true;
-  let sections = '';
+  let bodyRows = '';
   groups.forEach(g => {
-    const totalKirimanG = g.shipments.length;
-    const summary = computeUkuranSummaryForGroup(g);
-    const summaryRoll = summary.reduce((s,it) => s + it.jumlahRoll, 0);
-    const summaryTonase = summary.reduce((s,it) => s + it.tonase, 0);
-    const summaryRows = summary.map(it => `<tr>
-        <td>${esc(it.ukuran)}</td>
-        <td class="mono sv-num">${it.jumlahRoll ? it.jumlahRoll.toLocaleString('id-ID') + ' roll' : '-'}</td>
-        <td class="mono sv-num">${it.tonase ? it.tonase.toLocaleString('id-ID') + ' kg' : '-'}</td>
-      </tr>`).join('');
-    let detailRows = '';
-    g.shipments.forEach(sh => {
-      const shRowspan = sh.items.length;
-      sh.items.forEach((item, i) => {
-        detailRows += '<tr>';
-        if(i === 0) detailRows += `<td rowspan="${shRowspan}" style="vertical-align:middle;">${fmtDate(sh.tanggal)}</td><td class="mono" rowspan="${shRowspan}" style="vertical-align:middle;">${esc(sh.noPO)}</td>`;
-        detailRows += `
-          <td>${esc(item.ukuran)}</td>
-          <td class="mono sv-num">${item.jumlahRoll ? Number(item.jumlahRoll).toLocaleString('id-ID') + ' roll' : '-'}</td>
-          <td class="mono sv-num">${item.tonase ? Number(item.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>`;
-        detailRows += '</tr>';
+    const noPOs = computeCustNoPoUkuranAgg(g);
+    const custRowspan = noPOs.reduce((s,po) => s + po.ukurans.length, 0);
+    let custFirst = true;
+    noPOs.forEach(po => {
+      const poRowspan = po.ukurans.length;
+      po.ukurans.forEach((it, i) => {
+        bodyRows += '<tr>';
+        if(custFirst){ bodyRows += `<td class="sv-left" rowspan="${custRowspan}" style="vertical-align:middle; font-weight:600;">${esc(g.customer)}</td>`; custFirst = false; }
+        if(i === 0) bodyRows += `<td class="mono" rowspan="${poRowspan}" style="vertical-align:middle;">${esc(po.noPO)}</td>`;
+        bodyRows += `
+          <td>${esc(it.ukuran)}</td>
+          <td class="mono sv-num">${it.jumlahRoll ? it.jumlahRoll.toLocaleString('id-ID') + ' roll' : '-'}</td>
+          <td class="mono sv-num">${it.tonase ? it.tonase.toLocaleString('id-ID') + ' kg' : '-'}</td>`;
+        bodyRows += '</tr>';
       });
     });
-    sections += `<div style="margin-bottom:28px;">
-      ${showCustHeading ? `<h3 style="margin:0 0 10px; font-size:15px; color:#1a2740;">${esc(g.customer)} <span class="hint" style="font-weight:400;">(${totalKirimanG} pengiriman)</span></h3>` : ''}
-      <p class="hint" style="margin:0 0 6px;">Ringkasan per Ukuran (dijumlahkan dari seluruh pengiriman customer ini pada periode terpilih):</p>
-      <div style="overflow-x:auto; margin-bottom:14px;"><table class="sv-table" style="min-width:420px; max-width:560px;">
-        <thead><tr><th>Ukuran</th><th>Jumlah Roll</th><th>Tonase</th></tr></thead>
-        <tbody>${summaryRows}</tbody>
-        <tfoot><tr style="font-weight:700; background:#fafbfc;">
-          <td class="sv-left">TOTAL</td>
-          <td class="mono sv-num">${summaryRoll ? summaryRoll.toLocaleString('id-ID') + ' roll' : '-'}</td>
-          <td class="mono sv-num">${summaryTonase.toLocaleString('id-ID')} kg</td>
-        </tr></tfoot>
-      </table></div>
-      <p class="hint" style="margin:0 0 6px;">Detail per pengiriman:</p>
-      <div style="overflow-x:auto;"><table class="sv-table" style="min-width:700px;">
-        <thead><tr><th>Tgl Pengiriman</th><th>No PO</th><th>Ukuran</th><th>Jumlah Roll</th><th>Tonase</th></tr></thead>
-        <tbody>${detailRows}</tbody>
-      </table></div>
-    </div>`;
   });
   const grandTotalTonase = groups.reduce((s,g) => s + g.shipments.reduce((s2,sh) => s2 + sh.items.reduce((s3,it) => s3 + it.tonase, 0), 0), 0);
   const grandTotalRoll = groups.reduce((s,g) => s + g.shipments.reduce((s2,sh) => s2 + sh.items.reduce((s3,it) => s3 + (Number(it.jumlahRoll)||0), 0), 0), 0);
   const totalKiriman = groups.reduce((s,g) => s + g.shipments.length, 0);
-  const grandTotalBlock = groups.length > 1 ? `<div style="margin-top:4px; padding:12px 16px; background:#fafbfc; border:1px solid #e5e9f0; border-radius:8px; font-weight:700;">
-      TOTAL SELURUH CUSTOMER (${totalKiriman} pengiriman): ${grandTotalRoll ? grandTotalRoll.toLocaleString('id-ID') + ' roll, ' : ''}${grandTotalTonase.toLocaleString('id-ID')} kg
-    </div>` : '';
-  return sections + grandTotalBlock;
+  return `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:720px;">
+    <thead><tr><th>Customer</th><th>No PO</th><th>Ukuran</th><th>Jumlah Roll</th><th>Tonase</th></tr></thead>
+    <tbody>${bodyRows}</tbody>
+    <tfoot><tr style="font-weight:700; background:#fafbfc;">
+      <td colspan="3" class="sv-left">TOTAL (${totalKiriman} pengiriman)</td>
+      <td class="mono sv-num">${grandTotalRoll ? grandTotalRoll.toLocaleString('id-ID') + ' roll' : '-'}</td>
+      <td class="mono sv-num">${grandTotalTonase.toLocaleString('id-ID')} kg</td>
+    </tr></tfoot>
+  </table></div>`;
 }
 /* Isi ulang dropdown "Filter Customer" -- daftar customer diambil dari SELURUH pengiriman yang
    terkait PO (tidak ikut kena filter tanggal/bulan yang sedang aktif), supaya pilihan customer di
