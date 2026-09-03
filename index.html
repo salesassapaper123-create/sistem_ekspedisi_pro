@@ -5119,7 +5119,7 @@ function updateUserTopbarInfo(acc){
   const roleLbl = document.getElementById('userRoleLabel');
   if(badge) badge.textContent = displayName.charAt(0).toUpperCase();
   if(nameLbl) nameLbl.textContent = displayName;
-  if(roleLbl) roleLbl.textContent = accountRole(acc) === 'admin' ? 'Admin' : 'Staf';
+  if(roleLbl) roleLbl.textContent = accountRole(acc) === 'admin' ? 'Admin' : (accountRole(acc) === 'owner' ? 'Owner' : 'Staf');
 }
 /* ---------- NAVIGATION ---------- */
 const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'rekap-pengiriman-cust':'Rekap Pengiriman ke Customer', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada', 'monitoring-ban':'Monitoring Ban'};
@@ -12031,8 +12031,15 @@ function renderAccountList(){
     <div class="account-row">
       <div class="info">
         <div class="em">${esc(a.email)} ${!accountApproved(a) ? '<span class="badge badge-legal-warn" style="margin-left:6px;"><span class="badge-dot"></span>Menunggu persetujuan</span>' : ''}</div>
-        <div class="nm">${esc(a.nama || 'Tanpa nama')} — ${accountRole(a) === 'admin' ? 'Admin (akses penuh)' : 'Terbatas (profil &amp; password saja)'}</div>
-        ${accountRole(a) !== 'admin' ? `<label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted); cursor:pointer;">
+        <div class="nm">${esc(a.nama || 'Tanpa nama')} — ${accountRole(a) === 'admin' ? 'Admin (akses penuh)' : (accountRole(a) === 'owner' ? 'Owner' : 'Staf')}${accountRole(a) !== 'admin' ? ' (Terbatas -- profil &amp; password saja)' : ''}</div>
+        ${accountRole(a) !== 'admin' ? `<label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted);">
+          Jabatan (cuma keterangan/badge, TIDAK mengubah hak akses):
+          <select class="role-select" data-uid="${esc(a.uid)}" style="font-size:12px; padding:3px 6px; border-radius:6px; border:1px solid var(--border, #d8dee8);">
+            <option value="user" ${accountRole(a) !== 'owner' ? 'selected' : ''}>Staf</option>
+            <option value="owner" ${accountRole(a) === 'owner' ? 'selected' : ''}>Owner</option>
+          </select>
+        </label>
+        <label style="display:flex; align-items:center; gap:6px; margin-top:6px; font-size:12px; color:var(--text-muted); cursor:pointer;">
           <input type="checkbox" class="po-access-toggle" data-uid="${esc(a.uid)}" ${a.bisaKonfirmasiPO ? 'checked' : ''}>
           Bisa konfirmasi PO (ACC / tolak Sales Order)
         </label>
@@ -12066,6 +12073,13 @@ function renderAccountList(){
       fbDeleteAccountV2(targetUid);
       showToast('Akses akun berhasil dicabut', 'danger');
     }
+  }));
+  wrap.querySelectorAll('.role-select').forEach(sel => sel.addEventListener('change', function(){
+    // Ganti field 'role' (cuma dipakai untuk label/badge "Staf"/"Owner" di topbar & daftar akun ini --
+    // SENGAJA tidak menyentuh hak akses/menu sama sekali, itu tetap diatur terpisah lewat "Atur Menu"
+    // & 2 checkbox di atas/bawah ini).
+    fbUpdateAccountV2(this.dataset.uid, {role: this.value});
+    showToast(this.value === 'owner' ? 'Jabatan akun diubah jadi Owner' : 'Jabatan akun diubah jadi Staf', 'success');
   }));
   wrap.querySelectorAll('.po-access-toggle').forEach(cb => cb.addEventListener('change', function(){
     fbUpdateAccountV2(this.dataset.uid, {bisaKonfirmasiPO: this.checked});
