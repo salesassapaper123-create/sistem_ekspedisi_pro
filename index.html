@@ -386,14 +386,33 @@
   .rb-barang-table td.rb-tonase{text-align:right; width:110px;}
   .rb-footer td{padding-top:14px !important;}
   .rb-footer .rb-sign-space{height:60px; padding-top:6px !important;}
+  /* Kotak isian bebas (Ongkos/Untuk/No. Timbangan) -- dibuat SEPOLOS mungkin (tanpa border/kotak
+     kelihatan) supaya menyatu dengan garis form, baik di layar maupun saat dicetak/PDF. */
+  .rb-inline-input{
+    width:100%; border:none; background:transparent; outline:none; padding:2px 0;
+    font-family:inherit; font-size:inherit; color:inherit; text-transform:inherit;
+  }
+  .rb-inline-input:focus{background:#fffbe0;}
+  .rb-barang-table .rb-inline-input{text-align:left;}
+  @media print{
+    .rb-inline-input{border:none !important; background:none !important; -webkit-appearance:none; appearance:none;}
+  }
   @media print{
     body *{visibility:hidden;}
     #suratTugasPrintArea, #suratTugasPrintArea *{visibility:visible;}
     #suratTugasPrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
     #reimbursePrintArea, #reimbursePrintArea *{visibility:visible;}
     #reimbursePrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
+    #reimburseLookupPrintArea, #reimburseLookupPrintArea *{visibility:visible;}
+    #reimburseLookupPrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
     .st-modal-overlay, .st-modal{position:static; background:none; box-shadow:none; max-width:none; max-height:none; overflow:visible;}
   }
+  #reimburseLookupPrintArea{
+    padding:20px 4px; font-size:12.5px; color:#111; line-height:1.55;
+    text-transform:none;
+    font-family:'Courier New', Courier, monospace;
+  }
+  #reimburseLookupPrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
 
   /* ---------- MODAL FORM GENERIK (mis. Tambah Kendaraan) ---------- */
   .form-modal-overlay{
@@ -988,6 +1007,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
             Rekap Data DO
           </button>
+          <button class="nav-item nav-sub" data-view="reimburse">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M9 15h6"/></svg>
+            Bukti Reimbursement
+          </button>
           <button class="nav-item nav-sub" data-view="borongan">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 20l-5-2V6l5 2 6-2 5 2v12l-5-2-6 2z"/><path d="M9 6v14M15 4v14"/></svg>
             Ongkos Borongan
@@ -1566,6 +1589,31 @@
             </div>
             <p class="hint" style="margin:8px 0 0;">Export/cetak mengikuti filter yang sedang aktif di atas.</p>
             <div id="tableWrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BUKTI REIMBURSEMENT — halaman khusus (Sesi keseratussepuluh): staf tinggal ketik No PKB,
+           datanya otomatis muncul (auto-lookup ke records[] yang sama dipakai Rekap Data DO), tanpa
+           perlu buka/scroll tabel Rekap Data DO dulu. Bon yang tampil & tombol cetaknya SAMA PERSIS
+           dengan modal "Cetak Bon Reimbursement" (buildReimburseHtml/wireReimburseInlineInputs dipakai
+           bareng, satu sumber logika) -- cuma beda tempat aksesnya saja. -->
+      <div class="view" data-view="reimburse">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Bukti Reimbursement</h2>
+              <p>Ketik No PKB, data DO terkait otomatis muncul lengkap siap cetak</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="field" style="max-width:420px;">
+              <label for="rbLookupInput">No PKB</label>
+              <input type="text" id="rbLookupInput" list="rbLookupNoPkbList" placeholder="Ketik atau pilih No PKB..." autocomplete="off">
+              <datalist id="rbLookupNoPkbList"></datalist>
+              <p class="hint" id="rbLookupStatus" style="margin-top:8px;">Belum ada No PKB yang diketik.</p>
+            </div>
+            <div id="rbLookupResultWrap" style="margin-top:18px;"></div>
           </div>
         </div>
       </div>
@@ -3516,6 +3564,7 @@ function syncOdometerFromCartrack(){
                   <label class="acc-menu-chk"><input type="checkbox" data-view="rekap-pengiriman-cust"> Rekap Pengiriman ke Cust</label>
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px; margin-top:14px;">Ekspedisi</div>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="rekap"> Rekap Data DO</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="reimburse"> Bukti Reimbursement</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="borongan"> Ongkos Borongan</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="service"> Service Berkala</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="maintenance"> Maintenance Perbaikan</label>
@@ -5188,13 +5237,14 @@ function updateUserTopbarInfo(acc){
   if(roleLbl) roleLbl.textContent = accountRole(acc) === 'admin' ? 'Admin' : (accountRole(acc) === 'owner' ? 'Owner' : 'Staf');
 }
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'rekap-pengiriman-cust':'Rekap Pengiriman ke Customer', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada', 'monitoring-ban':'Monitoring Ban'};
+const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', reimburse:'Bukti Reimbursement', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'rekap-pengiriman-cust':'Rekap Pengiriman ke Customer', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada', 'monitoring-ban':'Monitoring Ban'};
 /* Subjudul kecil di bawah judul halaman (topbar) -- murni visual/deskriptif, mengikuti foto
    referensi dashboard "Accurate Expedition" yang menaruh satu baris ringkasan di bawah tiap judul
    halaman. View yang tidak terdaftar di sini cukup tidak menampilkan subjudul (elemennya kosong). */
 const subtitles = {
   dashboard:'Ringkasan performa operasional ekspedisi', input:'Input data pengiriman & buat PKB baru',
-  rekap:'Rekap seluruh data DO yang sudah diinput', 'po-input':'Input SO baru & upload dokumen PO customer',
+  rekap:'Rekap seluruh data DO yang sudah diinput', reimburse:'Ketik No PKB, data DO terkait otomatis muncul lengkap siap cetak',
+  'po-input':'Input SO baru & upload dokumen PO customer',
   po:'Daftar PO masuk & status konfirmasinya', 'po-monitoring':'Pantau sisa tonase PO yang sudah dikonfirmasi',
   'rekap-pengiriman-cust':'Rekap pengiriman per customer, dikelompokkan per nama customer',
   borongan:'Rekap ongkos kirim borongan vendor luar', service:'Jadwal & status service berkala armada',
@@ -5228,6 +5278,7 @@ function goTo(view){
   if(view === 'dashboard') renderDashboard();
   if(view === 'input'){ populateDoNoCODropdown(); populateDoNopolSopirDropdowns(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); if(!editingId && !document.getElementById('doNoPKB').value) prefillNoPKB(); }
   if(view === 'rekap') renderTable();
+  if(view === 'reimburse') initReimburseLookupView();
   if(view === 'kendaraan') renderKendaraan();
   if(view === 'legalitas') renderLegalitas();
   if(view === 'legalitas-input') populateLegalitasInputSelect();
@@ -5952,7 +6003,7 @@ function dataInputRestrictedForCurrentUser(){
    Konsekuensinya: akun non-admin yang SUDAH ADA sebelum perubahan ini (dan belum pernah diatur lewat
    "Atur Menu") juga ikut kena default ketat ini -- admin perlu membuka "Atur Menu" sekali untuk
    masing-masing akun tsb dan memberi akses yang sesuai (bisa pakai tombol preset atau "Pilih Semua"). */
-const ALL_MENU_VIEWS = ['dashboard','rekap','po','po-monitoring','rekap-pengiriman-cust','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
+const ALL_MENU_VIEWS = ['dashboard','rekap','reimburse','po','po-monitoring','rekap-pengiriman-cust','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
 const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
 const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'rekap-pengiriman-cust', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-monitoring-organik'];
 /* Preset siap-pakai untuk tombol di modal "Atur Menu" -- cuma pengisi awal checklist, admin masih
@@ -6856,11 +6907,17 @@ function buildReimburseHtml(r){
   const paVal = isVendor ? (r.vendorNama || '-') : (r.nopol || '-');
   // TUJUAN: rute muat -> bongkar (sama seperti kolom "Rute muat -> bongkar" di Rekap Data DO).
   const tujuanVal = tujuanListText(r) || '-';
-  // UNTUK: SENGAJA dikosongkan (sama seperti ONGKOS) -- diisi manual oleh staff, bukan otomatis.
+  // UNTUK: kotak isian bebas (sama seperti ONGKOS & No. Timbangan) -- staf ketik dulu di layar SEBELUM
+  // cetak/download, supaya hasil cetaknya sudah rapi terisi (bukan tulis tangan). Nilainya disimpan
+  // ke record (r.reimburseUntuk/r.reimburseOngkos/r.reimburseTimbangan) lewat listener 'change' di
+  // openReimburseModal, jadi tetap ada kalau modal ditutup & dibuka lagi. Sesi keseratussembilan.
+  const untukSaved = esc(r.reimburseUntuk || '');
+  const ongkosSaved = esc(r.reimburseOngkos || '');
+  const timbanganSaved = Array.isArray(r.reimburseTimbangan) ? r.reimburseTimbangan : [];
 
   // Perincian Barang: satu baris per jenis kiriman (BK/Roll Assa/OCC) yang DIANGKUT DO ini, Tonase
   // diambil dari tonase final yang diisi saat DO ditandai Selesai (tonase1/2/3) -- No. Timbangan
-  // sengaja dikosongkan untuk diisi manual oleh staff.
+  // kotak isian bebas untuk staf.
   const barangRows = [];
   if(recKirimBK(r)) barangRows.push({ label: 'BK', tonase: r.tonase1 });
   if(recKirimRoll(r)) barangRows.push({ label: 'Roll Assa', tonase: r.tonase2 });
@@ -6869,7 +6926,7 @@ function buildReimburseHtml(r){
     ? barangRows.map((b, i) => `<tr>
         <td class="rb-num">${i + 1}</td>
         <td>${esc(b.label)}</td>
-        <td class="rb-timbangan">&nbsp;</td>
+        <td class="rb-timbangan"><input type="text" class="rb-inline-input" data-field="timbangan" data-idx="${i}" value="${esc(timbanganSaved[i] || '')}" placeholder="No. timbangan"></td>
         <td class="rb-tonase">${(b.tonase !== null && b.tonase !== undefined && b.tonase !== '' && Number(b.tonase) > 0) ? Number(b.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
       </tr>`).join('')
     : `<tr><td class="rb-num">1</td><td colspan="3">&nbsp;</td></tr>`;
@@ -6886,14 +6943,14 @@ function buildReimburseHtml(r){
             <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
             <tr><td class="pkb-lbl">PA</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(paVal)}</td></tr>
             <tr><td class="pkb-lbl">TUJUAN</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(tujuanVal)}</td></tr>
-            <tr><td class="pkb-lbl">ONGKOS</td><td class="pkb-colon">:</td><td class="pkb-val">&nbsp;</td></tr>
+            <tr><td class="pkb-lbl">ONGKOS</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="ongkos" value="${ongkosSaved}" placeholder="Rp ..."></td></tr>
           </tbody>
         </table>
         <table class="pkb-table pkb-table-gap">
           <tbody>
             <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
             <tr><td class="pkb-lbl">DO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noDO || '-')}</td></tr>
-            <tr><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val">&nbsp;</td></tr>
+            <tr><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="untuk" value="${untukSaved}" placeholder="nama customer / tujuan"></td></tr>
           </tbody>
         </table>
         <div class="pkb-barang-head">PERINCIAN BARANG :</div>
@@ -6928,6 +6985,28 @@ function openReimburseModal(id){
   }
   document.getElementById('reimbursePrintArea').innerHTML = buildReimburseHtml(r);
   document.getElementById('rbModalOverlay').style.display = 'flex';
+  wireReimburseInlineInputs(r);
+}
+/* Kotak isian bebas (Ongkos/Untuk/No. Timbangan) langsung di dalam lembar cetak -- staf ketik di sini,
+   nilainya otomatis IKUT TERCETAK (browser mencetak isi <input> yang sedang diketik apa adanya) DAN
+   disimpan ke record saat field-nya selesai diisi (event 'change', bukan tiap huruf diketik, supaya
+   tidak nulis ke Firebase tiap ketikan) -- jadi kalau modal ditutup & dibuka lagi (atau device lain),
+   yang sudah pernah diketik tetap ada. Sesi keseratussembilan. */
+function wireReimburseInlineInputs(r, areaId){
+  const area = document.getElementById(areaId || 'reimbursePrintArea');
+  area.querySelectorAll('.rb-inline-input').forEach(inp => inp.addEventListener('change', function(){
+    const field = this.dataset.field;
+    if(field === 'ongkos'){
+      r.reimburseOngkos = this.value;
+    }else if(field === 'untuk'){
+      r.reimburseUntuk = this.value;
+    }else if(field === 'timbangan'){
+      const idx = Number(this.dataset.idx);
+      if(!Array.isArray(r.reimburseTimbangan)) r.reimburseTimbangan = [];
+      r.reimburseTimbangan[idx] = this.value;
+    }
+    save();
+  }));
 }
 function closeReimburseModal(){
   document.getElementById('rbModalOverlay').style.display = 'none';
@@ -6939,6 +7018,82 @@ document.getElementById('rbModalOverlay').addEventListener('click', function(e){
 });
 document.getElementById('rbModalPrint').addEventListener('click', function(){
   window.print();
+});
+
+/* ---------- HALAMAN "BUKTI REIMBURSEMENT" (Sesi keseratussepuluh) ----------
+   Halaman khusus di sidebar (data-view="reimburse") -- staf ketik/pilih No PKB, DO yang cocok
+   otomatis muncul lengkap (pakai buildReimburseHtml/wireReimburseInlineInputs yang SAMA dengan modal
+   di Rekap Data DO, satu sumber logika supaya tidak dobel kode), siap diedit (Ongkos/Untuk/No.
+   Timbangan) & langsung dicetak dari halaman ini juga -- tanpa perlu buka/scroll tabel Rekap Data DO. */
+function populateReimburseNoPkbDatalist(){
+  const listEl = document.getElementById('rbLookupNoPkbList');
+  if(!listEl) return;
+  const seen = new Set();
+  const options = [];
+  records.forEach(r => {
+    const no = (r.noPKB || '').trim();
+    if(no && !seen.has(no)){ seen.add(no); options.push(no); }
+  });
+  options.sort();
+  listEl.innerHTML = options.map(no => `<option value="${esc(no)}"></option>`).join('');
+}
+function initReimburseLookupView(){
+  populateReimburseNoPkbDatalist();
+  const input = document.getElementById('rbLookupInput');
+  if(input) input.value = '';
+  document.getElementById('rbLookupResultWrap').innerHTML = '';
+  document.getElementById('rbLookupStatus').textContent = 'Belum ada No PKB yang diketik.';
+  document.getElementById('rbLookupStatus').style.color = 'var(--text-muted)';
+}
+function renderReimburseLookupResult(r){
+  const wrap = document.getElementById('rbLookupResultWrap');
+  if(!r.noReimburse){
+    r.noReimburse = generateNoReimburse(r.tanggal);
+    save();
+  }
+  wrap.innerHTML = `
+    <div id="reimburseLookupPrintArea">${buildReimburseHtml(r)}</div>
+    <div class="btn-row no-print" style="margin-top:14px;">
+      <button type="button" class="btn btn-primary" id="rbLookupPrintBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+        Cetak / Download Bon
+      </button>
+    </div>`;
+  wireReimburseInlineInputs(r, 'reimburseLookupPrintArea');
+  document.getElementById('rbLookupPrintBtn').addEventListener('click', function(){
+    window.print();
+  });
+}
+document.getElementById('rbLookupInput').addEventListener('input', function(){
+  const q = this.value.trim().toLowerCase();
+  const statusEl = document.getElementById('rbLookupStatus');
+  const wrap = document.getElementById('rbLookupResultWrap');
+  if(!q){
+    statusEl.textContent = 'Belum ada No PKB yang diketik.';
+    statusEl.style.color = 'var(--text-muted)';
+    wrap.innerHTML = '';
+    return;
+  }
+  const matches = records.filter(r => (r.noPKB || '').trim().toLowerCase() === q);
+  if(matches.length === 0){
+    statusEl.textContent = `Belum ditemukan DO dengan No PKB "${this.value.trim()}". Pastikan sudah diketik lengkap & sesuai (lihat saran otomatis di bawah kotak).`;
+    statusEl.style.color = '#c0392b';
+    wrap.innerHTML = '';
+  }else if(matches.length === 1){
+    statusEl.textContent = `Ditemukan 1 DO -- data di bawah otomatis terisi dari PKB ${esc(matches[0].noPKB)}.`;
+    statusEl.style.color = 'var(--green-600)';
+    renderReimburseLookupResult(matches[0]);
+  }else{
+    // Kasus jarang terjadi -- No PKB tidak wajib unik di sistem ini (diisi manual bebas), jadi kalau
+    // kebetulan ada lebih dari 1 DO pakai No PKB yang sama persis, staf pilih dulu salah satu.
+    statusEl.textContent = `Ada ${matches.length} DO dengan No PKB yang sama -- pilih salah satu tanggal/nopol di bawah ini:`;
+    statusEl.style.color = 'var(--amber-600)';
+    wrap.innerHTML = `<div class="btn-row" style="flex-wrap:wrap;">${matches.map(r => `<button type="button" class="btn btn-secondary rb-lookup-pick" data-id="${esc(r.id)}">${fmtDate(r.tanggal)} — ${esc(r.nopol || r.vendorNama || '-')}</button>`).join('')}</div>`;
+    wrap.querySelectorAll('.rb-lookup-pick').forEach(btn => btn.addEventListener('click', function(){
+      const picked = records.find(x => x.id === this.dataset.id);
+      if(picked) renderReimburseLookupResult(picked);
+    }));
+  }
 });
 
 /* ---------- DATA KENDARAAN ---------- */
