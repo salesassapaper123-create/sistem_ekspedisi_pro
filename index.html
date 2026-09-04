@@ -374,7 +374,7 @@
      lihat Sesi keseratuslimabelas) yang benar-benar diangkut DO itu -- .rb-leg-doc satu per jenis,
      masing-masing punya No Seri & tombol Cetak sendiri. ---------- */
   #reimburseLookupPrintArea{
-    padding:20px 4px; font-size:17px; color:#111; line-height:1.5;
+    padding:20px 4px; font-size:12.5px; color:#111; line-height:1.55;
     text-transform:none;
     font-family:'Courier New', Courier, monospace;
   }
@@ -388,32 +388,19 @@
   }
   .rb-leg-card-head strong{font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy-700);}
   .rb-headrow{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
-  .rb-headrow .rb-title{font-weight:800; font-size:19px; letter-spacing:.04em; text-transform:uppercase;}
-  .rb-headrow .rb-no{font-weight:700; font-size:17px; display:flex; align-items:baseline; gap:4px;}
+  .rb-headrow .rb-title{font-weight:800; font-size:15px; letter-spacing:.04em; text-transform:uppercase;}
+  .rb-headrow .rb-no{font-weight:700; font-size:13px; display:flex; align-items:baseline; gap:4px;}
   /* No Seri cuma bisa diubah admin (Sesi keseratustigabelas) -- staf lihat sebagai teks biasa, admin
      lihat sebagai kotak isian kecil bergaris putus-putus (sama seperti Ongkos/Untuk/dll). */
-  .rb-no-input{width:130px !important; text-align:right; font-weight:700;}
+  .rb-no-input{width:96px !important; text-align:right; font-weight:700;}
   .rb-barang-table{width:100%; border-collapse:collapse; margin-top:0;}
-  .rb-barang-table th, .rb-barang-table td{border:1.4px solid #111; padding:8px 10px; font-size:15px; text-align:left;}
+  .rb-barang-table th, .rb-barang-table td{border:1.4px solid #111; padding:7px 9px; font-size:12px; text-align:left;}
   .rb-barang-table th{font-weight:700; background:#f2f2f2; text-align:center;}
-  .rb-barang-table td.rb-num{text-align:center; width:40px;}
-  .rb-barang-table td.rb-timbangan{min-width:130px;}
-  .rb-barang-table td.rb-tonase{text-align:right; width:125px;}
+  .rb-barang-table td.rb-num{text-align:center; width:34px;}
+  .rb-barang-table td.rb-timbangan{min-width:110px;}
+  .rb-barang-table td.rb-tonase{text-align:right; width:110px;}
   .rb-footer td{padding-top:14px !important;}
   .rb-footer .rb-sign-space{height:60px; padding-top:6px !important;}
-  /* Ukuran huruf & jarak Bukti Reimbursement diperbesar KHUSUS di area cetak ini (Sesi
-     keseratusenambelas) -- user mencetak di kertas kecil (21cm x 9cm), huruf bawaan (yang tadinya
-     ikut ukuran PKB Surat Tugas biasa lewat .pkb-table dkk yang dipakai bersama) jadi kekecilan &
-     kurang jelas kalau dicetak di kertas sekecil itu. Override cuma berlaku DI DALAM
-     #reimburseLookupPrintArea (lebih spesifik dari aturan dasar .pkb-table dkk), jadi TIDAK ikut
-     mengubah ukuran huruf PKB Surat Tugas di tempat lain yang masih pakai ukuran dasar seperti biasa. */
-  #reimburseLookupPrintArea .pkb-outer{padding:20px 22px 24px;}
-  #reimburseLookupPrintArea .pkb-table td{font-size:16px; padding:9px 12px; line-height:1.5;}
-  #reimburseLookupPrintArea .pkb-table td.pkb-lbl{font-size:18px; width:150px;}
-  #reimburseLookupPrintArea .pkb-table td.pkb-colon{font-size:18px;}
-  #reimburseLookupPrintArea .pkb-table td.pkb-val{font-size:17px;}
-  #reimburseLookupPrintArea .pkb-barang-head{font-size:16px; padding:9px 12px;}
-  #reimburseLookupPrintArea .pkb-footer td{font-size:15px; padding:16px 12px;}
   /* Kotak isian bebas (Ongkos/Untuk/No. Timbangan) -- SAAT DICETAK dibuat sepolos mungkin (tanpa
      border/kotak kelihatan) supaya menyatu dengan garis form. Tapi SAAT DI LAYAR diberi garis putus-
      putus tipis + kursor "text" supaya staf langsung tahu ini kotak yang bisa diklik & diketik langsung
