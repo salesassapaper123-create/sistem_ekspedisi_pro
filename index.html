@@ -368,13 +368,24 @@
   .pkb-footer .pkb-footer-sign{padding-top:36px;}
   /* ---------- BON REIMBURSEMENT — mengikuti contoh form fisik "Bon" perusahaan (TGL/PA/TUJUAN/ONGKOS,
      lalu TGL/DO/UNTUK, lalu PERINCIAN BARANG dengan No. Timbangan & Tonase, footer Kabag/Keuangan).
-     Reuse .pkb-outer/.pkb-table/.pkb-barang-head/.pkb-footer supaya satu keluarga visual dengan PKB. ---------- */
-  #reimbursePrintArea{
-    padding:30px 34px; font-size:12.5px; color:#111; line-height:1.55;
+     Reuse .pkb-outer/.pkb-table/.pkb-barang-head/.pkb-footer supaya satu keluarga visual dengan PKB.
+     Sesi keseratussebelas: dipindah SELURUHNYA ke halaman sidebar "Bukti Reimbursement" (modal dihapus)
+     dan dipisah OTOMATIS jadi satu dokumen per jenis muatan (BK/Roll/OCC) yang benar-benar diangkut DO
+     itu -- .rb-leg-doc satu per jenis, masing-masing punya No Seri & tombol Cetak sendiri. ---------- */
+  #reimburseLookupPrintArea{
+    padding:20px 4px; font-size:12.5px; color:#111; line-height:1.55;
     text-transform:none;
     font-family:'Courier New', Courier, monospace;
   }
-  #reimbursePrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
+  #reimburseLookupPrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
+  .rb-leg-doc{border:1px solid var(--border); border-radius:10px; margin-bottom:22px; overflow:hidden;}
+  .rb-leg-doc:last-child{margin-bottom:0;}
+  .rb-leg-doc .pkb-doc{padding:22px 26px;}
+  .rb-leg-card-head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    padding:10px 16px; background:#f7f8fb; border-bottom:1px solid var(--border);
+  }
+  .rb-leg-card-head strong{font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy-700);}
   .rb-headrow{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
   .rb-headrow .rb-title{font-weight:800; font-size:15px; letter-spacing:.04em; text-transform:uppercase;}
   .rb-headrow .rb-no{font-weight:700; font-size:13px;}
@@ -401,18 +412,16 @@
     body *{visibility:hidden;}
     #suratTugasPrintArea, #suratTugasPrintArea *{visibility:visible;}
     #suratTugasPrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
-    #reimbursePrintArea, #reimbursePrintArea *{visibility:visible;}
-    #reimbursePrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
     #reimburseLookupPrintArea, #reimburseLookupPrintArea *{visibility:visible;}
     #reimburseLookupPrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
     .st-modal-overlay, .st-modal{position:static; background:none; box-shadow:none; max-width:none; max-height:none; overflow:visible;}
+    /* Hanya dokumen leg yang sedang "aktif dicetak" (rb-print-active, di-set oleh tombol Cetak
+       masing-masing kartu) yang ditampilkan -- supaya satu klik Cetak cuma mencetak 1 bukti reimbursement
+       (bukan semua sekaligus), meski di layar semuanya tampil berjajar. */
+    #reimburseLookupPrintArea .rb-leg-doc{display:none;}
+    #reimburseLookupPrintArea .rb-leg-doc.rb-print-active{display:block; border:none; margin:0;}
+    .no-print{display:none !important;}
   }
-  #reimburseLookupPrintArea{
-    padding:20px 4px; font-size:12.5px; color:#111; line-height:1.55;
-    text-transform:none;
-    font-family:'Courier New', Courier, monospace;
-  }
-  #reimburseLookupPrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
 
   /* ---------- MODAL FORM GENERIK (mis. Tambah Kendaraan) ---------- */
   .form-modal-overlay{
@@ -1593,11 +1602,13 @@
         </div>
       </div>
 
-      <!-- BUKTI REIMBURSEMENT — halaman khusus (Sesi keseratussepuluh): staf tinggal ketik No PKB,
-           datanya otomatis muncul (auto-lookup ke records[] yang sama dipakai Rekap Data DO), tanpa
-           perlu buka/scroll tabel Rekap Data DO dulu. Bon yang tampil & tombol cetaknya SAMA PERSIS
-           dengan modal "Cetak Bon Reimbursement" (buildReimburseHtml/wireReimburseInlineInputs dipakai
-           bareng, satu sumber logika) -- cuma beda tempat aksesnya saja. -->
+      <!-- BUKTI REIMBURSEMENT — halaman khusus (Sesi keseratussepuluh, dirombak Sesi keseratussebelas):
+           SATU-SATUNYA tempat cetak Bon Reimbursement (modal terpisah di Rekap Data DO sudah dihapus).
+           Staf tinggal ketik No PKB (atau klik ikon reimburse di baris Rekap Data DO -- langsung
+           diarahkan kesini dengan datanya sudah terisi), lalu otomatis muncul SATU kartu Bukti
+           Reimbursement TERPISAH untuk setiap jenis muatan (BK/Roll/OCC) yang benar-benar diangkut DO
+           tsb (kalau DO itu bawa BK+OCC sekaligus, 2 kartu terpisah lengkap dengan No Seri & tombol
+           cetak masing-masing) -- karena tiap jenis muatan punya rute muat->bongkar sendiri. -->
       <div class="view" data-view="reimburse">
         <div class="panel">
           <div class="panel-head">
@@ -3715,29 +3726,6 @@ function syncOdometerFromCartrack(){
   </div>
 </div>
 
-<!-- MODAL BON REIMBURSEMENT (bon ongkos jalan, dibuat otomatis dari data PKB/DO -- Sesi keseratustujuh) -->
-<div class="st-modal-overlay" id="rbModalOverlay">
-  <div class="st-modal">
-    <div class="st-modal-head no-print">
-      <div>
-        <h3>Bon Reimbursement</h3>
-        <p>TGL/PA/TUJUAN/DO terisi otomatis dari data PKB — Ongkos, Untuk &amp; No. Timbangan diisi manual oleh staff</p>
-      </div>
-      <button type="button" class="st-close-btn" id="rbModalClose" title="Tutup">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
-      </button>
-    </div>
-    <div id="reimbursePrintArea"></div>
-    <div class="btn-row no-print" style="padding:0 22px 20px;">
-      <button type="button" class="btn btn-primary" id="rbModalPrint">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
-        Cetak / Download Bon
-      </button>
-      <button type="button" class="btn btn-secondary" id="rbModalCloseBtn">Tutup</button>
-    </div>
-  </div>
-</div>
-
 <script>
 /* ---------- FIREBASE: sinkron data real-time antar perangkat (menggantikan polling Google Sheets untuk DO/Kendaraan/Maintenance) ---------- */
 const firebaseConfig = {
@@ -5243,7 +5231,7 @@ const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', re
    halaman. View yang tidak terdaftar di sini cukup tidak menampilkan subjudul (elemennya kosong). */
 const subtitles = {
   dashboard:'Ringkasan performa operasional ekspedisi', input:'Input data pengiriman & buat PKB baru',
-  rekap:'Rekap seluruh data DO yang sudah diinput', reimburse:'Ketik No PKB, data DO terkait otomatis muncul lengkap siap cetak',
+  rekap:'Rekap seluruh data DO yang sudah diinput', reimburse:'Ketik No PKB (atau klik ikon reimburse di Rekap Data DO) -- otomatis muncul 1 bukti per jenis muatan (BK/Roll/OCC), siap edit & cetak',
   'po-input':'Input SO baru & upload dokumen PO customer',
   po:'Daftar PO masuk & status konfirmasinya', 'po-monitoring':'Pantau sisa tonase PO yang sudah dikonfirmasi',
   'rekap-pengiriman-cust':'Rekap pengiriman per customer, dikelompokkan per nama customer',
@@ -6880,83 +6868,112 @@ const ORIGINAL_DOC_TITLE = document.title;
 window.addEventListener('beforeprint', function(){ document.title = '\u00A0'; });
 window.addEventListener('afterprint', function(){ document.title = ORIGINAL_DOC_TITLE; });
 
-/* ---------- BON REIMBURSEMENT (Sesi keseratustujuh, disesuaikan sesi keseratusdelapan) ----------
+/* ---------- BON REIMBURSEMENT (Sesi keseratustujuh, dirombak besar Sesi keseratussebelas) ----------
    Format cetak mengikuti form fisik "Bon" perusahaan yang dikirim user: TGL/PA/TUJUAN/ONGKOS, lalu
    TGL/DO/UNTUK, lalu PERINCIAN BARANG (No. Timbangan & Tonase), footer tanda tangan Kabag/Keuangan.
    Field yang bisa diambil dari data PKB/DO (TGL/PA/TUJUAN/DO) diisi OTOMATIS -- ONGKOS, UNTUK, & No.
-   Timbangan SENGAJA dikosongkan (diisi manual oleh staff di kertas setelah dicetak, sesuai permintaan
-   user -- awalnya UNTUK sempat otomatis dari nama Customer, tapi diubah jadi manual di sesi keseratusdelapan). */
+   Timbangan diisi manual oleh staff di kotak isian sebelum cetak.
 
-/* No Seri dibuat OTOMATIS SEKALI per DO (tersimpan di record sbg r.noReimburse, tidak berubah lagi
-   walau dicetak ulang berkali-kali) -- format "YYMM-NNN": YYMM dari Tanggal DO (bukan tanggal cetak),
-   NNN = nomor urut 3 digit dalam bulan yang sama (mulai 001, tidak diulang), meniru pola generateNextNoCO(). */
+   Sesi keseratussebelas: 1 DO bisa mengangkut lebih dari 1 jenis muatan sekaligus (BK/Roll/OCC), dan
+   tiap jenis muatan punya rute muat->bongkar SENDIRI (tujuanMuat/tujuanMuat2/tujuanMuat3 dst) -- jadi
+   1 DO otomatis dipecah jadi BEBERAPA Bukti Reimbursement TERPISAH, satu per jenis muatan yang benar-
+   benar diangkut, tanpa staf perlu bikin dokumen baru manual. Data disimpan nested per jenis di
+   r.reimburseLegs = { bk:{noReimburse,ongkos,untuk,timbangan}, roll:{...}, occ:{...} }, menggantikan
+   field lama yang flat (r.noReimburse/reimburseOngkos/reimburseUntuk/reimburseTimbangan). Modal terpisah
+   di Rekap Data DO juga dihapus -- SATU-SATUNYA tempat cetak sekarang halaman sidebar ini saja. */
+
+/* Definisi tiap jenis muatan yang mungkin dibuatkan Bukti Reimbursement -- hanya jenis yang BENAR-BENAR
+   diangkut DO ybs (recKirimBK/recKirimRoll/recKirimOCC) yang masuk daftar, masing-masing dengan rute
+   muat->bongkar & tonase miliknya sendiri (bukan digabung seperti tujuanListText). */
+function reimburseLegDefs(r){
+  const defs = [];
+  if(recKirimBK(r)) defs.push({ key: 'bk', label: 'BK', tujuanMuat: r.tujuanMuat, tujuanBongkar: r.tujuanBongkar, tonase: r.tonase1 });
+  if(recKirimRoll(r)) defs.push({ key: 'roll', label: 'Roll Assa', tujuanMuat: r.tujuanMuat2, tujuanBongkar: r.tujuanBongkar2, tonase: r.tonase2 });
+  if(recKirimOCC(r)) defs.push({ key: 'occ', label: 'OCC', tujuanMuat: r.tujuanMuat3, tujuanBongkar: r.tujuanBongkar3, tonase: r.tonase3 });
+  return defs;
+}
+/* No Seri dibuat OTOMATIS SEKALI per LEG (tersimpan di r.reimburseLegs[key].noReimburse, tidak berubah
+   lagi walau dicetak ulang berkali-kali) -- format "YYMM-NNN": YYMM dari Tanggal DO (bukan tanggal
+   cetak), NNN = nomor urut 3 digit dalam bulan yang sama LINTAS SEMUA LEG (mulai 001, tidak diulang),
+   meniru pola generateNextNoCO(). Discan dari nested reimburseLegs semua record. */
 function generateNoReimburse(tanggalIso){
   const d = tanggalIso ? new Date(tanggalIso + 'T00:00:00') : new Date();
   const yymm = String(d.getFullYear()).slice(-2) + String(d.getMonth() + 1).padStart(2, '0');
-  const existingNums = records
-    .map(rr => rr.noReimburse || '')
-    .filter(no => no.startsWith(yymm + '-'))
-    .map(no => parseInt(no.split('-')[1], 10))
-    .filter(n => !isNaN(n));
+  const existingNums = [];
+  records.forEach(rr => {
+    const legs = rr.reimburseLegs;
+    if(!legs) return;
+    Object.keys(legs).forEach(k => {
+      const no = (legs[k] && legs[k].noReimburse) || '';
+      if(no.startsWith(yymm + '-')){
+        const n = parseInt(no.split('-')[1], 10);
+        if(!isNaN(n)) existingNums.push(n);
+      }
+    });
+  });
   const next = existingNums.length ? Math.max(...existingNums) + 1 : 1;
   return yymm + '-' + String(next).padStart(3, '0');
 }
-function buildReimburseHtml(r){
+/* Pastikan r.reimburseLegs[key] sudah ada & sudah punya No Seri -- dipanggil tiap leg akan ditampilkan,
+   aman dipanggil berkali-kali (No Seri cuma dibuat sekali, sisanya dipakai ulang). */
+function ensureReimburseLeg(r, key){
+  if(!r.reimburseLegs) r.reimburseLegs = {};
+  if(!r.reimburseLegs[key]) r.reimburseLegs[key] = {};
+  const leg = r.reimburseLegs[key];
+  if(!leg.noReimburse){
+    leg.noReimburse = generateNoReimburse(r.tanggal);
+    save();
+  }
+  return leg;
+}
+function buildReimburseLegHtml(r, legDef, legData){
   const isVendor = r.jenisAngkutan === 'vendor';
   // PA: Nopol untuk Angkutan Organik, nama angkutan Vendor Luar (termasuk Loco/Franco) untuk Vendor Luar.
   const paVal = isVendor ? (r.vendorNama || '-') : (r.nopol || '-');
-  // TUJUAN: rute muat -> bongkar (sama seperti kolom "Rute muat -> bongkar" di Rekap Data DO).
-  const tujuanVal = tujuanListText(r) || '-';
-  // UNTUK: kotak isian bebas (sama seperti ONGKOS & No. Timbangan) -- staf ketik dulu di layar SEBELUM
-  // cetak/download, supaya hasil cetaknya sudah rapi terisi (bukan tulis tangan). Nilainya disimpan
-  // ke record (r.reimburseUntuk/r.reimburseOngkos/r.reimburseTimbangan) lewat listener 'change' di
-  // openReimburseModal, jadi tetap ada kalau modal ditutup & dibuka lagi. Sesi keseratussembilan.
-  const untukSaved = esc(r.reimburseUntuk || '');
-  const ongkosSaved = esc(r.reimburseOngkos || '');
-  const timbanganSaved = Array.isArray(r.reimburseTimbangan) ? r.reimburseTimbangan : [];
-
-  // Perincian Barang: satu baris per jenis kiriman (BK/Roll Assa/OCC) yang DIANGKUT DO ini, Tonase
-  // diambil dari tonase final yang diisi saat DO ditandai Selesai (tonase1/2/3) -- No. Timbangan
-  // kotak isian bebas untuk staf.
-  const barangRows = [];
-  if(recKirimBK(r)) barangRows.push({ label: 'BK', tonase: r.tonase1 });
-  if(recKirimRoll(r)) barangRows.push({ label: 'Roll Assa', tonase: r.tonase2 });
-  if(recKirimOCC(r)) barangRows.push({ label: 'OCC', tonase: r.tonase3 });
-  const barangRowsHtml = barangRows.length
-    ? barangRows.map((b, i) => `<tr>
-        <td class="rb-num">${i + 1}</td>
-        <td>${esc(b.label)}</td>
-        <td class="rb-timbangan"><input type="text" class="rb-inline-input" data-field="timbangan" data-idx="${i}" value="${esc(timbanganSaved[i] || '')}" placeholder="No. timbangan"></td>
-        <td class="rb-tonase">${(b.tonase !== null && b.tonase !== undefined && b.tonase !== '' && Number(b.tonase) > 0) ? Number(b.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
-      </tr>`).join('')
-    : `<tr><td class="rb-num">1</td><td colspan="3">&nbsp;</td></tr>`;
+  // TUJUAN: rute muat -> bongkar KHUSUS jenis muatan ini saja (bukan gabungan semua jenis).
+  const tujuanVal = `${legDef.tujuanMuat || '-'} -> ${legDef.tujuanBongkar || '-'}`;
+  // UNTUK/ONGKOS/No.Timbangan: kotak isian bebas -- staf ketik dulu di layar SEBELUM cetak/download,
+  // supaya hasil cetaknya sudah rapi terisi (bukan tulis tangan). Disimpan per-leg lewat listener
+  // 'change' di wireReimburseInlineInputs, jadi tetap ada kalau halaman dibuka lagi (device lain juga).
+  const untukSaved = esc(legData.untuk || '');
+  const ongkosSaved = esc(legData.ongkos || '');
+  const timbanganSaved = esc(legData.timbangan || '');
+  const tonaseVal = (legDef.tonase !== null && legDef.tonase !== undefined && legDef.tonase !== '' && Number(legDef.tonase) > 0)
+    ? Number(legDef.tonase).toLocaleString('id-ID') + ' kg' : '-';
 
   return `
     <div class="pkb-doc">
       <div class="pkb-outer">
         <div class="rb-headrow">
-          <div class="rb-title">Bukti Reimbursement</div>
-          <div class="rb-no">NO&nbsp;: ${esc(r.noReimburse || '-')}</div>
+          <div class="rb-title">Bukti Reimbursement — ${esc(legDef.label)}</div>
+          <div class="rb-no">NO&nbsp;: ${esc(legData.noReimburse || '-')}</div>
         </div>
         <table class="pkb-table">
           <tbody>
             <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
             <tr><td class="pkb-lbl">PA</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(paVal)}</td></tr>
             <tr><td class="pkb-lbl">TUJUAN</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(tujuanVal)}</td></tr>
-            <tr><td class="pkb-lbl">ONGKOS</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="ongkos" value="${ongkosSaved}" placeholder="Rp ..."></td></tr>
+            <tr><td class="pkb-lbl">ONGKOS</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="ongkos" data-leg="${legDef.key}" value="${ongkosSaved}" placeholder="Rp ..."></td></tr>
           </tbody>
         </table>
         <table class="pkb-table pkb-table-gap">
           <tbody>
             <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
             <tr><td class="pkb-lbl">DO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noDO || '-')}</td></tr>
-            <tr><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="untuk" value="${untukSaved}" placeholder="nama customer / tujuan"></td></tr>
+            <tr><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="untuk" data-leg="${legDef.key}" value="${untukSaved}" placeholder="nama customer / tujuan"></td></tr>
           </tbody>
         </table>
         <div class="pkb-barang-head">PERINCIAN BARANG :</div>
         <table class="rb-barang-table">
           <thead><tr><th style="width:34px;">No</th><th>Uraian</th><th>No. Timbangan</th><th style="width:110px;">Tonase</th></tr></thead>
-          <tbody>${barangRowsHtml}</tbody>
+          <tbody>
+            <tr>
+              <td class="rb-num">1</td>
+              <td>${esc(legDef.label)}</td>
+              <td class="rb-timbangan"><input type="text" class="rb-inline-input" data-field="timbangan" data-leg="${legDef.key}" value="${timbanganSaved}" placeholder="No. timbangan"></td>
+              <td class="rb-tonase">${tonaseVal}</td>
+            </tr>
+          </tbody>
         </table>
         <table class="pkb-footer rb-footer pkb-table-gap">
           <tbody>
@@ -6974,57 +6991,36 @@ function buildReimburseHtml(r){
     </div>
   `;
 }
-function openReimburseModal(id){
-  const r = records.find(x => x.id === id);
-  if(!r) return;
-  // No Seri dibuat sekali & disimpan permanen di record -- kalau sudah pernah dicetak sebelumnya,
-  // nomor yang sama dipakai lagi (tidak generate baru tiap dicetak ulang).
-  if(!r.noReimburse){
-    r.noReimburse = generateNoReimburse(r.tanggal);
-    save();
-  }
-  document.getElementById('reimbursePrintArea').innerHTML = buildReimburseHtml(r);
-  document.getElementById('rbModalOverlay').style.display = 'flex';
-  wireReimburseInlineInputs(r);
-}
 /* Kotak isian bebas (Ongkos/Untuk/No. Timbangan) langsung di dalam lembar cetak -- staf ketik di sini,
    nilainya otomatis IKUT TERCETAK (browser mencetak isi <input> yang sedang diketik apa adanya) DAN
-   disimpan ke record saat field-nya selesai diisi (event 'change', bukan tiap huruf diketik, supaya
-   tidak nulis ke Firebase tiap ketikan) -- jadi kalau modal ditutup & dibuka lagi (atau device lain),
-   yang sudah pernah diketik tetap ada. Sesi keseratussembilan. */
+   disimpan ke record per-leg (r.reimburseLegs[data-leg].ongkos/untuk/timbangan) saat field-nya selesai
+   diisi (event 'change', bukan tiap huruf diketik, supaya tidak nulis ke Firebase tiap ketikan) --
+   jadi kalau halaman dibuka lagi (atau device lain), yang sudah pernah diketik tetap ada. */
 function wireReimburseInlineInputs(r, areaId){
-  const area = document.getElementById(areaId || 'reimbursePrintArea');
+  const area = document.getElementById(areaId || 'reimburseLookupPrintArea');
+  if(!area) return;
   area.querySelectorAll('.rb-inline-input').forEach(inp => inp.addEventListener('change', function(){
     const field = this.dataset.field;
+    const legKey = this.dataset.leg;
+    if(!legKey || !r.reimburseLegs || !r.reimburseLegs[legKey]) return;
+    const leg = r.reimburseLegs[legKey];
     if(field === 'ongkos'){
-      r.reimburseOngkos = this.value;
+      leg.ongkos = this.value;
     }else if(field === 'untuk'){
-      r.reimburseUntuk = this.value;
+      leg.untuk = this.value;
     }else if(field === 'timbangan'){
-      const idx = Number(this.dataset.idx);
-      if(!Array.isArray(r.reimburseTimbangan)) r.reimburseTimbangan = [];
-      r.reimburseTimbangan[idx] = this.value;
+      leg.timbangan = this.value;
     }
     save();
   }));
 }
-function closeReimburseModal(){
-  document.getElementById('rbModalOverlay').style.display = 'none';
-}
-document.getElementById('rbModalClose').addEventListener('click', closeReimburseModal);
-document.getElementById('rbModalCloseBtn').addEventListener('click', closeReimburseModal);
-document.getElementById('rbModalOverlay').addEventListener('click', function(e){
-  if(e.target === this) closeReimburseModal();
-});
-document.getElementById('rbModalPrint').addEventListener('click', function(){
-  window.print();
-});
 
-/* ---------- HALAMAN "BUKTI REIMBURSEMENT" (Sesi keseratussepuluh) ----------
-   Halaman khusus di sidebar (data-view="reimburse") -- staf ketik/pilih No PKB, DO yang cocok
-   otomatis muncul lengkap (pakai buildReimburseHtml/wireReimburseInlineInputs yang SAMA dengan modal
-   di Rekap Data DO, satu sumber logika supaya tidak dobel kode), siap diedit (Ongkos/Untuk/No.
-   Timbangan) & langsung dicetak dari halaman ini juga -- tanpa perlu buka/scroll tabel Rekap Data DO. */
+/* ---------- HALAMAN "BUKTI REIMBURSEMENT" (Sesi keseratussepuluh, dirombak Sesi keseratussebelas) ----------
+   Halaman khusus di sidebar (data-view="reimburse") -- SATU-SATUNYA tempat cetak Bon Reimbursement.
+   Staf ketik/pilih No PKB (atau diarahkan otomatis dari ikon reimburse di Rekap Data DO lewat
+   openReimburseForRecord), DO yang cocok otomatis muncul sebagai BEBERAPA kartu terpisah -- satu per
+   jenis muatan (BK/Roll/OCC) yang benar-benar diangkut DO tsb -- masing-masing siap diedit (Ongkos/
+   Untuk/No. Timbangan) & dicetak SENDIRI-SENDIRI dari halaman ini. */
 function populateReimburseNoPkbDatalist(){
   const listEl = document.getElementById('rbLookupNoPkbList');
   if(!listEl) return;
@@ -7045,24 +7041,55 @@ function initReimburseLookupView(){
   document.getElementById('rbLookupStatus').textContent = 'Belum ada No PKB yang diketik.';
   document.getElementById('rbLookupStatus').style.color = 'var(--text-muted)';
 }
-function renderReimburseLookupResult(r){
+/* Render SEMUA kartu Bukti Reimbursement untuk 1 DO -- 1 kartu per jenis muatan (BK/Roll/OCC) yang
+   diangkut, masing-masing dengan No Seri, kotak isian, dan tombol Cetak sendiri (tombol Cetak menandai
+   HANYA kartu itu sebagai rb-print-active sebelum window.print(), supaya satu klik Cetak cuma
+   mencetak 1 bukti, bukan semuanya sekaligus). */
+function renderReimburseLegsForRecord(r){
   const wrap = document.getElementById('rbLookupResultWrap');
-  if(!r.noReimburse){
-    r.noReimburse = generateNoReimburse(r.tanggal);
-    save();
+  const defs = reimburseLegDefs(r);
+  if(defs.length === 0){
+    wrap.innerHTML = `<p class="hint" style="color:#c0392b;">DO ini belum punya data muatan (BK/Roll/OCC) untuk dibuatkan Bukti Reimbursement.</p>`;
+    return;
   }
+  defs.forEach(def => ensureReimburseLeg(r, def.key));
   wrap.innerHTML = `
-    <div id="reimburseLookupPrintArea">${buildReimburseHtml(r)}</div>
-    <div class="btn-row no-print" style="margin-top:14px;">
-      <button type="button" class="btn btn-primary" id="rbLookupPrintBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
-        Cetak / Download Bon
-      </button>
+    <div id="reimburseLookupPrintArea">
+      ${defs.map(def => {
+        const legData = r.reimburseLegs[def.key];
+        return `<div class="rb-leg-doc" data-leg="${def.key}">
+          <div class="rb-leg-card-head no-print">
+            <strong>${esc(def.label)}${defs.length > 1 ? ` &middot; rute ${esc(def.tujuanMuat || '-')} &rarr; ${esc(def.tujuanBongkar || '-')}` : ''}</strong>
+            <button type="button" class="btn btn-primary rb-leg-print-btn" data-leg="${def.key}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+              Cetak / Download Bon ${esc(def.label)}
+            </button>
+          </div>
+          ${buildReimburseLegHtml(r, def, legData)}
+        </div>`;
+      }).join('')}
     </div>`;
   wireReimburseInlineInputs(r, 'reimburseLookupPrintArea');
-  document.getElementById('rbLookupPrintBtn').addEventListener('click', function(){
+  wrap.querySelectorAll('.rb-leg-print-btn').forEach(btn => btn.addEventListener('click', function(){
+    const legKey = this.dataset.leg;
+    wrap.querySelectorAll('.rb-leg-doc').forEach(d => d.classList.toggle('rb-print-active', d.dataset.leg === legKey));
     window.print();
-  });
+  }));
+}
+/* Dipanggil dari ikon "reimburse" di baris Rekap Data DO -- langsung pindah ke halaman sidebar Bukti
+   Reimbursement dengan data DO itu SUDAH TERISI & siap diedit, tanpa staf perlu ketik ulang No PKB nya. */
+function openReimburseForRecord(id){
+  const r = records.find(x => x.id === id);
+  if(!r) return;
+  goTo('reimburse');
+  const input = document.getElementById('rbLookupInput');
+  if(input) input.value = r.noPKB || '';
+  const statusEl = document.getElementById('rbLookupStatus');
+  statusEl.textContent = r.noPKB
+    ? `Menampilkan Bukti Reimbursement untuk DO dengan No PKB ${esc(r.noPKB)}.`
+    : `Menampilkan Bukti Reimbursement untuk DO ini (No PKB belum diisi).`;
+  statusEl.style.color = 'var(--green-600)';
+  renderReimburseLegsForRecord(r);
 }
 document.getElementById('rbLookupInput').addEventListener('input', function(){
   const q = this.value.trim().toLowerCase();
@@ -7082,7 +7109,7 @@ document.getElementById('rbLookupInput').addEventListener('input', function(){
   }else if(matches.length === 1){
     statusEl.textContent = `Ditemukan 1 DO -- data di bawah otomatis terisi dari PKB ${esc(matches[0].noPKB)}.`;
     statusEl.style.color = 'var(--green-600)';
-    renderReimburseLookupResult(matches[0]);
+    renderReimburseLegsForRecord(matches[0]);
   }else{
     // Kasus jarang terjadi -- No PKB tidak wajib unik di sistem ini (diisi manual bebas), jadi kalau
     // kebetulan ada lebih dari 1 DO pakai No PKB yang sama persis, staf pilih dulu salah satu.
@@ -7091,7 +7118,7 @@ document.getElementById('rbLookupInput').addEventListener('input', function(){
     wrap.innerHTML = `<div class="btn-row" style="flex-wrap:wrap;">${matches.map(r => `<button type="button" class="btn btn-secondary rb-lookup-pick" data-id="${esc(r.id)}">${fmtDate(r.tanggal)} — ${esc(r.nopol || r.vendorNama || '-')}</button>`).join('')}</div>`;
     wrap.querySelectorAll('.rb-lookup-pick').forEach(btn => btn.addEventListener('click', function(){
       const picked = records.find(x => x.id === this.dataset.id);
-      if(picked) renderReimburseLookupResult(picked);
+      if(picked) renderReimburseLegsForRecord(picked);
     }));
   }
 });
@@ -10618,7 +10645,7 @@ function renderTable(){
         <button class="icon-btn surat" data-id="${r.id}" title="Cetak PKB">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         </button>
-        <button class="icon-btn reimburse" data-id="${r.id}" title="Cetak Bon Reimbursement">
+        <button class="icon-btn reimburse" data-id="${r.id}" title="Buka Bukti Reimbursement (bisa diedit & dicetak)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M9 15h6"/></svg>
         </button>
         ${canEdit ? `<button class="icon-btn del" data-id="${r.id}" title="Hapus">
@@ -10645,7 +10672,7 @@ function renderTable(){
     openSuratTugasModal(this.dataset.id);
   }));
   wrap.querySelectorAll('.reimburse').forEach(btn => btn.addEventListener('click', function(){
-    openReimburseModal(this.dataset.id);
+    openReimburseForRecord(this.dataset.id);
   }));
   if(canEdit){
     wrap.querySelectorAll('.tonase-edit').forEach(btn => btn.addEventListener('click', function(){
