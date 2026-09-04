@@ -9865,14 +9865,21 @@ function waktuLalu(iso){
   const hari = Math.floor(jam / 24);
   return `${hari} hari lalu`;
 }
-/* DO/record terakhir milik satu nopol -- sumber Driver & Rute/Tujuan (bukan dari GPS).
-   Dibandingkan pakai normNopol() (bukan `===` mentah) karena nopol di form Input DO diketik bebas
-   tanpa datalist -- kalau dibandingkan mentah-mentah, beda huruf besar/kecil atau spasi antara yang
-   diketik di DO vs yang terdaftar di Data Armada bikin Driver & Rute/Tujuan tidak ketemu (tampil "-")
-   walau kendaraan itu sebenarnya sudah punya DO. */
+/* DO/record AKTIF (belum Selesai) terakhir milik satu nopol -- sumber Driver & Rute/Tujuan di
+   Monitoring Armada (bukan dari GPS). Dibandingkan pakai normNopol() (bukan `===` mentah) karena
+   nopol di form Input DO diketik bebas tanpa datalist -- kalau dibandingkan mentah-mentah, beda
+   huruf besar/kecil atau spasi antara yang diketik di DO vs yang terdaftar di Data Armada bikin
+   Driver & Rute/Tujuan tidak ketemu (tampil "-") walau kendaraan itu sebenarnya sudah punya DO.
+   Sesi keseratusdua: SENGAJA mengecualikan DO yang status-nya sudah "Selesai" -- sebelumnya begitu
+   1 DO ditandai Selesai, Rute/Tujuan (& Driver) di Monitoring Armada masih menampilkan DO itu terus
+   (karena tetap "yang terakhir"), padahal truk itu sudah tidak sedang menuju ke sana lagi -- bikin
+   bingung dikira masih dalam perjalanan. Sekarang cuma DO yang statusnya Dijadwalkan/Dalam
+   Perjalanan/Sampai Tujuan (belum Selesai) yang dianggap "sedang berjalan" & ditampilkan; begitu
+   DO itu ditandai Selesai, baris nopol tsb otomatis kembali ke "-" (kosong) di kolom Driver & Rute,
+   BUKAN nyangkut ke history DO lama yang membingungkan. */
 function dashVehicleLatestRecord(nopol){
   const target = normNopol(nopol);
-  const recs = records.filter(r => normNopol(r.nopol) === target).sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
+  const recs = records.filter(r => normNopol(r.nopol) === target && normalizeStatus(r.status) !== 'selesai').sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
   return recs[0] || null;
 }
 function gpsStatusBadge(status){
