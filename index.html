@@ -388,7 +388,10 @@
   .rb-leg-card-head strong{font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy-700);}
   .rb-headrow{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
   .rb-headrow .rb-title{font-weight:800; font-size:15px; letter-spacing:.04em; text-transform:uppercase;}
-  .rb-headrow .rb-no{font-weight:700; font-size:13px;}
+  .rb-headrow .rb-no{font-weight:700; font-size:13px; display:flex; align-items:baseline; gap:4px;}
+  /* No Seri cuma bisa diubah admin (Sesi keseratustigabelas) -- staf lihat sebagai teks biasa, admin
+     lihat sebagai kotak isian kecil bergaris putus-putus (sama seperti Ongkos/Untuk/dll). */
+  .rb-no-input{width:96px !important; text-align:right; font-weight:700;}
   .rb-barang-table{width:100%; border-collapse:collapse; margin-top:0;}
   .rb-barang-table th, .rb-barang-table td{border:1.4px solid #111; padding:7px 9px; font-size:12px; text-align:left;}
   .rb-barang-table th{font-weight:700; background:#f2f2f2; text-align:center;}
@@ -397,13 +400,17 @@
   .rb-barang-table td.rb-tonase{text-align:right; width:110px;}
   .rb-footer td{padding-top:14px !important;}
   .rb-footer .rb-sign-space{height:60px; padding-top:6px !important;}
-  /* Kotak isian bebas (Ongkos/Untuk/No. Timbangan) -- dibuat SEPOLOS mungkin (tanpa border/kotak
-     kelihatan) supaya menyatu dengan garis form, baik di layar maupun saat dicetak/PDF. */
+  /* Kotak isian bebas (Ongkos/Untuk/No. Timbangan) -- SAAT DICETAK dibuat sepolos mungkin (tanpa
+     border/kotak kelihatan) supaya menyatu dengan garis form. Tapi SAAT DI LAYAR diberi garis putus-
+     putus tipis + kursor "text" supaya staf langsung tahu ini kotak yang bisa diklik & diketik langsung
+     (bukan tulisan biasa) -- tidak ada tombol "Edit" terpisah, tinggal klik di atas teksnya lalu ketik. */
   .rb-inline-input{
-    width:100%; border:none; background:transparent; outline:none; padding:2px 0;
+    width:100%; border:none; border-bottom:1.5px dashed #b9bfcc; background:transparent; outline:none;
+    padding:2px 0; cursor:text;
     font-family:inherit; font-size:inherit; color:inherit; text-transform:inherit;
   }
-  .rb-inline-input:focus{background:#fffbe0;}
+  .rb-inline-input:hover{border-bottom-color:#7c8aa3;}
+  .rb-inline-input:focus{background:#fffbe0; border-bottom-color:var(--green-600, #1f7a54); border-bottom-style:solid;}
   .rb-barang-table .rb-inline-input{text-align:left;}
   @media print{
     .rb-inline-input{border:none !important; background:none !important; -webkit-appearance:none; appearance:none;}
@@ -6926,10 +6933,17 @@ function ensureReimburseLeg(r, key){
   }
   return leg;
 }
-function buildReimburseLegHtml(r, legDef, legData){
+function buildReimburseLegHtml(r, legDef, legData, isAdmin){
   const isVendor = r.jenisAngkutan === 'vendor';
-  // PA: Nopol untuk Angkutan Organik, nama angkutan Vendor Luar (termasuk Loco/Franco) untuk Vendor Luar.
-  const paVal = isVendor ? (r.vendorNama || '-') : (r.nopol || '-');
+  // PA & DO: OTOMATIS terisi dari data PKB/DO (Nopol/nama vendor, No DO) -- tapi sekarang jadi kotak
+  // isian yang bisa DIKETIK ULANG MANUAL oleh staff (mis. kalau PKB-nya beda dari yang biasanya
+  // otomatis, atau No DO belum sempat diisi di form PKB) -- Sesi keseratustigabelas. Nilai yang pernah
+  // diketik staf tersimpan di r.reimburseLegs[key].pa/.do (menimpa nilai otomatis), kalau belum pernah
+  // diketik sama sekali kotak ini tampil terisi nilai otomatis dari data PKB seperti biasa.
+  const paDefault = isVendor ? (r.vendorNama || '') : (r.nopol || '');
+  const paSaved = esc(legData.pa !== undefined ? legData.pa : paDefault);
+  const doDefault = r.noDO || '';
+  const doSaved = esc(legData.do !== undefined ? legData.do : doDefault);
   // TUJUAN: rute muat -> bongkar KHUSUS jenis muatan ini saja (bukan gabungan semua jenis).
   const tujuanVal = `${legDef.tujuanMuat || '-'} -> ${legDef.tujuanBongkar || '-'}`;
   // UNTUK/ONGKOS/No.Timbangan: kotak isian bebas -- staf ketik dulu di layar SEBELUM cetak/download,
@@ -6940,18 +6954,23 @@ function buildReimburseLegHtml(r, legDef, legData){
   const timbanganSaved = esc(legData.timbangan || '');
   const tonaseVal = (legDef.tonase !== null && legDef.tonase !== undefined && legDef.tonase !== '' && Number(legDef.tonase) > 0)
     ? Number(legDef.tonase).toLocaleString('id-ID') + ' kg' : '-';
+  // No Seri: HANYA admin yang boleh mengubahnya (nomor resmi urut per bulan, staf cukup lihat saja
+  // supaya tidak sengaja/tidak sengaja rusak urutannya) -- Sesi keseratustigabelas.
+  const noSeriHtml = isAdmin
+    ? `<input type="text" class="rb-inline-input rb-no-input" data-field="noReimburse" data-leg="${legDef.key}" value="${esc(legData.noReimburse || '')}" placeholder="YYMM-NNN" title="Hanya admin yang bisa mengubah No Seri">`
+    : esc(legData.noReimburse || '-');
 
   return `
     <div class="pkb-doc">
       <div class="pkb-outer">
         <div class="rb-headrow">
           <div class="rb-title">Bukti Reimbursement — ${esc(legDef.label)}</div>
-          <div class="rb-no">NO&nbsp;: ${esc(legData.noReimburse || '-')}</div>
+          <div class="rb-no">NO&nbsp;: ${noSeriHtml}</div>
         </div>
         <table class="pkb-table">
           <tbody>
             <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
-            <tr><td class="pkb-lbl">PA</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(paVal)}</td></tr>
+            <tr><td class="pkb-lbl">PA</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="pa" data-leg="${legDef.key}" value="${paSaved}" placeholder="nopol / nama vendor"></td></tr>
             <tr><td class="pkb-lbl">TUJUAN</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(tujuanVal)}</td></tr>
             <tr><td class="pkb-lbl">ONGKOS</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="ongkos" data-leg="${legDef.key}" value="${ongkosSaved}" placeholder="Rp ..."></td></tr>
           </tbody>
@@ -6959,7 +6978,7 @@ function buildReimburseLegHtml(r, legDef, legData){
         <table class="pkb-table pkb-table-gap">
           <tbody>
             <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
-            <tr><td class="pkb-lbl">DO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noDO || '-')}</td></tr>
+            <tr><td class="pkb-lbl">DO</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="do" data-leg="${legDef.key}" value="${doSaved}" placeholder="No. DO"></td></tr>
             <tr><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="untuk" data-leg="${legDef.key}" value="${untukSaved}" placeholder="nama customer / tujuan"></td></tr>
           </tbody>
         </table>
@@ -7010,6 +7029,16 @@ function wireReimburseInlineInputs(r, areaId){
       leg.untuk = this.value;
     }else if(field === 'timbangan'){
       leg.timbangan = this.value;
+    }else if(field === 'pa'){
+      leg.pa = this.value;
+    }else if(field === 'do'){
+      leg.do = this.value;
+    }else if(field === 'noReimburse'){
+      // No Seri cuma boleh diubah admin -- kotaknya sendiri cuma dirender untuk admin (lihat
+      // buildReimburseLegHtml), tapi dicek ulang disini juga sebagai jaga-jaga kalau ada yang
+      // memaksa lewat console/DOM, supaya staf non-admin tetap tidak bisa mengubahnya.
+      if(!isAdminUser()) return;
+      leg.noReimburse = this.value.trim() || leg.noReimburse;
     }
     save();
   }));
@@ -7052,8 +7081,10 @@ function renderReimburseLegsForRecord(r){
     wrap.innerHTML = `<p class="hint" style="color:#c0392b;">DO ini belum punya data muatan (BK/Roll/OCC) untuk dibuatkan Bukti Reimbursement.</p>`;
     return;
   }
+  const isAdmin = isAdminUser();
   defs.forEach(def => ensureReimburseLeg(r, def.key));
   wrap.innerHTML = `
+    <p class="hint no-print" style="margin:0 0 12px;">Kotak dengan garis putus-putus (PA, ONGKOS, DO, UNTUK, No. Timbangan${isAdmin ? ', No Seri' : ''}) bisa langsung diklik &amp; diketik -- tidak perlu tombol Edit, otomatis tersimpan begitu selesai mengetik &amp; pindah ke kotak lain.${isAdmin ? '' : ' No Seri di pojok kanan atas cuma bisa diubah oleh admin.'}</p>
     <div id="reimburseLookupPrintArea">
       ${defs.map(def => {
         const legData = r.reimburseLegs[def.key];
@@ -7065,7 +7096,7 @@ function renderReimburseLegsForRecord(r){
               Cetak / Download Bon ${esc(def.label)}
             </button>
           </div>
-          ${buildReimburseLegHtml(r, def, legData)}
+          ${buildReimburseLegHtml(r, def, legData, isAdmin)}
         </div>`;
       }).join('')}
     </div>`;
