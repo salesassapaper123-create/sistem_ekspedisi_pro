@@ -6899,39 +6899,68 @@ function reimburseLegDefs(r){
   if(recKirimOCC(r)) defs.push({ key: 'occ', label: 'OCC', tujuanMuat: r.tujuanMuat3, tujuanBongkar: r.tujuanBongkar3, tonase: r.tonase3 });
   return defs;
 }
-/* No Seri dibuat OTOMATIS SEKALI per LEG (tersimpan di r.reimburseLegs[key].noReimburse, tidak berubah
-   lagi walau dicetak ulang berkali-kali) -- format "YYMM-NNN": YYMM dari Tanggal DO (bukan tanggal
-   cetak), NNN = nomor urut 3 digit dalam bulan yang sama LINTAS SEMUA LEG (mulai 001, tidak diulang),
-   meniru pola generateNextNoCO(). Discan dari nested reimburseLegs semua record. */
-function generateNoReimburse(tanggalIso){
-  const d = tanggalIso ? new Date(tanggalIso + 'T00:00:00') : new Date();
-  const yymm = String(d.getFullYear()).slice(-2) + String(d.getMonth() + 1).padStart(2, '0');
-  const existingNums = [];
-  records.forEach(rr => {
-    const legs = rr.reimburseLegs;
-    if(!legs) return;
-    Object.keys(legs).forEach(k => {
-      const no = (legs[k] && legs[k].noReimburse) || '';
-      if(no.startsWith(yymm + '-')){
-        const n = parseInt(no.split('-')[1], 10);
-        if(!isNaN(n)) existingNums.push(n);
-      }
-    });
-  });
-  const next = existingNums.length ? Math.max(...existingNums) + 1 : 1;
-  return yymm + '-' + String(next).padStart(3, '0');
-}
-/* Pastikan r.reimburseLegs[key] sudah ada & sudah punya No Seri -- dipanggil tiap leg akan ditampilkan,
-   aman dipanggil berkali-kali (No Seri cuma dibuat sekali, sisanya dipakai ulang). */
+/* Pastikan r.reimburseLegs[key] sudah ada (No Seri-nya BELUM tentu diisi disini -- dihitung/diurutkan
+   belakangan oleh resyncReimburseNoSeri() supaya urut berdasarkan TANGGAL DO, bukan urutan staf
+   membuka halaman ini). Aman dipanggil berkali-kali. */
 function ensureReimburseLeg(r, key){
   if(!r.reimburseLegs) r.reimburseLegs = {};
   if(!r.reimburseLegs[key]) r.reimburseLegs[key] = {};
-  const leg = r.reimburseLegs[key];
-  if(!leg.noReimburse){
-    leg.noReimburse = generateNoReimburse(r.tanggal);
-    save();
-  }
-  return leg;
+  return r.reimburseLegs[key];
+}
+/* Urutan tetap jenis muatan dalam 1 DO -- dipakai sebagai salah satu penentu urutan No Seri kalau 1 DO
+   punya lebih dari 1 jenis muatan di tanggal yang sama (BK dulu, baru Roll, baru OCC), sama seperti
+   urutan yang dipakai reimburseLegDefs(). */
+const REIMBURSE_LEG_ORDER = { bk: 0, roll: 1, occ: 2 };
+/* Hitung ULANG No Seri SEMUA Bukti Reimbursement yang sudah pernah dibuka (ada isinya di
+   r.reimburseLegs) supaya urut RAPI berdasarkan TANGGAL DO -- per bulan mulai dari 001 di tanggal
+   paling awal, bukan berdasarkan urutan staf membuka/mengetik halamannya (itu penyebab nomornya
+   "acak-acakan" di versi sebelumnya). Format tetap "YYMM-NNN", dihitung terpisah tiap bulan. Kalau 1
+   DO punya beberapa jenis muatan di tanggal yang sama, urutannya BK -> Roll -> OCC.
+
+   Leg yang No Seri-nya SUDAH PERNAH DIUBAH MANUAL oleh admin (leg.noReimburseManual = true) TIDAK ikut
+   dihitung ulang -- nomornya dikunci apa adanya sesuai ketikan admin, dan leg otomatis lainnya akan
+   MELOMPATI nomor yang sudah dikunci itu supaya tidak dobel.
+
+   Dipanggil tiap kali halaman "Bukti Reimbursement" menampilkan data (renderReimburseLegsForRecord),
+   jadi begitu ada DO bertanggal lebih awal yang baru pertama kali dibuka Bukti Reimbursement-nya,
+   nomor-nomor leg otomatis lain otomatis bergeser mengikuti supaya tetap urut sesuai tanggal.
+   Sesi keseratusempatbelas. */
+function resyncReimburseNoSeri(){
+  const byMonth = {};
+  records.forEach(rr => {
+    if(!rr.reimburseLegs || !rr.tanggal) return;
+    const d = new Date(rr.tanggal + 'T00:00:00');
+    if(isNaN(d.getTime())) return;
+    const yymm = String(d.getFullYear()).slice(-2) + String(d.getMonth() + 1).padStart(2, '0');
+    reimburseLegDefs(rr).forEach(def => {
+      const leg = rr.reimburseLegs[def.key];
+      if(!leg) return;
+      if(!byMonth[yymm]) byMonth[yymm] = { locked: new Set(), items: [] };
+      if(leg.noReimburseManual && leg.noReimburse){
+        const n = parseInt(String(leg.noReimburse).split('-')[1], 10);
+        if(!isNaN(n)) byMonth[yymm].locked.add(n);
+      }else{
+        byMonth[yymm].items.push({ leg, tanggal: rr.tanggal, id: rr.id || '', order: REIMBURSE_LEG_ORDER[def.key] || 0 });
+      }
+    });
+  });
+  let changed = false;
+  Object.keys(byMonth).forEach(yymm => {
+    const { locked, items } = byMonth[yymm];
+    items.sort((a, b) => {
+      if(a.tanggal !== b.tanggal) return a.tanggal < b.tanggal ? -1 : 1;
+      if(a.id !== b.id) return a.id < b.id ? -1 : 1;
+      return a.order - b.order;
+    });
+    let n = 1;
+    items.forEach(item => {
+      while(locked.has(n)) n++;
+      const newNo = yymm + '-' + String(n).padStart(3, '0');
+      if(item.leg.noReimburse !== newNo){ item.leg.noReimburse = newNo; changed = true; }
+      n++;
+    });
+  });
+  if(changed) save();
 }
 function buildReimburseLegHtml(r, legDef, legData, isAdmin){
   const isVendor = r.jenisAngkutan === 'vendor';
@@ -7036,9 +7065,23 @@ function wireReimburseInlineInputs(r, areaId){
     }else if(field === 'noReimburse'){
       // No Seri cuma boleh diubah admin -- kotaknya sendiri cuma dirender untuk admin (lihat
       // buildReimburseLegHtml), tapi dicek ulang disini juga sebagai jaga-jaga kalau ada yang
-      // memaksa lewat console/DOM, supaya staf non-admin tetap tidak bisa mengubahnya.
+      // memaksa lewat console/DOM, supaya staf non-admin tetap tidak bisa mengubahnya. Begitu admin
+      // mengetik ulang No Seri, nomor itu "dikunci" (noReimburseManual = true) supaya TIDAK ikut
+      // dihitung ulang otomatis lagi oleh resyncReimburseNoSeri() -- lalu langsung resync & render
+      // ulang kartu supaya leg otomatis lainnya (kalau ada yang kebetulan tabrakan nomor) langsung
+      // menyesuaikan/melompati nomor yang baru dikunci ini.
       if(!isAdminUser()) return;
-      leg.noReimburse = this.value.trim() || leg.noReimburse;
+      const val = this.value.trim();
+      if(val){
+        leg.noReimburse = val;
+        leg.noReimburseManual = true;
+        save();
+        resyncReimburseNoSeri();
+        renderReimburseLegsForRecord(r);
+      }
+      return;
+    }else{
+      return;
     }
     save();
   }));
@@ -7083,6 +7126,10 @@ function renderReimburseLegsForRecord(r){
   }
   const isAdmin = isAdminUser();
   defs.forEach(def => ensureReimburseLeg(r, def.key));
+  // Hitung ulang No Seri semua leg (bukan cuma punya DO ini) supaya urut sesuai TANGGAL DO -- lihat
+  // penjelasan lengkap di resyncReimburseNoSeri(). Dipanggil disini (tiap kali kartu ditampilkan)
+  // supaya begitu DO tanggal lebih awal baru pertama kali dibuka, urutan langsung dibetulkan.
+  resyncReimburseNoSeri();
   wrap.innerHTML = `
     <p class="hint no-print" style="margin:0 0 12px;">Kotak dengan garis putus-putus (PA, ONGKOS, DO, UNTUK, No. Timbangan${isAdmin ? ', No Seri' : ''}) bisa langsung diklik &amp; diketik -- tidak perlu tombol Edit, otomatis tersimpan begitu selesai mengetik &amp; pindah ke kotak lain.${isAdmin ? '' : ' No Seri di pojok kanan atas cuma bisa diubah oleh admin.'}</p>
     <div id="reimburseLookupPrintArea">
