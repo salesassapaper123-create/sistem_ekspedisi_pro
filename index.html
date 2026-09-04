@@ -3340,7 +3340,9 @@ function checkAndNotify(){
 
   if (reminders.length === 0) return;
 
-  var msg = 'Pengingat Kendaraan (Legalitas & Service)\n'
+  var msg = '*LINTAS - Lingga Integrated Transport Administration System*\n'
+    + '_Notifikasi otomatis sistem, mohon tidak dibalas_\n\n'
+    + 'Pengingat Kendaraan (Legalitas & Service)\n'
     + Utilities.formatDate(new Date(), 'GMT+7', 'dd MMMM yyyy') + '\n\n'
     + reminders.map(function(r){ return '- ' + r; }).join('\n')
     + '\n\nMohon segera dijadwalkan perpanjangan/pembayaran/service.';
@@ -3364,7 +3366,9 @@ function checkAndNotifyPoBaru(){
   var totalSisaPo = totalSisaPoDikonfirmasi_();
 
   belumNotif.forEach(function(p){
-    var msg = 'PO Baru Masuk\n\n'
+    var msg = '*LINTAS - Lingga Integrated Transport Administration System*\n'
+      + '_Notifikasi otomatis sistem, mohon tidak dibalas_\n\n'
+      + 'PO Baru Masuk\n\n'
       + 'No. CO: ' + (p.noCO || '-') + '\n'
       + 'No. PO: ' + (p.noPO || '-') + '\n'
       + 'Customer: ' + (p.namaCustomer || '-') + '\n'
@@ -8539,7 +8543,7 @@ function getLegalDueSoonList(){
   return out.sort((a,b) => a.sisa - b.sisa);
 }
 function buildWaLegalMessage(list){
-  const lines = [`*Pengingat Kendaraan (Legalitas & Service)*`, `Dicetak: ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}`, ``];
+  const lines = [`*LINTAS - Lingga Integrated Transport Administration System*`, `_Notifikasi otomatis sistem, mohon tidak dibalas_`, ``, `*Pengingat Kendaraan (Legalitas & Service)*`, `Dicetak: ${new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}`, ``];
   list.forEach(it => {
     let status;
     if(it.unit === 'km'){
