@@ -10211,7 +10211,7 @@ function getRekapDOFilteredList(){
   else if(fBln) list = list.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
   if(fStatus) list = list.filter(r => normalizeStatus(r.status) === fStatus);
   if(fAngkutan) list = list.filter(r => (r.jenisAngkutan || 'organik') === fAngkutan);
-  if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota]
+  if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota,r.noPKB]
     .some(v => (v||'').toLowerCase().includes(q)));
   return list;
 }
@@ -10238,7 +10238,7 @@ function renderTable(){
 
   const canEdit = canEditRekapDO(); // admin, atau akun non-admin yang diberi akses khusus lewat toggle "Bisa edit Rekap Data DO"
   wrap.innerHTML = `<table class="do-table"><thead><tr>
-    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th><th class="do-th-kota">Kota</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
+    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th><th class="do-th-pkb">No PKB</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
     <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-pendapatan">Pendapatan (Rp)</th><th class="do-th-status">Status</th><th class="do-th-aksi"></th>
   </tr></thead><tbody>${list.map(r => `
     <tr>
@@ -10246,7 +10246,7 @@ function renderTable(){
       <td class="do-td-nopol"><span class="plate-cell">${esc(r.nopol)}</span></td>
       <td class="do-td-armada">${esc(armadaLabel(r.jenisArmada))}</td>
       <td class="do-td-angkutan">${jenisAngkutanBadge(r)}</td>
-      <td class="do-td-kota">${r.jenisAngkutan === 'vendor' ? `<span title="${esc(r.vendorRute || '')}">${esc(r.vendorNama || '-')}</span>` : esc(r.kota || '-')}${r.noCOTerkait ? `<div class="hint" style="margin-top:2px;">PO: ${esc(r.noCOTerkait)}</div>` : ''}</td>
+      <td class="do-td-pkb mono">${esc(r.noPKB || '-')}${r.noCOTerkait ? `<div class="hint" style="margin-top:2px;">PO: ${esc(r.noCOTerkait)}</div>` : ''}</td>
       <td class="do-td-sopir">${esc(r.sopir || '-')}</td>
       <td class="do-td-uang mono">${rupiah(Number(r.uangJalan) || 0)}</td>
       <td class="do-td-biayalain mono">${rupiah(Number(r.biayaLain) || 0)}</td>
@@ -10386,7 +10386,7 @@ document.getElementById('btnClearFilter').addEventListener('click', function(){
    Kolom & baris TOTAL persis meniru tabel di layar (renderTable), dan selalu mengikuti filter yang
    sedang aktif (getRekapDOFilteredList / getRekapDOFilterLabel di atas). Pola ZIP-XLSX & jendela
    cetak sama persis dengan "Monitoring Organik" / "Laporan Pengiriman" (makeZip, XS, LAPORAN_XLSX_STYLES_XML). ---- */
-const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','Kota/Vendor','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Pendapatan (Rp)','Status'];
+const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Pendapatan (Rp)','Status'];
 const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,16,15,17,12,36,14,17,14,16,16];
 function buildRekapDOSheetXml(filterLabel, list){
   const nCols = REKAPDO_XLSX_HEADERS.length;
@@ -10415,7 +10415,7 @@ function buildRekapDOSheetXml(filterLabel, list){
       r.nopol || '-',
       armadaLabel(r.jenisArmada),
       isVendor ? 'Vendor Luar' : 'Organik',
-      isVendor ? (r.vendorNama || '-') : (r.kota || '-'),
+      r.noPKB || '-',
       r.sopir || '-',
     ];
     let cells = '';
@@ -10536,7 +10536,7 @@ function buildRekapDOPrintHtml(filterLabel, list){
       <td>${esc(r.nopol || '-')}</td>
       <td>${esc(armadaLabel(r.jenisArmada))}</td>
       <td>${esc(isVendor ? 'Vendor Luar' : 'Organik')}</td>
-      <td>${esc(isVendor ? (r.vendorNama || '-') : (r.kota || '-'))}</td>
+      <td>${esc(r.noPKB || '-')}</td>
       <td>${esc(r.sopir || '-')}</td>
       <td style="text-align:right;">${rupiah(Number(r.uangJalan)||0)}</td>
       <td style="text-align:right;">${rupiah(Number(r.biayaLain)||0)}</td>
@@ -10586,7 +10586,7 @@ function buildRekapDOPrintHtml(filterLabel, list){
   <p class="sub">Filter: ${esc(filterLabel)}</p>
   <table>
     <thead><tr>
-      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Angkutan</th><th>Kota/Vendor</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya Lain-lain</th><th>Jenis</th><th>Rute Muat &rarr; Bongkar</th><th>Tonase BK (Kg)</th><th>Tonase Roll Assa (Kg)</th><th>Tonase OCC (Kg)</th><th>Pendapatan</th><th>Status</th>
+      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Angkutan</th><th>No PKB</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya Lain-lain</th><th>Jenis</th><th>Rute Muat &rarr; Bongkar</th><th>Tonase BK (Kg)</th><th>Tonase Roll Assa (Kg)</th><th>Tonase OCC (Kg)</th><th>Pendapatan</th><th>Status</th>
     </tr></thead>
     <tbody>${bodyHtml}${footHtml}</tbody>
   </table>
