@@ -1309,6 +1309,10 @@
                   <input type="text" id="doNoPKB" placeholder="cth. PKB-001/VIII/2026">
                 </div>
                 <div class="field">
+                  <label for="doNoDO">No. DO <span class="hint">(opsional, diisi manual)</span></label>
+                  <input type="text" id="doNoDO" placeholder="cth. DO-001/VIII/2026">
+                </div>
+                <div class="field">
                   <label for="nopolOrganik" id="nopolLabel">Nopol</label>
                   <!-- Angkutan Organik: WAJIB pilih dari dropdown (bukan ketik bebas) supaya tidak salah ketik/typo nopol --
                        daftarnya diambil dari Data Armada, lihat populateDoNopolSopirDropdowns(). -->
@@ -6428,6 +6432,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   const fieldsData = {
     tanggal: tanggal,
     noPKB: document.getElementById('doNoPKB').value.trim(),
+    noDO: document.getElementById('doNoDO').value.trim(),
     nopol: getDONopolVal(),
     sopir: getDOSopirVal(),
     kirimBK: kirimBK,
@@ -6494,6 +6499,7 @@ function editRecordDO(id){
 
   document.getElementById('tanggal').value = rec.tanggal || '';
   document.getElementById('doNoPKB').value = rec.noPKB || '';
+  document.getElementById('doNoDO').value = rec.noDO || '';
   setDONopolSopirVal(rec.nopol || '', rec.sopir || '');
   document.getElementById('cbBK').checked = recKirimBK(rec);
   document.getElementById('cbRoll').checked = recKirimRoll(rec);
@@ -10211,7 +10217,7 @@ function getRekapDOFilteredList(){
   else if(fBln) list = list.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
   if(fStatus) list = list.filter(r => normalizeStatus(r.status) === fStatus);
   if(fAngkutan) list = list.filter(r => (r.jenisAngkutan || 'organik') === fAngkutan);
-  if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota,r.noPKB]
+  if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota,r.noPKB,r.noDO]
     .some(v => (v||'').toLowerCase().includes(q)));
   return list;
 }
@@ -10238,7 +10244,7 @@ function renderTable(){
 
   const canEdit = canEditRekapDO(); // admin, atau akun non-admin yang diberi akses khusus lewat toggle "Bisa edit Rekap Data DO"
   wrap.innerHTML = `<table class="do-table"><thead><tr>
-    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th><th class="do-th-pkb">No PKB</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
+    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th><th class="do-th-pkb">No PKB</th><th class="do-th-do">No DO</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
     <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-pendapatan">Pendapatan (Rp)</th><th class="do-th-status">Status</th><th class="do-th-aksi"></th>
   </tr></thead><tbody>${list.map(r => `
     <tr>
@@ -10247,6 +10253,7 @@ function renderTable(){
       <td class="do-td-armada">${esc(armadaLabel(r.jenisArmada))}</td>
       <td class="do-td-angkutan">${jenisAngkutanBadge(r)}</td>
       <td class="do-td-pkb mono">${esc(r.noPKB || '-')}${r.noCOTerkait ? `<div class="hint" style="margin-top:2px;">PO: ${esc(r.noCOTerkait)}</div>` : ''}</td>
+      <td class="do-td-do mono">${esc(r.noDO || '-')}</td>
       <td class="do-td-sopir">${esc(r.sopir || '-')}</td>
       <td class="do-td-uang mono">${rupiah(Number(r.uangJalan) || 0)}</td>
       <td class="do-td-biayalain mono">${rupiah(Number(r.biayaLain) || 0)}</td>
@@ -10305,7 +10312,7 @@ function renderTable(){
       </td>
     </tr>`).join('')}
     <tr class="do-total-row">
-      <td class="do-td-tanggal" colspan="6" style="text-align:right;">TOTAL (${list.length} DO)</td>
+      <td class="do-td-tanggal" colspan="7" style="text-align:right;">TOTAL (${list.length} DO)</td>
       <td class="do-td-uang mono">${rupiah(list.reduce((s,r) => s + (Number(r.uangJalan)||0), 0))}</td>
       <td class="do-td-biayalain mono">${rupiah(list.reduce((s,r) => s + (Number(r.biayaLain)||0), 0))}</td>
       <td class="do-td-jenis"></td>
@@ -10386,8 +10393,8 @@ document.getElementById('btnClearFilter').addEventListener('click', function(){
    Kolom & baris TOTAL persis meniru tabel di layar (renderTable), dan selalu mengikuti filter yang
    sedang aktif (getRekapDOFilteredList / getRekapDOFilterLabel di atas). Pola ZIP-XLSX & jendela
    cetak sama persis dengan "Monitoring Organik" / "Laporan Pengiriman" (makeZip, XS, LAPORAN_XLSX_STYLES_XML). ---- */
-const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Pendapatan (Rp)','Status'];
-const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,16,15,17,12,36,14,17,14,16,16];
+const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','No DO','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Pendapatan (Rp)','Status'];
+const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,18,16,15,17,12,36,14,17,14,16,16];
 function buildRekapDOSheetXml(filterLabel, list){
   const nCols = REKAPDO_XLSX_HEADERS.length;
   const headerRowIdx = 4;
@@ -10416,25 +10423,26 @@ function buildRekapDOSheetXml(filterLabel, list){
       armadaLabel(r.jenisArmada),
       isVendor ? 'Vendor Luar' : 'Organik',
       r.noPKB || '-',
+      r.noDO || '-',
       r.sopir || '-',
     ];
     let cells = '';
     textVals.forEach((v, ci) => {
       cells += `<c r="${xlsxColLetter(ci+1)}${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(String(v))}</t></is></c>`;
     });
-    cells += `<c r="G${rowIdx}" s="${sCur}"><v>${Number(r.uangJalan)||0}</v></c>`;
-    cells += `<c r="H${rowIdx}" s="${sCur}"><v>${Number(r.biayaLain)||0}</v></c>`;
-    cells += `<c r="I${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(jenisLabel(r))}</t></is></c>`;
-    cells += `<c r="J${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(tujuanListText(r))}</t></is></c>`;
+    cells += `<c r="H${rowIdx}" s="${sCur}"><v>${Number(r.uangJalan)||0}</v></c>`;
+    cells += `<c r="I${rowIdx}" s="${sCur}"><v>${Number(r.biayaLain)||0}</v></c>`;
+    cells += `<c r="J${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(jenisLabel(r))}</t></is></c>`;
+    cells += `<c r="K${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(tujuanListText(r))}</t></is></c>`;
     const t1 = r.tonase1 ? Number(r.tonase1) : null;
-    cells += t1 != null ? `<c r="K${rowIdx}" s="${sNum}"><v>${t1}</v></c>` : `<c r="K${rowIdx}" s="${sNum}"/>`;
+    cells += t1 != null ? `<c r="L${rowIdx}" s="${sNum}"><v>${t1}</v></c>` : `<c r="L${rowIdx}" s="${sNum}"/>`;
     const t2 = r.tonase2 ? Number(r.tonase2) : null;
-    cells += t2 != null ? `<c r="L${rowIdx}" s="${sNum}"><v>${t2}</v></c>` : `<c r="L${rowIdx}" s="${sNum}"/>`;
+    cells += t2 != null ? `<c r="M${rowIdx}" s="${sNum}"><v>${t2}</v></c>` : `<c r="M${rowIdx}" s="${sNum}"/>`;
     const t3 = r.tonase3 ? Number(r.tonase3) : null;
-    cells += t3 != null ? `<c r="M${rowIdx}" s="${sNum}"><v>${t3}</v></c>` : `<c r="M${rowIdx}" s="${sNum}"/>`;
+    cells += t3 != null ? `<c r="N${rowIdx}" s="${sNum}"><v>${t3}</v></c>` : `<c r="N${rowIdx}" s="${sNum}"/>`;
     const pend = r.status === 'selesai' ? (Number(r.pendapatan) || 0) : null;
-    cells += pend != null ? `<c r="N${rowIdx}" s="${sCur}"><v>${pend}</v></c>` : `<c r="N${rowIdx}" s="${sCur}"/>`;
-    cells += `<c r="O${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc((STATUS_META[normalizeStatus(r.status)] || {}).label || '-')}</t></is></c>`;
+    cells += pend != null ? `<c r="O${rowIdx}" s="${sCur}"><v>${pend}</v></c>` : `<c r="O${rowIdx}" s="${sCur}"/>`;
+    cells += `<c r="P${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc((STATUS_META[normalizeStatus(r.status)] || {}).label || '-')}</t></is></c>`;
     rowsXml += `<row r="${rowIdx}">${cells}</row>`;
   });
 
@@ -10445,16 +10453,16 @@ function buildRekapDOSheetXml(filterLabel, list){
   const sumT3 = list.reduce((s,r) => s + (Number(r.tonase3)||0), 0);
   const sumPend = list.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
   let totalCells = `<c r="A${totalRowIdx}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>${esc('TOTAL (' + list.length + ' DO)')}</t></is></c>`;
-  for(let ci = 2; ci <= 6; ci++) totalCells += `<c r="${xlsxColLetter(ci)}${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
-  totalCells += `<c r="G${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(G${firstDataRow}:G${lastDataRow})</f><v>${sumUang}</v></c>`;
-  totalCells += `<c r="H${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(H${firstDataRow}:H${lastDataRow})</f><v>${sumBiaya}</v></c>`;
-  totalCells += `<c r="I${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  for(let ci = 2; ci <= 7; ci++) totalCells += `<c r="${xlsxColLetter(ci)}${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="H${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(H${firstDataRow}:H${lastDataRow})</f><v>${sumUang}</v></c>`;
+  totalCells += `<c r="I${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(I${firstDataRow}:I${lastDataRow})</f><v>${sumBiaya}</v></c>`;
   totalCells += `<c r="J${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
-  totalCells += `<c r="K${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(K${firstDataRow}:K${lastDataRow})</f><v>${sumT1}</v></c>`;
-  totalCells += `<c r="L${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(L${firstDataRow}:L${lastDataRow})</f><v>${sumT2}</v></c>`;
-  totalCells += `<c r="M${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(M${firstDataRow}:M${lastDataRow})</f><v>${sumT3}</v></c>`;
-  totalCells += `<c r="N${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(N${firstDataRow}:N${lastDataRow})</f><v>${sumPend}</v></c>`;
-  totalCells += `<c r="O${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="K${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="L${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(L${firstDataRow}:L${lastDataRow})</f><v>${sumT1}</v></c>`;
+  totalCells += `<c r="M${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(M${firstDataRow}:M${lastDataRow})</f><v>${sumT2}</v></c>`;
+  totalCells += `<c r="N${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(N${firstDataRow}:N${lastDataRow})</f><v>${sumT3}</v></c>`;
+  totalCells += `<c r="O${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(O${firstDataRow}:O${lastDataRow})</f><v>${sumPend}</v></c>`;
+  totalCells += `<c r="P${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
 
   const colsXml = REKAPDO_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
@@ -10537,6 +10545,7 @@ function buildRekapDOPrintHtml(filterLabel, list){
       <td>${esc(armadaLabel(r.jenisArmada))}</td>
       <td>${esc(isVendor ? 'Vendor Luar' : 'Organik')}</td>
       <td>${esc(r.noPKB || '-')}</td>
+      <td>${esc(r.noDO || '-')}</td>
       <td>${esc(r.sopir || '-')}</td>
       <td style="text-align:right;">${rupiah(Number(r.uangJalan)||0)}</td>
       <td style="text-align:right;">${rupiah(Number(r.biayaLain)||0)}</td>
@@ -10557,7 +10566,7 @@ function buildRekapDOPrintHtml(filterLabel, list){
   const sumT3 = list.reduce((s,r) => s + (Number(r.tonase3)||0), 0);
   const sumPend = list.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
   const footHtml = `<tr style="font-weight:700; background:#e5f0da !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
-    <td colspan="6" style="text-align:right;">TOTAL (${list.length} DO)</td>
+    <td colspan="7" style="text-align:right;">TOTAL (${list.length} DO)</td>
     <td style="text-align:right;">${rupiah(sumUang)}</td>
     <td style="text-align:right;">${rupiah(sumBiaya)}</td>
     <td colspan="2"></td>
@@ -10586,7 +10595,7 @@ function buildRekapDOPrintHtml(filterLabel, list){
   <p class="sub">Filter: ${esc(filterLabel)}</p>
   <table>
     <thead><tr>
-      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Angkutan</th><th>No PKB</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya Lain-lain</th><th>Jenis</th><th>Rute Muat &rarr; Bongkar</th><th>Tonase BK (Kg)</th><th>Tonase Roll Assa (Kg)</th><th>Tonase OCC (Kg)</th><th>Pendapatan</th><th>Status</th>
+      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Angkutan</th><th>No PKB</th><th>No DO</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya Lain-lain</th><th>Jenis</th><th>Rute Muat &rarr; Bongkar</th><th>Tonase BK (Kg)</th><th>Tonase Roll Assa (Kg)</th><th>Tonase OCC (Kg)</th><th>Pendapatan</th><th>Status</th>
     </tr></thead>
     <tbody>${bodyHtml}${footHtml}</tbody>
   </table>
