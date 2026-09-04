@@ -636,6 +636,13 @@
   }
   .tonase-cell-btn:hover{background:var(--accent-100);}
   .tonase-cell-btn .tonase-empty{color:var(--accent-700); font-weight:600; font-size:12.5px;}
+  .keterangan-inline-input{
+    width:100%; min-width:120px; border:none; border-bottom:1.5px dashed transparent; background:transparent;
+    outline:none; padding:4px 2px; font-family:inherit; font-size:12.5px; color:var(--text); cursor:text; border-radius:4px;
+  }
+  .keterangan-inline-input::placeholder{color:var(--accent-700); font-weight:600; font-size:12.5px;}
+  .keterangan-inline-input:hover{border-bottom-color:#b9bfcc; background:var(--accent-100);}
+  .keterangan-inline-input:focus{border-bottom-color:var(--green-600, #1f7a54); background:#fffbe0;}
   .empty-state{padding:36px 20px; text-align:center; color:var(--text-muted); font-size:13px;}
   .empty-state svg{width:32px; height:32px; stroke:var(--text-faint); margin-bottom:8px;}
 
@@ -10749,7 +10756,9 @@ function renderTable(){
           : `<span style="color:var(--text-faint);">-</span>`}
       </td>
       <td class="do-td-kotatujuan">${esc(r.kotaTujuan || '-')}</td>
-      <td class="do-td-keterangan">${esc(r.keterangan || '-')}</td>
+      <td class="do-td-keterangan">${canEdit
+          ? `<input type="text" class="keterangan-inline-input keterangan-edit" data-id="${r.id}" value="${esc(r.keterangan || '')}" placeholder="+ Isi keterangan">`
+          : esc(r.keterangan || '-')}</td>
       <td class="do-td-status">${statusBadge(r.status)}</td>
       <td class="do-td-aksi row-actions">
         ${canEdit ? `<button class="icon-btn edit" data-id="${r.id}" title="Edit DO (termasuk tanggal)">
@@ -10795,6 +10804,17 @@ function renderTable(){
     wrap.querySelectorAll('.tonase-edit').forEach(btn => btn.addEventListener('click', function(){
       openTonaseModal(this.dataset.id, 'edit', this.dataset.field);
     }));
+    wrap.querySelectorAll('.keterangan-edit').forEach(inp => {
+      inp.addEventListener('keydown', function(e){ if(e.key === 'Enter'){ this.blur(); } });
+      inp.addEventListener('blur', function(){
+        const r = records.find(x => String(x.id) === String(this.dataset.id));
+        if(!r) return;
+        const val = this.value.trim();
+        if((r.keterangan || '') === val) return;
+        r.keterangan = val;
+        save();
+      });
+    });
     wrap.querySelectorAll('.toggle').forEach(btn => btn.addEventListener('click', function(){
       const r = records.find(x => x.id === this.dataset.id);
       if(!r) return;
