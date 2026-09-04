@@ -1397,10 +1397,6 @@
                   <input type="text" id="doKotaTujuan" placeholder="cth. Bandung">
                 </div>
                 <div class="field">
-                  <label for="doKeterangan">Keterangan <span class="hint">(opsional, diisi manual)</span></label>
-                  <input type="text" id="doKeterangan" placeholder="cth. catatan tambahan untuk DO ini">
-                </div>
-                <div class="field">
                   <label for="nopolOrganik" id="nopolLabel">Nopol</label>
                   <!-- Angkutan Organik: WAJIB pilih dari dropdown (bukan ketik bebas) supaya tidak salah ketik/typo nopol --
                        daftarnya diambil dari Data Armada, lihat populateDoNopolSopirDropdowns(). -->
@@ -6554,7 +6550,6 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     noPKB: document.getElementById('doNoPKB').value.trim(),
     noDO: document.getElementById('doNoDO').value.trim(),
     kotaTujuan: document.getElementById('doKotaTujuan').value.trim(),
-    keterangan: document.getElementById('doKeterangan').value.trim(),
     nopol: getDONopolVal(),
     sopir: getDOSopirVal(),
     kirimBK: kirimBK,
@@ -6623,7 +6618,6 @@ function editRecordDO(id){
   document.getElementById('doNoPKB').value = rec.noPKB || '';
   document.getElementById('doNoDO').value = rec.noDO || '';
   document.getElementById('doKotaTujuan').value = rec.kotaTujuan || '';
-  document.getElementById('doKeterangan').value = rec.keterangan || '';
   setDONopolSopirVal(rec.nopol || '', rec.sopir || '');
   document.getElementById('cbBK').checked = recKirimBK(rec);
   document.getElementById('cbRoll').checked = recKirimRoll(rec);
