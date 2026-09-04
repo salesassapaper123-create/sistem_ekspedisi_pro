@@ -366,10 +366,32 @@
   .pkb-footer td{border:1.4px solid #111; padding:14px 10px; text-align:center; font-size:12px; font-weight:700; width:50%;}
   .pkb-footer .pkb-footer-note{font-style:italic; font-weight:400; font-size:11px;}
   .pkb-footer .pkb-footer-sign{padding-top:36px;}
+  /* ---------- BON REIMBURSEMENT — mengikuti contoh form fisik "Bon" perusahaan (TGL/PA/TUJUAN/ONGKOS,
+     lalu TGL/DO/UNTUK, lalu PERINCIAN BARANG dengan No. Timbangan & Tonase, footer Kabag/Keuangan).
+     Reuse .pkb-outer/.pkb-table/.pkb-barang-head/.pkb-footer supaya satu keluarga visual dengan PKB. ---------- */
+  #reimbursePrintArea{
+    padding:30px 34px; font-size:12.5px; color:#111; line-height:1.55;
+    text-transform:none;
+    font-family:'Courier New', Courier, monospace;
+  }
+  #reimbursePrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
+  .rb-headrow{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
+  .rb-headrow .rb-title{font-weight:800; font-size:15px; letter-spacing:.04em; text-transform:uppercase;}
+  .rb-headrow .rb-no{font-weight:700; font-size:13px;}
+  .rb-barang-table{width:100%; border-collapse:collapse; margin-top:0;}
+  .rb-barang-table th, .rb-barang-table td{border:1.4px solid #111; padding:7px 9px; font-size:12px; text-align:left;}
+  .rb-barang-table th{font-weight:700; background:#f2f2f2; text-align:center;}
+  .rb-barang-table td.rb-num{text-align:center; width:34px;}
+  .rb-barang-table td.rb-timbangan{min-width:110px;}
+  .rb-barang-table td.rb-tonase{text-align:right; width:110px;}
+  .rb-footer td{padding-top:14px !important;}
+  .rb-footer .rb-sign-space{height:60px; padding-top:6px !important;}
   @media print{
     body *{visibility:hidden;}
     #suratTugasPrintArea, #suratTugasPrintArea *{visibility:visible;}
     #suratTugasPrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
+    #reimbursePrintArea, #reimbursePrintArea *{visibility:visible;}
+    #reimbursePrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
     .st-modal-overlay, .st-modal{position:static; background:none; box-shadow:none; max-width:none; max-height:none; overflow:visible;}
   }
 
@@ -3644,6 +3666,29 @@ function syncOdometerFromCartrack(){
   </div>
 </div>
 
+<!-- MODAL BON REIMBURSEMENT (bon ongkos jalan, dibuat otomatis dari data PKB/DO -- Sesi keseratustujuh) -->
+<div class="st-modal-overlay" id="rbModalOverlay">
+  <div class="st-modal">
+    <div class="st-modal-head no-print">
+      <div>
+        <h3>Bon Reimbursement</h3>
+        <p>TGL/PA/TUJUAN/DO terisi otomatis dari data PKB — Ongkos, Untuk &amp; No. Timbangan diisi manual oleh staff</p>
+      </div>
+      <button type="button" class="st-close-btn" id="rbModalClose" title="Tutup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="reimbursePrintArea"></div>
+    <div class="btn-row no-print" style="padding:0 22px 20px;">
+      <button type="button" class="btn btn-primary" id="rbModalPrint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+        Cetak / Download Bon
+      </button>
+      <button type="button" class="btn btn-secondary" id="rbModalCloseBtn">Tutup</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* ---------- FIREBASE: sinkron data real-time antar perangkat (menggantikan polling Google Sheets untuk DO/Kendaraan/Maintenance) ---------- */
 const firebaseConfig = {
@@ -6783,6 +6828,118 @@ document.getElementById('stModalPrint').addEventListener('click', function(){
 const ORIGINAL_DOC_TITLE = document.title;
 window.addEventListener('beforeprint', function(){ document.title = '\u00A0'; });
 window.addEventListener('afterprint', function(){ document.title = ORIGINAL_DOC_TITLE; });
+
+/* ---------- BON REIMBURSEMENT (Sesi keseratustujuh, disesuaikan sesi keseratusdelapan) ----------
+   Format cetak mengikuti form fisik "Bon" perusahaan yang dikirim user: TGL/PA/TUJUAN/ONGKOS, lalu
+   TGL/DO/UNTUK, lalu PERINCIAN BARANG (No. Timbangan & Tonase), footer tanda tangan Kabag/Keuangan.
+   Field yang bisa diambil dari data PKB/DO (TGL/PA/TUJUAN/DO) diisi OTOMATIS -- ONGKOS, UNTUK, & No.
+   Timbangan SENGAJA dikosongkan (diisi manual oleh staff di kertas setelah dicetak, sesuai permintaan
+   user -- awalnya UNTUK sempat otomatis dari nama Customer, tapi diubah jadi manual di sesi keseratusdelapan). */
+
+/* No Seri dibuat OTOMATIS SEKALI per DO (tersimpan di record sbg r.noReimburse, tidak berubah lagi
+   walau dicetak ulang berkali-kali) -- format "YYMM-NNN": YYMM dari Tanggal DO (bukan tanggal cetak),
+   NNN = nomor urut 3 digit dalam bulan yang sama (mulai 001, tidak diulang), meniru pola generateNextNoCO(). */
+function generateNoReimburse(tanggalIso){
+  const d = tanggalIso ? new Date(tanggalIso + 'T00:00:00') : new Date();
+  const yymm = String(d.getFullYear()).slice(-2) + String(d.getMonth() + 1).padStart(2, '0');
+  const existingNums = records
+    .map(rr => rr.noReimburse || '')
+    .filter(no => no.startsWith(yymm + '-'))
+    .map(no => parseInt(no.split('-')[1], 10))
+    .filter(n => !isNaN(n));
+  const next = existingNums.length ? Math.max(...existingNums) + 1 : 1;
+  return yymm + '-' + String(next).padStart(3, '0');
+}
+function buildReimburseHtml(r){
+  const isVendor = r.jenisAngkutan === 'vendor';
+  // PA: Nopol untuk Angkutan Organik, nama angkutan Vendor Luar (termasuk Loco/Franco) untuk Vendor Luar.
+  const paVal = isVendor ? (r.vendorNama || '-') : (r.nopol || '-');
+  // TUJUAN: rute muat -> bongkar (sama seperti kolom "Rute muat -> bongkar" di Rekap Data DO).
+  const tujuanVal = tujuanListText(r) || '-';
+  // UNTUK: SENGAJA dikosongkan (sama seperti ONGKOS) -- diisi manual oleh staff, bukan otomatis.
+
+  // Perincian Barang: satu baris per jenis kiriman (BK/Roll Assa/OCC) yang DIANGKUT DO ini, Tonase
+  // diambil dari tonase final yang diisi saat DO ditandai Selesai (tonase1/2/3) -- No. Timbangan
+  // sengaja dikosongkan untuk diisi manual oleh staff.
+  const barangRows = [];
+  if(recKirimBK(r)) barangRows.push({ label: 'BK', tonase: r.tonase1 });
+  if(recKirimRoll(r)) barangRows.push({ label: 'Roll Assa', tonase: r.tonase2 });
+  if(recKirimOCC(r)) barangRows.push({ label: 'OCC', tonase: r.tonase3 });
+  const barangRowsHtml = barangRows.length
+    ? barangRows.map((b, i) => `<tr>
+        <td class="rb-num">${i + 1}</td>
+        <td>${esc(b.label)}</td>
+        <td class="rb-timbangan">&nbsp;</td>
+        <td class="rb-tonase">${(b.tonase !== null && b.tonase !== undefined && b.tonase !== '' && Number(b.tonase) > 0) ? Number(b.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+      </tr>`).join('')
+    : `<tr><td class="rb-num">1</td><td colspan="3">&nbsp;</td></tr>`;
+
+  return `
+    <div class="pkb-doc">
+      <div class="pkb-outer">
+        <div class="rb-headrow">
+          <div class="rb-title">Bukti Reimbursement</div>
+          <div class="rb-no">NO&nbsp;: ${esc(r.noReimburse || '-')}</div>
+        </div>
+        <table class="pkb-table">
+          <tbody>
+            <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
+            <tr><td class="pkb-lbl">PA</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(paVal)}</td></tr>
+            <tr><td class="pkb-lbl">TUJUAN</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(tujuanVal)}</td></tr>
+            <tr><td class="pkb-lbl">ONGKOS</td><td class="pkb-colon">:</td><td class="pkb-val">&nbsp;</td></tr>
+          </tbody>
+        </table>
+        <table class="pkb-table pkb-table-gap">
+          <tbody>
+            <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
+            <tr><td class="pkb-lbl">DO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noDO || '-')}</td></tr>
+            <tr><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val">&nbsp;</td></tr>
+          </tbody>
+        </table>
+        <div class="pkb-barang-head">PERINCIAN BARANG :</div>
+        <table class="rb-barang-table">
+          <thead><tr><th style="width:34px;">No</th><th>Uraian</th><th>No. Timbangan</th><th style="width:110px;">Tonase</th></tr></thead>
+          <tbody>${barangRowsHtml}</tbody>
+        </table>
+        <table class="pkb-footer rb-footer pkb-table-gap">
+          <tbody>
+            <tr>
+              <td>Kabag</td>
+              <td>Keuangan</td>
+            </tr>
+            <tr>
+              <td class="rb-sign-space"></td>
+              <td class="rb-sign-space"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+function openReimburseModal(id){
+  const r = records.find(x => x.id === id);
+  if(!r) return;
+  // No Seri dibuat sekali & disimpan permanen di record -- kalau sudah pernah dicetak sebelumnya,
+  // nomor yang sama dipakai lagi (tidak generate baru tiap dicetak ulang).
+  if(!r.noReimburse){
+    r.noReimburse = generateNoReimburse(r.tanggal);
+    save();
+  }
+  document.getElementById('reimbursePrintArea').innerHTML = buildReimburseHtml(r);
+  document.getElementById('rbModalOverlay').style.display = 'flex';
+}
+function closeReimburseModal(){
+  document.getElementById('rbModalOverlay').style.display = 'none';
+}
+document.getElementById('rbModalClose').addEventListener('click', closeReimburseModal);
+document.getElementById('rbModalCloseBtn').addEventListener('click', closeReimburseModal);
+document.getElementById('rbModalOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeReimburseModal();
+});
+document.getElementById('rbModalPrint').addEventListener('click', function(){
+  window.print();
+});
 
 /* ---------- DATA KENDARAAN ---------- */
 function renderKendaraan(){
@@ -10306,6 +10463,9 @@ function renderTable(){
         <button class="icon-btn surat" data-id="${r.id}" title="Cetak PKB">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         </button>
+        <button class="icon-btn reimburse" data-id="${r.id}" title="Cetak Bon Reimbursement">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M9 15h6"/></svg>
+        </button>
         ${canEdit ? `<button class="icon-btn del" data-id="${r.id}" title="Hapus">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>` : ''}
@@ -10328,6 +10488,9 @@ function renderTable(){
 
   wrap.querySelectorAll('.surat').forEach(btn => btn.addEventListener('click', function(){
     openSuratTugasModal(this.dataset.id);
+  }));
+  wrap.querySelectorAll('.reimburse').forEach(btn => btn.addEventListener('click', function(){
+    openReimburseModal(this.dataset.id);
   }));
   if(canEdit){
     wrap.querySelectorAll('.tonase-edit').forEach(btn => btn.addEventListener('click', function(){
