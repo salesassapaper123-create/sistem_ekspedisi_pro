@@ -370,8 +370,9 @@
      lalu TGL/DO/UNTUK, lalu PERINCIAN BARANG dengan No. Timbangan & Tonase, footer Kabag/Keuangan).
      Reuse .pkb-outer/.pkb-table/.pkb-barang-head/.pkb-footer supaya satu keluarga visual dengan PKB.
      Sesi keseratussebelas: dipindah SELURUHNYA ke halaman sidebar "Bukti Reimbursement" (modal dihapus)
-     dan dipisah OTOMATIS jadi satu dokumen per jenis muatan (BK/Roll/OCC) yang benar-benar diangkut DO
-     itu -- .rb-leg-doc satu per jenis, masing-masing punya No Seri & tombol Cetak sendiri. ---------- */
+     dan dipisah OTOMATIS jadi satu dokumen per jenis muatan (Roll Assa/OCC, khusus keduanya saja --
+     lihat Sesi keseratuslimabelas) yang benar-benar diangkut DO itu -- .rb-leg-doc satu per jenis,
+     masing-masing punya No Seri & tombol Cetak sendiri. ---------- */
   #reimburseLookupPrintArea{
     padding:20px 4px; font-size:12.5px; color:#111; line-height:1.55;
     text-transform:none;
@@ -1609,13 +1610,15 @@
         </div>
       </div>
 
-      <!-- BUKTI REIMBURSEMENT — halaman khusus (Sesi keseratussepuluh, dirombak Sesi keseratussebelas):
-           SATU-SATUNYA tempat cetak Bon Reimbursement (modal terpisah di Rekap Data DO sudah dihapus).
-           Staf tinggal ketik No PKB (atau klik ikon reimburse di baris Rekap Data DO -- langsung
-           diarahkan kesini dengan datanya sudah terisi), lalu otomatis muncul SATU kartu Bukti
-           Reimbursement TERPISAH untuk setiap jenis muatan (BK/Roll/OCC) yang benar-benar diangkut DO
-           tsb (kalau DO itu bawa BK+OCC sekaligus, 2 kartu terpisah lengkap dengan No Seri & tombol
-           cetak masing-masing) -- karena tiap jenis muatan punya rute muat->bongkar sendiri. -->
+      <!-- BUKTI REIMBURSEMENT — halaman khusus (Sesi keseratussepuluh, dirombak Sesi keseratussebelas,
+           dikoreksi Sesi keseratuslimabelas): SATU-SATUNYA tempat cetak Bon Reimbursement (modal
+           terpisah di Rekap Data DO sudah dihapus). Staf tinggal ketik No PKB (atau klik ikon
+           reimburse di baris Rekap Data DO -- langsung diarahkan kesini dengan datanya sudah terisi),
+           lalu otomatis muncul SATU kartu Bukti Reimbursement TERPISAH untuk setiap jenis muatan **Roll
+           Assa & OCC saja** (BK TIDAK dibuatkan Bukti Reimbursement sama sekali) yang benar-benar
+           diangkut DO tsb (kalau DO itu bawa Roll+OCC sekaligus, 2 kartu terpisah lengkap dengan No
+           Seri & tombol cetak masing-masing) -- karena tiap jenis muatan punya rute muat->bongkar
+           sendiri. -->
       <div class="view" data-view="reimburse">
         <div class="panel">
           <div class="panel-head">
@@ -5238,7 +5241,7 @@ const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', re
    halaman. View yang tidak terdaftar di sini cukup tidak menampilkan subjudul (elemennya kosong). */
 const subtitles = {
   dashboard:'Ringkasan performa operasional ekspedisi', input:'Input data pengiriman & buat PKB baru',
-  rekap:'Rekap seluruh data DO yang sudah diinput', reimburse:'Ketik No PKB (atau klik ikon reimburse di Rekap Data DO) -- otomatis muncul 1 bukti per jenis muatan (BK/Roll/OCC), siap edit & cetak',
+  rekap:'Rekap seluruh data DO yang sudah diinput', reimburse:'Ketik No PKB (atau klik ikon reimburse di Rekap Data DO) -- otomatis muncul 1 bukti per jenis muatan Roll Assa/OCC (BK tidak dibuatkan), siap edit & cetak',
   'po-input':'Input SO baru & upload dokumen PO customer',
   po:'Daftar PO masuk & status konfirmasinya', 'po-monitoring':'Pantau sisa tonase PO yang sudah dikonfirmasi',
   'rekap-pengiriman-cust':'Rekap pengiriman per customer, dikelompokkan per nama customer',
@@ -6875,26 +6878,33 @@ const ORIGINAL_DOC_TITLE = document.title;
 window.addEventListener('beforeprint', function(){ document.title = '\u00A0'; });
 window.addEventListener('afterprint', function(){ document.title = ORIGINAL_DOC_TITLE; });
 
-/* ---------- BON REIMBURSEMENT (Sesi keseratustujuh, dirombak besar Sesi keseratussebelas) ----------
+/* ---------- BON REIMBURSEMENT (Sesi keseratustujuh, dirombak besar Sesi keseratussebelas, dikoreksi
+   Sesi keseratuslimabelas) ----------
    Format cetak mengikuti form fisik "Bon" perusahaan yang dikirim user: TGL/PA/TUJUAN/ONGKOS, lalu
    TGL/DO/UNTUK, lalu PERINCIAN BARANG (No. Timbangan & Tonase), footer tanda tangan Kabag/Keuangan.
    Field yang bisa diambil dari data PKB/DO (TGL/PA/TUJUAN/DO) diisi OTOMATIS -- ONGKOS, UNTUK, & No.
    Timbangan diisi manual oleh staff di kotak isian sebelum cetak.
 
-   Sesi keseratussebelas: 1 DO bisa mengangkut lebih dari 1 jenis muatan sekaligus (BK/Roll/OCC), dan
-   tiap jenis muatan punya rute muat->bongkar SENDIRI (tujuanMuat/tujuanMuat2/tujuanMuat3 dst) -- jadi
-   1 DO otomatis dipecah jadi BEBERAPA Bukti Reimbursement TERPISAH, satu per jenis muatan yang benar-
-   benar diangkut, tanpa staf perlu bikin dokumen baru manual. Data disimpan nested per jenis di
-   r.reimburseLegs = { bk:{noReimburse,ongkos,untuk,timbangan}, roll:{...}, occ:{...} }, menggantikan
-   field lama yang flat (r.noReimburse/reimburseOngkos/reimburseUntuk/reimburseTimbangan). Modal terpisah
-   di Rekap Data DO juga dihapus -- SATU-SATUNYA tempat cetak sekarang halaman sidebar ini saja. */
+   Sesi keseratussebelas: 1 DO bisa mengangkut lebih dari 1 jenis muatan sekaligus (Roll/OCC), dan
+   tiap jenis muatan punya rute muat->bongkar SENDIRI (tujuanMuat2/tujuanMuat3 dst) -- jadi 1 DO
+   otomatis dipecah jadi BEBERAPA Bukti Reimbursement TERPISAH, satu per jenis muatan yang benar-benar
+   diangkut, tanpa staf perlu bikin dokumen baru manual. Data disimpan nested per jenis di
+   r.reimburseLegs = { roll:{noReimburse,ongkos,untuk,timbangan}, occ:{...} }, menggantikan field lama
+   yang flat (r.noReimburse/reimburseOngkos/reimburseUntuk/reimburseTimbangan). Modal terpisah di Rekap
+   Data DO juga dihapus -- SATU-SATUNYA tempat cetak sekarang halaman sidebar ini saja.
+
+   Sesi keseratuslimabelas: KOREKSI miskomunikasi -- ternyata Bukti Reimbursement HANYA untuk Roll Assa
+   & OCC. Muatan BK (termasuk kalau rutenya berawal dari BK1) TIDAK PERNAH dibuatkan Bukti
+   Reimbursement sama sekali -- lihat reimburseLegDefs() yang sekarang sengaja tidak menyertakan 'bk'. */
 
 /* Definisi tiap jenis muatan yang mungkin dibuatkan Bukti Reimbursement -- hanya jenis yang BENAR-BENAR
-   diangkut DO ybs (recKirimBK/recKirimRoll/recKirimOCC) yang masuk daftar, masing-masing dengan rute
-   muat->bongkar & tonase miliknya sendiri (bukan digabung seperti tujuanListText). */
+   diangkut DO ybs (recKirimRoll/recKirimOCC) yang masuk daftar, masing-masing dengan rute muat->bongkar
+   & tonase miliknya sendiri (bukan digabung seperti tujuanListText).
+   PENTING (Sesi keseratuslimabelas, koreksi miskomunikasi Sesi keseratussebelas): Bukti Reimbursement
+   HANYA untuk Roll Assa & OCC -- muatan BK (termasuk yang rutenya berawal dari BK1) TIDAK PERNAH
+   dibuatkan Bukti Reimbursement sama sekali, jadi 'bk' sengaja TIDAK dimasukkan ke daftar ini. */
 function reimburseLegDefs(r){
   const defs = [];
-  if(recKirimBK(r)) defs.push({ key: 'bk', label: 'BK', tujuanMuat: r.tujuanMuat, tujuanBongkar: r.tujuanBongkar, tonase: r.tonase1 });
   if(recKirimRoll(r)) defs.push({ key: 'roll', label: 'Roll Assa', tujuanMuat: r.tujuanMuat2, tujuanBongkar: r.tujuanBongkar2, tonase: r.tonase2 });
   if(recKirimOCC(r)) defs.push({ key: 'occ', label: 'OCC', tujuanMuat: r.tujuanMuat3, tujuanBongkar: r.tujuanBongkar3, tonase: r.tonase3 });
   return defs;
@@ -7087,12 +7097,13 @@ function wireReimburseInlineInputs(r, areaId){
   }));
 }
 
-/* ---------- HALAMAN "BUKTI REIMBURSEMENT" (Sesi keseratussepuluh, dirombak Sesi keseratussebelas) ----------
+/* ---------- HALAMAN "BUKTI REIMBURSEMENT" (Sesi keseratussepuluh, dirombak Sesi keseratussebelas,
+   dikoreksi Sesi keseratuslimabelas) ----------
    Halaman khusus di sidebar (data-view="reimburse") -- SATU-SATUNYA tempat cetak Bon Reimbursement.
    Staf ketik/pilih No PKB (atau diarahkan otomatis dari ikon reimburse di Rekap Data DO lewat
    openReimburseForRecord), DO yang cocok otomatis muncul sebagai BEBERAPA kartu terpisah -- satu per
-   jenis muatan (BK/Roll/OCC) yang benar-benar diangkut DO tsb -- masing-masing siap diedit (Ongkos/
-   Untuk/No. Timbangan) & dicetak SENDIRI-SENDIRI dari halaman ini. */
+   jenis muatan Roll Assa/OCC (BK TIDAK dibuatkan) yang benar-benar diangkut DO tsb -- masing-masing
+   siap diedit (Ongkos/Untuk/No. Timbangan) & dicetak SENDIRI-SENDIRI dari halaman ini. */
 function populateReimburseNoPkbDatalist(){
   const listEl = document.getElementById('rbLookupNoPkbList');
   if(!listEl) return;
@@ -7113,15 +7124,16 @@ function initReimburseLookupView(){
   document.getElementById('rbLookupStatus').textContent = 'Belum ada No PKB yang diketik.';
   document.getElementById('rbLookupStatus').style.color = 'var(--text-muted)';
 }
-/* Render SEMUA kartu Bukti Reimbursement untuk 1 DO -- 1 kartu per jenis muatan (BK/Roll/OCC) yang
-   diangkut, masing-masing dengan No Seri, kotak isian, dan tombol Cetak sendiri (tombol Cetak menandai
+/* Render SEMUA kartu Bukti Reimbursement untuk 1 DO -- 1 kartu per jenis muatan Roll Assa/OCC yang
+   diangkut (BK tidak dibuatkan), masing-masing dengan No Seri, kotak isian, dan tombol Cetak sendiri
+   (tombol Cetak menandai
    HANYA kartu itu sebagai rb-print-active sebelum window.print(), supaya satu klik Cetak cuma
    mencetak 1 bukti, bukan semuanya sekaligus). */
 function renderReimburseLegsForRecord(r){
   const wrap = document.getElementById('rbLookupResultWrap');
   const defs = reimburseLegDefs(r);
   if(defs.length === 0){
-    wrap.innerHTML = `<p class="hint" style="color:#c0392b;">DO ini belum punya data muatan (BK/Roll/OCC) untuk dibuatkan Bukti Reimbursement.</p>`;
+    wrap.innerHTML = `<p class="hint" style="color:#c0392b;">DO ini tidak ada muatan Roll Assa/OCC (Bukti Reimbursement khusus Roll Assa &amp; OCC saja -- muatan BK tidak perlu dibuatkan).</p>`;
     return;
   }
   const isAdmin = isAdminUser();
