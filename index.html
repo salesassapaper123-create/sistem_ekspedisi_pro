@@ -1007,6 +1007,14 @@
         Dashboard
       </button>
 
+      <!-- Sesi keseratusduapuluhsatu: menu baru "Rekap BKL" berdiri sendiri sejajar Dashboard, khusus
+           muatan BK yang DO-nya diterbitkan pabrik (bukan Ekspedisi Jaya) -- dicatat & dipantau
+           terpisah dari Rekap Data DO biasa, dengan data yang jauh lebih ringkas. -->
+      <button class="nav-item" data-view="bkl">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        Rekap BKL
+      </button>
+
       <div class="nav-group" data-group="po">
         <button type="button" class="nav-group-head" data-group-toggle="po">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
@@ -1657,6 +1665,30 @@
               <p class="hint" id="rbLookupStatus" style="margin-top:8px;">Belum ada No PKB yang diketik.</p>
             </div>
             <div id="rbLookupResultWrap" style="margin-top:18px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REKAP BKL -- muatan BK yang DO-nya diterbitkan pabrik (bukan Ekspedisi Jaya), dicatat &
+           dipantau terpisah dari Rekap Data DO biasa. Data sengaja ringkas: Tanggal, Nopol, Sopir,
+           Kota Tujuan, Tonase, Status (Dijadwalkan/Dalam Perjalanan/Sampai Tujuan/Selesai, sama
+           seperti status DO biasa). Semua staff login boleh menambah data baru lewat tombol "+ Tambah
+           BKL"; ubah/hapus data yang sudah ada dibatasi lewat canEditRekapDO() (sama seperti Rekap
+           Data DO). -->
+      <div class="view" data-view="bkl">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Rekap BKL</h2>
+              <p>Muatan BK yang DO-nya diterbitkan langsung oleh pabrik -- dicatat di sini supaya tetap terpantau</p>
+            </div>
+            <button type="button" class="btn btn-primary" id="btnTambahBKL">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;vertical-align:-2px;margin-right:4px;"><path d="M12 5v14M5 12h14"/></svg>
+              Tambah BKL
+            </button>
+          </div>
+          <div class="panel-body">
+            <div id="bklTableWrap"></div>
           </div>
         </div>
       </div>
@@ -2511,6 +2543,51 @@
               <div class="btn-row" style="justify-content:flex-end;">
                 <button type="button" class="btn btn-secondary" id="btnBatalMaintenance">Batal</button>
                 <button type="submit" class="btn btn-primary">Simpan perbaikan</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: TAMBAH/EDIT BKL -->
+      <div class="form-modal-overlay" id="bklModalOverlay">
+        <div class="form-modal">
+          <div class="form-modal-head">
+            <div>
+              <h3 id="bklModalTitle">Tambah BKL</h3>
+              <p>Muatan BK yang DO-nya diterbitkan pabrik -- cukup data ringkas buat dipantau</p>
+            </div>
+            <button type="button" class="form-modal-close" id="btnCloseBKLModal" aria-label="Tutup">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="form-modal-body">
+            <form id="formBKL">
+              <div class="grid2">
+                <div class="field">
+                  <label for="bklTanggal">Tanggal</label>
+                  <input type="date" id="bklTanggal" required>
+                </div>
+                <div class="field">
+                  <label for="bklNopol">Nopol</label>
+                  <input type="text" id="bklNopol" list="kendaraanList" placeholder="cth. B 1234 XYZ" required style="text-transform:uppercase;">
+                </div>
+                <div class="field">
+                  <label for="bklSopir">Nama Sopir</label>
+                  <input type="text" id="bklSopir" placeholder="cth. Budi Santoso" required>
+                </div>
+                <div class="field">
+                  <label for="bklKotaTujuan">Kota Tujuan</label>
+                  <input type="text" id="bklKotaTujuan" placeholder="cth. Bandung" required>
+                </div>
+                <div class="field">
+                  <label for="bklTonase">Tonase (kg)</label>
+                  <input type="number" id="bklTonase" step="1" min="0" placeholder="cth. 6000" required>
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="btnBatalBKL">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan BKL</button>
               </div>
             </form>
           </div>
@@ -3601,6 +3678,7 @@ function syncOdometerFromCartrack(){
                        juga karena menunya sudah tidak ada lagi di sidebar. -->
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px;">Dashboard</div>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="dashboard"> Dashboard</label>
+                  <label class="acc-menu-chk"><input type="checkbox" data-view="bkl"> Rekap BKL</label>
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px; margin-top:14px;">PO</div>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="po"> Konfirmasi PO</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="po-monitoring"> Monitoring Sisa PO</label>
@@ -4400,6 +4478,35 @@ function attachFirebaseListenersInner(){
     }
   });
 
+  fbDb.ref('bkl').on('value', snap => {
+    if(fbPendingWrites['bkl']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
+    const val = snap.val();
+    const arr = fbToArray(val);
+    const sudahPernahSinkron = fbHasSyncedBefore('bkl');
+    fbMarkSynced('bkl');
+    if(arr){
+      bklList = fbFilterTombstoned('bkl', arr);
+      if(ensureIds(bklList, 'bkl')) fbPush('bkl', bklList);
+      localStorage.setItem(BKL_KEY, JSON.stringify(bklList));
+      if(currentViewName() === 'bkl') renderBKL();
+      // Driver/Rute mobil BKL (grup pabrik) ikut ditampilkan di tabel GPS Monitoring Armada yang sama
+      // (lihat dashVehicleLatestRecordOrBKL) -- jadi kalau ada update data BKL dari perangkat lain
+      // SELAGI halaman ini terbuka, tabelnya harus ikut refresh juga, sama seperti saat DO berubah.
+      if(currentViewName() === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
+      if(currentViewName() === 'dashboard') renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5);
+    }else if(val == null){
+      if(bklList.length > 0 && !sudahPernahSinkron){
+        fbPush('bkl', bklList);
+      }else if(bklList.length > 0){
+        bklList = [];
+        localStorage.setItem(BKL_KEY, JSON.stringify(bklList));
+        if(currentViewName() === 'bkl') renderBKL();
+        if(currentViewName() === 'monitoring-armada') renderMonitoringArmadaCard('monitoringArmadaFullWrap');
+        if(currentViewName() === 'dashboard') renderMonitoringArmadaCard('dashMonitoringArmadaWrap', 5);
+      }
+    }
+  });
+
   fbDb.ref('tarif').on('value', snap => {
     if(fbPendingWrites['tarif']) return; // ada penulisan lokal yang belum selesai -> abaikan snapshot ini, jangan sampai data lama menimpa balik
     const val = snap.val();
@@ -4492,6 +4599,10 @@ const MAINTENANCE_KEY = 'ekspedisi_pro_maintenance';
 let maintenanceList = loadMaintenance();
 const PO_KEY = 'ekspedisi_pro_po';
 let poList = loadPO();
+/* Sesi keseratusduapuluhsatu: BKL -- muatan BK yang DO-nya diterbitkan pabrik, bukan Ekspedisi Jaya.
+   Koleksi TERPISAH dari `records` (data DO biasa), sengaja lebih ringkas (tanpa No PKB/uang jalan/dst). */
+const BKL_KEY = 'ekspedisi_pro_bkl';
+let bklList = loadBKL();
 const HPP_KEY = 'ekspedisi_pro_hpp_asumsi';
 let hppAsumsi = loadHpp();
 /* Pengaturan aplikasi tingkat sistem (bukan per-akun) -- object tunggal, BUKAN array seperti koleksi
@@ -4539,6 +4650,8 @@ function saveDriver(){ localStorage.setItem(DRIVER_KEY, JSON.stringify(driverLis
 function loadMaintenance(){ try{ const l = JSON.parse(localStorage.getItem(MAINTENANCE_KEY)) || []; ensureIds(l, 'mt'); return l; }catch(e){ return []; } }
 function saveMaintenance(){ localStorage.setItem(MAINTENANCE_KEY, JSON.stringify(maintenanceList)); fbPush('maintenance', maintenanceList); }
 function loadPO(){ try{ const l = JSON.parse(localStorage.getItem(PO_KEY)) || []; ensureIds(l, 'po'); return l; }catch(e){ return []; } }
+function loadBKL(){ try{ const l = JSON.parse(localStorage.getItem(BKL_KEY)) || []; ensureIds(l, 'bkl'); return l; }catch(e){ return []; } }
+function saveBKL(){ localStorage.setItem(BKL_KEY, JSON.stringify(bklList)); fbPush('bkl', bklList); }
 function savePO(){ localStorage.setItem(PO_KEY, JSON.stringify(poList)); fbPush('po', poList); }
 /* No. CO dibuat OTOMATIS oleh sistem saat SO/PO di-ACC (bukan diketik manual saat input) — format
    "NNN-YY": NNN = nomor urut 3 digit (mulai 001, terus bertambah, tidak dipakai ulang sekalipun ada
@@ -5257,12 +5370,12 @@ function updateUserTopbarInfo(acc){
   if(roleLbl) roleLbl.textContent = accountRole(acc) === 'admin' ? 'Admin' : (accountRole(acc) === 'owner' ? 'Owner' : 'Staf');
 }
 /* ---------- NAVIGATION ---------- */
-const titles = {dashboard:'Dashboard', input:'Input PKB', rekap:'Rekap Data', reimburse:'Bukti Reimbursement', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'rekap-pengiriman-cust':'Rekap Pengiriman ke Customer', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada', 'monitoring-ban':'Monitoring Ban'};
+const titles = {dashboard:'Dashboard', bkl:'Rekap BKL', input:'Input PKB', rekap:'Rekap Data', reimburse:'Bukti Reimbursement', kendaraan:'Data Kendaraan', 'kendaraan-input':'Input Data Kendaraan', legalitas:'Legalitas Kendaraan', 'legalitas-input':'Input Legalitas Kendaraan', driver:'Driver', 'driver-input':'Input Driver', service:'Monitoring Service Berkala', ritase:'Ritase per Nopol (Rekap)', biayapengeluaran:'Biaya Pengeluaran Organik', 'biayapengeluaran-vendor':'Biaya Pengeluaran Vendor Luar', maintenance:'Maintenance Perbaikan', peringatan:'Pusat Peringatan', margin:'Margin & Keuntungan', hpp:'HPP & Harga Jual', borongan:'Ongkos Borongan', laporan:'Laporan Pengiriman', pengaturan:'Pengaturan', 'po-input':'Input SO & Upload PO', po:'Konfirmasi PO', 'po-monitoring':'Monitoring Sisa PO', 'rekap-pengiriman-cust':'Rekap Pengiriman ke Customer', 'laporan-sisapo':'Laporan Sisa PO', customer:'Data Customer', 'customer-input':'Input Customer', barang:'Data Barang', 'barang-input':'Input Barang', 'monitoring-armada':'Monitoring Armada', 'monitoring-ban':'Monitoring Ban'};
 /* Subjudul kecil di bawah judul halaman (topbar) -- murni visual/deskriptif, mengikuti foto
    referensi dashboard "Accurate Expedition" yang menaruh satu baris ringkasan di bawah tiap judul
    halaman. View yang tidak terdaftar di sini cukup tidak menampilkan subjudul (elemennya kosong). */
 const subtitles = {
-  dashboard:'Ringkasan performa operasional ekspedisi', input:'Input data pengiriman & buat PKB baru',
+  dashboard:'Ringkasan performa operasional ekspedisi', bkl:'Muatan BK yang DO-nya diterbitkan pabrik -- dicatat & dipantau terpisah dari Rekap Data DO', input:'Input data pengiriman & buat PKB baru',
   rekap:'Rekap seluruh data DO yang sudah diinput', reimburse:'Ketik No PKB (atau klik ikon reimburse di Rekap Data DO) -- otomatis muncul 1 bukti per jenis muatan Roll Assa/OCC (BK tidak dibuatkan), siap edit & cetak',
   'po-input':'Input SO baru & upload dokumen PO customer',
   po:'Daftar PO masuk & status konfirmasinya', 'po-monitoring':'Pantau sisa tonase PO yang sudah dikonfirmasi',
@@ -5296,6 +5409,7 @@ function goTo(view){
     jenisFilterWrap.style.display = (view === 'dashboard' && isAdminJf) ? 'inline-flex' : 'none';
   }
   if(view === 'dashboard') renderDashboard();
+  if(view === 'bkl') renderBKL();
   if(view === 'input'){ populateDoNoCODropdown(); populateDoNopolSopirDropdowns(); if(currentJenisAngkutan() === 'vendor') populateDoVendorRuteDropdown(); if(!editingId && !document.getElementById('doNoPKB').value) prefillNoPKB(); }
   if(view === 'rekap') renderTable();
   if(view === 'reimburse') initReimburseLookupView();
@@ -6023,7 +6137,7 @@ function dataInputRestrictedForCurrentUser(){
    Konsekuensinya: akun non-admin yang SUDAH ADA sebelum perubahan ini (dan belum pernah diatur lewat
    "Atur Menu") juga ikut kena default ketat ini -- admin perlu membuka "Atur Menu" sekali untuk
    masing-masing akun tsb dan memberi akses yang sesuai (bisa pakai tombol preset atau "Pilih Semua"). */
-const ALL_MENU_VIEWS = ['dashboard','rekap','reimburse','po','po-monitoring','rekap-pengiriman-cust','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
+const ALL_MENU_VIEWS = ['dashboard','bkl','rekap','reimburse','po','po-monitoring','rekap-pengiriman-cust','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
 const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
 const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'rekap-pengiriman-cust', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-monitoring-organik'];
 /* Preset siap-pakai untuk tombol di modal "Atur Menu" -- cuma pengisi awal checklist, admin masih
@@ -8746,6 +8860,130 @@ function closeMaintenanceModal(){
   });
 })();
 
+/* ---------- REKAP BKL (Sesi keseratusduapuluhsatu) ----------
+   Muatan BK yang DO-nya diterbitkan pabrik, bukan Ekspedisi Jaya -- dicatat di sini supaya tetap
+   terpantau, TERPISAH dari Rekap Data DO biasa (koleksi `bklList` sendiri, bukan `records`). Data
+   sengaja ringkas (Tanggal, Nopol, Nama Sopir, Kota Tujuan, Tonase) tanpa No PKB/uang jalan/biaya
+   lain/dst karena bukan transaksi ekspedisi penuh -- cuma buat dipantau. Status pengiriman memakai
+   state machine yang SAMA dengan DO biasa (STATUS_STAGES/STATUS_META/nextStatus/statusBadge):
+   Dijadwalkan -> Dalam Perjalanan -> Sampai Tujuan -> Selesai.
+   Akses: SEMUA akun login boleh menambah data baru (tombol "+ Tambah BKL" tidak dibatasi) -- tapi
+   ubah/majukan-status/hapus data yang SUDAH ADA dibatasi lewat canEditRekapDO() (admin, atau akun
+   non-admin yang diberi akses "Bisa edit data Rekap Data DO"), PERSIS sama dengan pembatasan yang
+   sudah berlaku di Rekap Data DO, sesuai permintaan user. */
+let bklEditId = null;
+function renderBKL(){
+  const wrap = document.getElementById('bklTableWrap');
+  const list = bklList.slice().sort((a,b) => (String(a.tanggal||'') < String(b.tanggal||'') ? 1 : -1));
+  if(list.length === 0){ wrap.innerHTML = emptyState('Belum ada data BKL. Klik "Tambah BKL" di atas untuk mulai mencatat.'); return; }
+  const canEdit = canEditRekapDO();
+  wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Nama Sopir</th><th>Kota Tujuan</th><th>Tonase</th><th>Status</th><th></th></tr></thead><tbody>${list.map(b => `
+    <tr>
+      <td>${fmtDate(b.tanggal)}</td>
+      <td><span class="plate-cell">${esc(b.nopol)}</span></td>
+      <td class="sv-left">${esc(b.sopir)}</td>
+      <td class="sv-left">${esc(b.kotaTujuan)}</td>
+      <td class="mono sv-num">${b.tonase ? Number(b.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+      <td>${statusBadge(b.status)}</td>
+      <td class="row-actions">
+        ${canEdit ? `<button class="icon-btn toggle" data-id="${b.id}" title="Maju ke status berikutnya (${esc((STATUS_META[nextStatus(b.status)] || {}).label || '')})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        </button>
+        <button class="icon-btn edit" data-id="${b.id}" title="Edit BKL">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+        </button>
+        <button class="icon-btn del" data-id="${b.id}" title="Hapus">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>` : ''}
+      </td>
+    </tr>`).join('')}</tbody></table>`;
+  if(canEdit){
+    wrap.querySelectorAll('.toggle').forEach(btn => btn.addEventListener('click', function(){
+      const b = bklList.find(x => x.id === this.dataset.id);
+      if(!b) return;
+      b.status = nextStatus(b.status);
+      saveBKL(); renderBKL();
+    }));
+    wrap.querySelectorAll('.edit').forEach(btn => btn.addEventListener('click', function(){
+      openBKLModal(this.dataset.id);
+    }));
+    wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+      if(confirm('Hapus data BKL ini?')){
+        const before = bklList.length;
+        const targetId = this.dataset.id;
+        bklList = bklList.filter(x => String(x.id) !== String(targetId));
+        if(bklList.length === before){
+          showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+          return;
+        }
+        localStorage.setItem(BKL_KEY, JSON.stringify(bklList));
+        fbRemoveFromList('bkl', item => String(item.id) === String(targetId), targetId);
+        renderBKL();
+        showToast('Data BKL berhasil dihapus', 'danger');
+      }
+    }));
+  }
+}
+/* editId diisi kalau modal dibuka untuk MENGEDIT record yang sudah ada -- kosong/null = mode tambah baru. */
+function openBKLModal(editId){
+  bklEditId = editId || null;
+  const existing = bklEditId ? bklList.find(x => x.id === bklEditId) : null;
+  const overlay = document.getElementById('bklModalOverlay');
+  const titleEl = document.getElementById('bklModalTitle');
+  document.getElementById('formBKL').reset();
+  if(existing){
+    if(titleEl) titleEl.textContent = 'Edit BKL';
+    document.getElementById('bklTanggal').value = existing.tanggal || '';
+    document.getElementById('bklNopol').value = existing.nopol || '';
+    document.getElementById('bklSopir').value = existing.sopir || '';
+    document.getElementById('bklKotaTujuan').value = existing.kotaTujuan || '';
+    document.getElementById('bklTonase').value = existing.tonase || '';
+  }else{
+    if(titleEl) titleEl.textContent = 'Tambah BKL';
+    document.getElementById('bklTanggal').valueAsDate = new Date();
+  }
+  if(overlay) overlay.classList.add('show');
+}
+function closeBKLModal(){
+  const overlay = document.getElementById('bklModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formBKL');
+  if(form) form.reset();
+  bklEditId = null;
+}
+document.getElementById('formBKL').addEventListener('submit', function(e){
+  e.preventDefault();
+  const data = {
+    tanggal: document.getElementById('bklTanggal').value,
+    nopol: document.getElementById('bklNopol').value.trim().toUpperCase(),
+    sopir: document.getElementById('bklSopir').value.trim(),
+    kotaTujuan: document.getElementById('bklKotaTujuan').value.trim(),
+    tonase: parseFloat(document.getElementById('bklTonase').value) || 0,
+  };
+  const existing = bklEditId ? bklList.find(x => x.id === bklEditId) : null;
+  if(existing){
+    Object.assign(existing, data);
+  }else{
+    bklList.push(Object.assign({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), status: 'dijadwalkan' }, data));
+  }
+  saveBKL();
+  renderBKL();
+  closeBKLModal();
+  showToast(existing ? 'Data BKL berhasil diperbarui' : 'Data BKL berhasil disimpan', 'success');
+});
+(function(){
+  const btnOpen = document.getElementById('btnTambahBKL');
+  const btnClose = document.getElementById('btnCloseBKLModal');
+  const btnCancel = document.getElementById('btnBatalBKL');
+  const overlay = document.getElementById('bklModalOverlay');
+  if(btnOpen) btnOpen.addEventListener('click', function(){ openBKLModal(null); });
+  if(btnClose) btnClose.addEventListener('click', closeBKLModal);
+  if(btnCancel) btnCancel.addEventListener('click', closeBKLModal);
+  if(overlay) overlay.addEventListener('click', function(e){
+    if(e.target === overlay) closeBKLModal();
+  });
+})();
+
 /* ---------- INPUT SO & KONFIRMASI PO ---------- */
 const PO_STATUS_META = {
   menunggu:     { label: 'Menunggu Konfirmasi', cls: 'badge-legal-warn' },
@@ -10368,6 +10606,30 @@ function dashVehicleLatestRecord(nopol){
   const recs = records.filter(r => normNopol(r.nopol) === target && normalizeStatus(r.status) !== 'selesai').sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
   return recs[0] || null;
 }
+/* Sesi keseratusduapuluhdua: mobil grup BKL (muatan BK yang DO-nya diterbitkan pabrik) TETAP dipantau
+   di tabel GPS Monitoring Armada yang SAMA dengan armada lain -- bukan tabel/section terpisah --
+   karena mobil pabrik ini ternyata SUDAH punya GPS Cartrack terhubung juga (sudah terdaftar di
+   `kendaraanList` & sudah muncul sendiri di tabel ini lewat lokasi GPS-nya). Yang tadinya kosong cuma
+   kolom Driver & Rute/Tujuan (karena dulu cuma dicari dari `records`/DO biasa, sedangkan mobil ini
+   dicatat lewat Rekap BKL) -- fungsi ini melengkapi celah itu, sama persis logikanya dengan
+   dashVehicleLatestRecord (cuma yang BELUM berstatus Selesai yang dianggap "sedang berjalan"). */
+function dashVehicleLatestBKL(nopol){
+  const target = normNopol(nopol);
+  const list = bklList.filter(b => normNopol(b.nopol) === target && normalizeStatus(b.status) !== 'selesai').sort((a, b) => (a.tanggal < b.tanggal ? 1 : -1));
+  return list[0] || null;
+}
+/* Gabungan DO biasa (records) & BKL untuk satu nopol -- dipakai bareng di tabel GPS Monitoring
+   Armada supaya Driver/Rute kendaraan grup BKL ikut terisi di tabel yang sama dengan armada lain,
+   bukan di tempat terpisah. Kalau kebetulan nopol yang sama punya DO biasa & BKL yang sama-sama
+   masih berjalan (jarang terjadi), yang tanggalnya paling baru yang dipakai. */
+function dashVehicleLatestAny(nopol){
+  const rec = dashVehicleLatestRecord(nopol);
+  const bkl = dashVehicleLatestBKL(nopol);
+  if(rec && bkl) return (String(bkl.tanggal||'') > String(rec.tanggal||'')) ? { type: 'bkl', data: bkl } : { type: 'do', data: rec };
+  if(bkl) return { type: 'bkl', data: bkl };
+  if(rec) return { type: 'do', data: rec };
+  return null;
+}
 function gpsStatusBadge(status){
   if(status === 'jalan' || status === 'bergerak' || status === 'berjalan') return `<span class="badge badge-done"><span class="badge-dot"></span>Berjalan</span>`;
   if(status === 'berhenti' || status === 'stop' || status === 'diam') return `<span class="badge badge-legal-warn"><span class="badge-dot"></span>Berhenti</span>`;
@@ -10400,9 +10662,11 @@ function renderMonitoringArmadaCard(containerId, limit){
     <th>No. Polisi</th><th>Driver</th><th class="sv-left">Rute/Tujuan</th><th>Status</th><th class="sv-left">Lokasi Terakhir</th><th>Waktu Update</th>
   </tr></thead><tbody>
     ${list.map(k => {
-      const rec = dashVehicleLatestRecord(k.nopol);
-      const driver = rec ? esc(rec.sopir || '-') : '<span style="color:var(--text-faint);">-</span>';
-      const rute = rec ? tujuanList(rec) : '<span style="color:var(--text-faint);">-</span>';
+      const latest = dashVehicleLatestAny(k.nopol);
+      const driver = latest ? esc(latest.data.sopir || '-') : '<span style="color:var(--text-faint);">-</span>';
+      const rute = latest
+        ? (latest.type === 'bkl' ? `<div>BKL &rarr; ${esc(latest.data.kotaTujuan || '-')}</div>` : tujuanList(latest.data))
+        : '<span style="color:var(--text-faint);">-</span>';
       const maint = vehicleActiveMaintenance(k.nopol);
       const maintBadge = maint ? `<div style="margin-top:4px;"><span class="badge badge-legal-danger" title="${esc(maint.jenis || 'Perbaikan')} -- sejak ${esc(fmtDate(maint.tanggal))}"><span class="badge-dot"></span>Sedang Diperbaiki</span></div>` : '';
       const menit = waktuLaluMinutes(k.gpsWaktuUpdate);
