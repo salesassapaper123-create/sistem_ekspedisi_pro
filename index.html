@@ -9880,6 +9880,19 @@ function gpsStatusBadge(status){
   if(status === 'berhenti' || status === 'stop' || status === 'diam') return `<span class="badge badge-legal-warn"><span class="badge-dot"></span>Berhenti</span>`;
   return `<span class="badge" style="background:#eef0f2; color:var(--text-muted);"><span class="badge-dot"></span>Belum Terhubung</span>`;
 }
+/* Sesi keseratussatu: kalau nopol ini punya catatan Maintenance Perbaikan berstatus "On Proses"
+   (sedang dikerjakan di bengkel), Monitoring Armada otomatis menandainya -- supaya kelihatan alasan
+   kendaraan itu "Berhenti" (bukan cuma GPS bilang berhenti tanpa konteks, padahal sebenarnya lagi di
+   bengkel). SENGAJA tidak menyentuh/menimpa field gpsStatus sama sekali (itu tetap murni data GPS
+   dari integrasi Cartrack, prinsip yang sudah ada) -- ini badge TAMBAHAN yang independen, dihitung
+   langsung dari maintenanceList tiap render supaya selalu ikut ter-update begitu status perbaikan
+   berubah (proses/selesai) tanpa perlu sinkron GPS apa pun. */
+function vehicleActiveMaintenance(nopol){
+  const target = normNopol(nopol);
+  const aktif = maintenanceList.filter(m => normNopol(m.nopol) === target && m.status === 'proses');
+  if(aktif.length === 0) return null;
+  return aktif.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1))[0]; // yang paling baru kalau kebetulan lebih dari 1
+}
 function renderMonitoringArmadaCard(containerId, limit){
   const wrap = document.getElementById(containerId);
   if(!wrap) return;
@@ -9897,6 +9910,8 @@ function renderMonitoringArmadaCard(containerId, limit){
       const rec = dashVehicleLatestRecord(k.nopol);
       const driver = rec ? esc(rec.sopir || '-') : '<span style="color:var(--text-faint);">-</span>';
       const rute = rec ? tujuanList(rec) : '<span style="color:var(--text-faint);">-</span>';
+      const maint = vehicleActiveMaintenance(k.nopol);
+      const maintBadge = maint ? `<div style="margin-top:4px;"><span class="badge badge-legal-danger" title="${esc(maint.jenis || 'Perbaikan')} -- sejak ${esc(fmtDate(maint.tanggal))}"><span class="badge-dot"></span>Sedang Diperbaiki</span></div>` : '';
       const menit = waktuLaluMinutes(k.gpsWaktuUpdate);
       const waktu = waktuLalu(k.gpsWaktuUpdate);
       // "Waktu Update" ini adalah jam PERANGKAT GPS di kendaraan itu SENDIRI terakhir mengirim
@@ -9913,7 +9928,7 @@ function renderMonitoringArmadaCard(containerId, limit){
         <td><span class="plate-cell">${esc(k.nopol)}</span></td>
         <td>${driver}</td>
         <td class="sv-left">${rute}</td>
-        <td>${gpsStatusBadge(k.gpsStatus)}</td>
+        <td>${gpsStatusBadge(k.gpsStatus)}${maintBadge}</td>
         <td class="sv-left">${k.gpsLokasi ? esc(k.gpsLokasi) : '<span style="color:var(--text-faint);">-</span>'}</td>
         <td>${waktu ? `<span style="color:${waktuColor}; font-size:12px; font-weight:${menit !== null && menit >= 30 ? '700' : '400'}; white-space:nowrap;" title="${esc(waktuTitle)}">${DASH_ICON_PIN} ${waktu}</span>` : '<span style="color:var(--text-faint);">-</span>'}</td>
       </tr>`;
