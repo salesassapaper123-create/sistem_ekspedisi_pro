@@ -374,7 +374,7 @@
      lihat Sesi keseratuslimabelas) yang benar-benar diangkut DO itu -- .rb-leg-doc satu per jenis,
      masing-masing punya No Seri & tombol Cetak sendiri. ---------- */
   #reimburseLookupPrintArea{
-    padding:20px 4px; font-size:12.5px; color:#111; line-height:1.55;
+    padding:20px 4px; font-size:17px; color:#111; line-height:1.5;
     text-transform:none;
     font-family:'Courier New', Courier, monospace;
   }
@@ -388,19 +388,32 @@
   }
   .rb-leg-card-head strong{font-size:12.5px; text-transform:uppercase; letter-spacing:.03em; color:var(--navy-700);}
   .rb-headrow{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
-  .rb-headrow .rb-title{font-weight:800; font-size:15px; letter-spacing:.04em; text-transform:uppercase;}
-  .rb-headrow .rb-no{font-weight:700; font-size:13px; display:flex; align-items:baseline; gap:4px;}
+  .rb-headrow .rb-title{font-weight:800; font-size:19px; letter-spacing:.04em; text-transform:uppercase;}
+  .rb-headrow .rb-no{font-weight:700; font-size:17px; display:flex; align-items:baseline; gap:4px;}
   /* No Seri cuma bisa diubah admin (Sesi keseratustigabelas) -- staf lihat sebagai teks biasa, admin
      lihat sebagai kotak isian kecil bergaris putus-putus (sama seperti Ongkos/Untuk/dll). */
-  .rb-no-input{width:96px !important; text-align:right; font-weight:700;}
+  .rb-no-input{width:130px !important; text-align:right; font-weight:700;}
   .rb-barang-table{width:100%; border-collapse:collapse; margin-top:0;}
-  .rb-barang-table th, .rb-barang-table td{border:1.4px solid #111; padding:7px 9px; font-size:12px; text-align:left;}
+  .rb-barang-table th, .rb-barang-table td{border:1.4px solid #111; padding:8px 10px; font-size:15px; text-align:left;}
   .rb-barang-table th{font-weight:700; background:#f2f2f2; text-align:center;}
-  .rb-barang-table td.rb-num{text-align:center; width:34px;}
-  .rb-barang-table td.rb-timbangan{min-width:110px;}
-  .rb-barang-table td.rb-tonase{text-align:right; width:110px;}
+  .rb-barang-table td.rb-num{text-align:center; width:40px;}
+  .rb-barang-table td.rb-timbangan{min-width:130px;}
+  .rb-barang-table td.rb-tonase{text-align:right; width:125px;}
   .rb-footer td{padding-top:14px !important;}
   .rb-footer .rb-sign-space{height:60px; padding-top:6px !important;}
+  /* Ukuran huruf & jarak Bukti Reimbursement diperbesar KHUSUS di area cetak ini (Sesi
+     keseratusenambelas) -- user mencetak di kertas kecil (21cm x 9cm), huruf bawaan (yang tadinya
+     ikut ukuran PKB Surat Tugas biasa lewat .pkb-table dkk yang dipakai bersama) jadi kekecilan &
+     kurang jelas kalau dicetak di kertas sekecil itu. Override cuma berlaku DI DALAM
+     #reimburseLookupPrintArea (lebih spesifik dari aturan dasar .pkb-table dkk), jadi TIDAK ikut
+     mengubah ukuran huruf PKB Surat Tugas di tempat lain yang masih pakai ukuran dasar seperti biasa. */
+  #reimburseLookupPrintArea .pkb-outer{padding:20px 22px 24px;}
+  #reimburseLookupPrintArea .pkb-table td{font-size:16px; padding:9px 12px; line-height:1.5;}
+  #reimburseLookupPrintArea .pkb-table td.pkb-lbl{font-size:18px; width:150px;}
+  #reimburseLookupPrintArea .pkb-table td.pkb-colon{font-size:18px;}
+  #reimburseLookupPrintArea .pkb-table td.pkb-val{font-size:17px;}
+  #reimburseLookupPrintArea .pkb-barang-head{font-size:16px; padding:9px 12px;}
+  #reimburseLookupPrintArea .pkb-footer td{font-size:15px; padding:16px 12px;}
   /* Kotak isian bebas (Ongkos/Untuk/No. Timbangan) -- SAAT DICETAK dibuat sepolos mungkin (tanpa
      border/kotak kelihatan) supaya menyatu dengan garis form. Tapi SAAT DI LAYAR diberi garis putus-
      putus tipis + kursor "text" supaya staf langsung tahu ini kotak yang bisa diklik & diketik langsung
@@ -867,8 +880,6 @@
   .do-table tbody tr.do-total-row td{
     background:var(--navy-700) !important; color:#fff !important; font-weight:800 !important; font-size:12px !important;
   }
-  .do-td-pendapatan{ color:var(--green-600); font-weight:800; }
-  .do-total-row .do-td-pendapatan{ color:#fff; }
 
   /* ---------- MONITORING SERVICE BERKALA (KM) ---------- */
   /* ---------- MONITORING SERVICE BERKALA (KM) — meniru persis tampilan Google Sheet "MONITORING SERVICE BERKALA" ---------- */
@@ -1373,6 +1384,10 @@
                 <div class="field">
                   <label for="doNoDO">No. DO <span class="hint">(opsional, diisi manual)</span></label>
                   <input type="text" id="doNoDO" placeholder="cth. DO-001/VIII/2026">
+                </div>
+                <div class="field">
+                  <label for="doKotaTujuan">Kota Tujuan <span class="hint">(opsional, diisi manual -- dipakai juga di Bukti Reimbursement)</span></label>
+                  <input type="text" id="doKotaTujuan" placeholder="cth. Bandung">
                 </div>
                 <div class="field">
                   <label for="nopolOrganik" id="nopolLabel">Nopol</label>
@@ -6527,6 +6542,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     tanggal: tanggal,
     noPKB: document.getElementById('doNoPKB').value.trim(),
     noDO: document.getElementById('doNoDO').value.trim(),
+    kotaTujuan: document.getElementById('doKotaTujuan').value.trim(),
     nopol: getDONopolVal(),
     sopir: getDOSopirVal(),
     kirimBK: kirimBK,
@@ -6594,6 +6610,7 @@ function editRecordDO(id){
   document.getElementById('tanggal').value = rec.tanggal || '';
   document.getElementById('doNoPKB').value = rec.noPKB || '';
   document.getElementById('doNoDO').value = rec.noDO || '';
+  document.getElementById('doKotaTujuan').value = rec.kotaTujuan || '';
   setDONopolSopirVal(rec.nopol || '', rec.sopir || '');
   document.getElementById('cbBK').checked = recKirimBK(rec);
   document.getElementById('cbRoll').checked = recKirimRoll(rec);
@@ -6983,11 +7000,15 @@ function buildReimburseLegHtml(r, legDef, legData, isAdmin){
   const paSaved = esc(legData.pa !== undefined ? legData.pa : paDefault);
   const doDefault = r.noDO || '';
   const doSaved = esc(legData.do !== undefined ? legData.do : doDefault);
-  // TUJUAN: rute muat -> bongkar KHUSUS jenis muatan ini saja (bukan gabungan semua jenis).
-  const tujuanVal = `${legDef.tujuanMuat || '-'} -> ${legDef.tujuanBongkar || '-'}`;
-  // UNTUK/ONGKOS/No.Timbangan: kotak isian bebas -- staf ketik dulu di layar SEBELUM cetak/download,
-  // supaya hasil cetaknya sudah rapi terisi (bukan tulis tangan). Disimpan per-leg lewat listener
-  // 'change' di wireReimburseInlineInputs, jadi tetap ada kalau halaman dibuka lagi (device lain juga).
+  // TUJUAN: KOTA TUJUAN (field manual di form Input PKB, r.kotaTujuan) -- BUKAN rute muat->bongkar lagi
+  // (permintaan user Sesi keseratustujuhbelas: TUJUAN di Bon Reimbursement harus tampil nama kota,
+  // bukan rute/kode lokasi muat->bongkar). Sama untuk semua leg/jenis muatan dalam 1 DO yang sama,
+  // karena Kota Tujuan itu satu nilai per DO (bukan per jenis muatan).
+  const tujuanVal = r.kotaTujuan || '-';
+  // UNTUK (diisi NAMA CUSTOMER, bukan tujuan lagi -- Sesi keseratustujuhbelas)/ONGKOS/No.Timbangan:
+  // kotak isian bebas -- staf ketik dulu di layar SEBELUM cetak/download, supaya hasil cetaknya sudah
+  // rapi terisi (bukan tulis tangan). Disimpan per-leg lewat listener 'change' di
+  // wireReimburseInlineInputs, jadi tetap ada kalau halaman dibuka lagi (device lain juga).
   const untukSaved = esc(legData.untuk || '');
   const ongkosSaved = esc(legData.ongkos || '');
   const timbanganSaved = esc(legData.timbangan || '');
@@ -7018,7 +7039,7 @@ function buildReimburseLegHtml(r, legDef, legData, isAdmin){
           <tbody>
             <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
             <tr><td class="pkb-lbl">DO</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="do" data-leg="${legDef.key}" value="${doSaved}" placeholder="No. DO"></td></tr>
-            <tr><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="untuk" data-leg="${legDef.key}" value="${untukSaved}" placeholder="nama customer / tujuan"></td></tr>
+            <tr><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val"><input type="text" class="rb-inline-input" data-field="untuk" data-leg="${legDef.key}" value="${untukSaved}" placeholder="nama customer"></td></tr>
           </tbody>
         </table>
         <div class="pkb-barang-head">PERINCIAN BARANG :</div>
@@ -10646,7 +10667,7 @@ function getRekapDOFilteredList(){
   else if(fBln) list = list.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
   if(fStatus) list = list.filter(r => normalizeStatus(r.status) === fStatus);
   if(fAngkutan) list = list.filter(r => (r.jenisAngkutan || 'organik') === fAngkutan);
-  if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota,r.noPKB,r.noDO]
+  if(q) list = list.filter(r => [r.nopol,r.sopir,r.tujuanMuat,r.tujuanBongkar,r.tujuanMuat2,r.tujuanBongkar2,r.tujuanMuat3,r.tujuanBongkar3,jenisLabel(r),r.kota,r.noPKB,r.noDO,r.kotaTujuan]
     .some(v => (v||'').toLowerCase().includes(q)));
   return list;
 }
@@ -10674,7 +10695,7 @@ function renderTable(){
   const canEdit = canEditRekapDO(); // admin, atau akun non-admin yang diberi akses khusus lewat toggle "Bisa edit Rekap Data DO"
   wrap.innerHTML = `<table class="do-table"><thead><tr>
     <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th><th class="do-th-pkb">No PKB</th><th class="do-th-do">No DO</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
-    <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-pendapatan">Pendapatan (Rp)</th><th class="do-th-status">Status</th><th class="do-th-aksi"></th>
+    <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-kotatujuan">Kota Tujuan</th><th class="do-th-status">Status</th><th class="do-th-aksi"></th>
   </tr></thead><tbody>${list.map(r => `
     <tr>
       <td class="do-td-tanggal">${fmtDate(r.tanggal)}</td>
@@ -10721,9 +10742,7 @@ function renderTable(){
             : (r.tonase3 ? `<span class="mono">${esc(r.tonase3)} kg</span>` : `<span style="color:var(--text-faint);">Belum diisi</span>`))
           : `<span style="color:var(--text-faint);">-</span>`}
       </td>
-      <td class="do-td-pendapatan mono">${r.status === 'selesai'
-          ? rupiah(Number(r.pendapatan) || 0)
-          : `<span style="color:var(--text-faint);" title="Dihitung otomatis dari Database Tarif saat DO ditandai Selesai">-</span>`}</td>
+      <td class="do-td-kotatujuan">${esc(r.kotaTujuan || '-')}</td>
       <td class="do-td-status">${statusBadge(r.status)}</td>
       <td class="do-td-aksi row-actions">
         ${canEdit ? `<button class="icon-btn edit" data-id="${r.id}" title="Edit DO (termasuk tanggal)">
@@ -10752,7 +10771,7 @@ function renderTable(){
       <td class="do-td-bk mono">${list.reduce((s,r) => s + (Number(r.tonase1)||0), 0).toLocaleString('id-ID')} kg</td>
       <td class="do-td-roll mono">${list.reduce((s,r) => s + (Number(r.tonase2)||0), 0).toLocaleString('id-ID')} kg</td>
       <td class="do-td-occ mono">${list.reduce((s,r) => s + (Number(r.tonase3)||0), 0).toLocaleString('id-ID')} kg</td>
-      <td class="do-td-pendapatan mono">${rupiah(list.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0))}</td>
+      <td class="do-td-kotatujuan"></td>
       <td class="do-td-status"></td>
       <td class="do-td-aksi"></td>
     </tr>
@@ -10828,8 +10847,8 @@ document.getElementById('btnClearFilter').addEventListener('click', function(){
    Kolom & baris TOTAL persis meniru tabel di layar (renderTable), dan selalu mengikuti filter yang
    sedang aktif (getRekapDOFilteredList / getRekapDOFilterLabel di atas). Pola ZIP-XLSX & jendela
    cetak sama persis dengan "Monitoring Organik" / "Laporan Pengiriman" (makeZip, XS, LAPORAN_XLSX_STYLES_XML). ---- */
-const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','No DO','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Pendapatan (Rp)','Status'];
-const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,18,16,15,17,12,36,14,17,14,16,16];
+const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','No DO','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Kota Tujuan','Status'];
+const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,18,16,15,17,12,36,14,17,14,18,16];
 function buildRekapDOSheetXml(filterLabel, list){
   const nCols = REKAPDO_XLSX_HEADERS.length;
   const headerRowIdx = 4;
@@ -10875,8 +10894,7 @@ function buildRekapDOSheetXml(filterLabel, list){
     cells += t2 != null ? `<c r="M${rowIdx}" s="${sNum}"><v>${t2}</v></c>` : `<c r="M${rowIdx}" s="${sNum}"/>`;
     const t3 = r.tonase3 ? Number(r.tonase3) : null;
     cells += t3 != null ? `<c r="N${rowIdx}" s="${sNum}"><v>${t3}</v></c>` : `<c r="N${rowIdx}" s="${sNum}"/>`;
-    const pend = r.status === 'selesai' ? (Number(r.pendapatan) || 0) : null;
-    cells += pend != null ? `<c r="O${rowIdx}" s="${sCur}"><v>${pend}</v></c>` : `<c r="O${rowIdx}" s="${sCur}"/>`;
+    cells += `<c r="O${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(r.kotaTujuan || '-')}</t></is></c>`;
     cells += `<c r="P${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc((STATUS_META[normalizeStatus(r.status)] || {}).label || '-')}</t></is></c>`;
     rowsXml += `<row r="${rowIdx}">${cells}</row>`;
   });
@@ -10886,7 +10904,6 @@ function buildRekapDOSheetXml(filterLabel, list){
   const sumT1 = list.reduce((s,r) => s + (Number(r.tonase1)||0), 0);
   const sumT2 = list.reduce((s,r) => s + (Number(r.tonase2)||0), 0);
   const sumT3 = list.reduce((s,r) => s + (Number(r.tonase3)||0), 0);
-  const sumPend = list.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
   let totalCells = `<c r="A${totalRowIdx}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>${esc('TOTAL (' + list.length + ' DO)')}</t></is></c>`;
   for(let ci = 2; ci <= 7; ci++) totalCells += `<c r="${xlsxColLetter(ci)}${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   totalCells += `<c r="H${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(H${firstDataRow}:H${lastDataRow})</f><v>${sumUang}</v></c>`;
@@ -10896,7 +10913,7 @@ function buildRekapDOSheetXml(filterLabel, list){
   totalCells += `<c r="L${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(L${firstDataRow}:L${lastDataRow})</f><v>${sumT1}</v></c>`;
   totalCells += `<c r="M${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(M${firstDataRow}:M${lastDataRow})</f><v>${sumT2}</v></c>`;
   totalCells += `<c r="N${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(N${firstDataRow}:N${lastDataRow})</f><v>${sumT3}</v></c>`;
-  totalCells += `<c r="O${totalRowIdx}" s="${XS.TOTAL_CUR}"><f>SUM(O${firstDataRow}:O${lastDataRow})</f><v>${sumPend}</v></c>`;
+  totalCells += `<c r="O${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   totalCells += `<c r="P${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
 
@@ -10989,7 +11006,7 @@ function buildRekapDOPrintHtml(filterLabel, list){
       <td style="text-align:right;">${r.tonase1 ? Number(r.tonase1).toLocaleString('id-ID') : '-'}</td>
       <td style="text-align:right;">${r.tonase2 ? Number(r.tonase2).toLocaleString('id-ID') : '-'}</td>
       <td style="text-align:right;">${r.tonase3 ? Number(r.tonase3).toLocaleString('id-ID') : '-'}</td>
-      <td style="text-align:right;">${r.status === 'selesai' ? rupiah(Number(r.pendapatan)||0) : '-'}</td>
+      <td>${esc(r.kotaTujuan || '-')}</td>
       <td>${esc(statusLabel)}</td>
     </tr>`;
   }).join('');
@@ -10999,7 +11016,6 @@ function buildRekapDOPrintHtml(filterLabel, list){
   const sumT1 = list.reduce((s,r) => s + (Number(r.tonase1)||0), 0);
   const sumT2 = list.reduce((s,r) => s + (Number(r.tonase2)||0), 0);
   const sumT3 = list.reduce((s,r) => s + (Number(r.tonase3)||0), 0);
-  const sumPend = list.reduce((s,r) => s + (r.status === 'selesai' ? (Number(r.pendapatan)||0) : 0), 0);
   const footHtml = `<tr style="font-weight:700; background:#e5f0da !important; -webkit-print-color-adjust:exact; print-color-adjust:exact;">
     <td colspan="7" style="text-align:right;">TOTAL (${list.length} DO)</td>
     <td style="text-align:right;">${rupiah(sumUang)}</td>
@@ -11008,7 +11024,7 @@ function buildRekapDOPrintHtml(filterLabel, list){
     <td style="text-align:right;">${sumT1.toLocaleString('id-ID')}</td>
     <td style="text-align:right;">${sumT2.toLocaleString('id-ID')}</td>
     <td style="text-align:right;">${sumT3.toLocaleString('id-ID')}</td>
-    <td style="text-align:right;">${rupiah(sumPend)}</td>
+    <td></td>
     <td></td>
   </tr>`;
 
@@ -11030,7 +11046,7 @@ function buildRekapDOPrintHtml(filterLabel, list){
   <p class="sub">Filter: ${esc(filterLabel)}</p>
   <table>
     <thead><tr>
-      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Angkutan</th><th>No PKB</th><th>No DO</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya Lain-lain</th><th>Jenis</th><th>Rute Muat &rarr; Bongkar</th><th>Tonase BK (Kg)</th><th>Tonase Roll Assa (Kg)</th><th>Tonase OCC (Kg)</th><th>Pendapatan</th><th>Status</th>
+      <th>Tanggal</th><th>Nopol</th><th>Armada</th><th>Angkutan</th><th>No PKB</th><th>No DO</th><th>Sopir</th><th>Uang Jalan</th><th>Biaya Lain-lain</th><th>Jenis</th><th>Rute Muat &rarr; Bongkar</th><th>Tonase BK (Kg)</th><th>Tonase Roll Assa (Kg)</th><th>Tonase OCC (Kg)</th><th>Kota Tujuan</th><th>Status</th>
     </tr></thead>
     <tbody>${bodyHtml}${footHtml}</tbody>
   </table>
