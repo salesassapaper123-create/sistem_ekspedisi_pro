@@ -1835,7 +1835,7 @@
         <div class="form-modal" style="max-width:560px;">
           <div class="form-modal-head">
             <div>
-              <h3>Foto PO</h3>
+              <h3 id="poFotoModalTitle">Foto PO</h3>
             </div>
             <button type="button" class="form-modal-close" id="btnClosePoFotoModal" aria-label="Tutup">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
@@ -2368,19 +2368,27 @@
                   <input type="text" id="mJenis" placeholder="cth. Ganti kampas rem" required>
                 </div>
                 <div class="field">
-                  <label for="mBiaya">Biaya (Rp)</label>
-                  <input type="number" id="mBiaya" min="0" step="1000" placeholder="cth. 750000" required>
-                </div>
-                <div class="field full" style="grid-column:1 / -1;">
-                  <label for="mCatatan">Catatan <span class="hint">(opsional)</span></label>
-                  <input type="text" id="mCatatan" placeholder="cth. bengkel, no. bon, dsb.">
-                </div>
-                <div class="field">
                   <label for="mStatus">Status</label>
                   <select id="mStatus">
                     <option value="proses">On Proses</option>
                     <option value="selesai">Selesai</option>
                   </select>
+                </div>
+                <div class="field">
+                  <label for="mBiaya">Biaya (Rp) <span class="hint" id="mBiayaHint">(opsional dulu selama On Proses)</span></label>
+                  <input type="number" id="mBiaya" min="0" step="1000" placeholder="cth. 750000">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="mCatatan">Catatan <span class="hint">(opsional)</span></label>
+                  <input type="text" id="mCatatan" placeholder="cth. bengkel, no. bon, dsb.">
+                </div>
+                <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
+                  <label for="mFotoSpk">Foto SPK dari bengkel <span class="hint" id="mFotoSpkHint">(bukti bon/perbaikan -- wajib diisi kalau status Selesai)</span></label>
+                  <input type="file" id="mFotoSpk" accept="image/*">
+                  <div id="mFotoSpkPreviewWrap" style="display:none; margin-top:10px;">
+                    <img id="mFotoSpkPreviewImg" alt="Preview foto SPK" style="max-width:220px; max-height:220px; border-radius:8px; border:1px solid var(--border); display:block;">
+                  </div>
+                  <div class="login-error" id="mFotoSpkError" style="margin-top:6px;"></div>
                 </div>
               </div>
               <div class="btn-row" style="justify-content:flex-end;">
@@ -3426,7 +3434,8 @@ function syncOdometerFromCartrack(){
                 <label for="newAccRole">Hak akses <span class="hint">(atur apa yang boleh dilihat akun ini)</span></label>
                 <select id="newAccRole">
                   <option value="admin">Admin — akses penuh (semua Pengaturan)</option>
-                  <option value="user" selected>Terbatas — hanya bisa ganti profil/password sendiri</option>
+                  <option value="owner">Owner — akses terbatas (diatur lewat "Atur Menu" setelah dibuat), badge ditandai "Owner"</option>
+                  <option value="user" selected>Staf — akses terbatas (diatur lewat "Atur Menu" setelah dibuat)</option>
                 </select>
               </div>
               <div class="login-error" id="addAccountError" style="text-align:left;"></div>
@@ -8035,22 +8044,32 @@ document.getElementById('btnCopyFbRules').addEventListener('click', function(){
   document.getElementById('waAutoBanner').checked = localStorage.getItem(WA_AUTOBANNER_KEY) === '1';
 })();
 
-/* ---------- MAINTENANCE PERBAIKAN ---------- */
+/* ---------- MAINTENANCE PERBAIKAN ----------
+   Sesi keseratus: selama status masih "On Proses" (baru dijadwalkan, belum tentu final biayanya),
+   Biaya TIDAK wajib diisi -- boleh dikosongkan dulu. Begitu status jadi "Selesai", BARU Biaya wajib
+   diisi DAN wajib upload Foto SPK dari bengkel sebagai bukti bon/perbaikan (field baru: fotoSpk,
+   base64 data URL, dikompres pakai compressImageFile() -- pola sama persis dengan fotoPO di Input
+   SO & Upload PO). Supaya syarat ini tidak bisa "dilewati" lewat tombol ubah-status cepat di tabel,
+   transisi proses -> selesai SEKARANG membuka modal ini (mode "lengkapi") alih-alih langsung
+   menukar status di tempat -- transisi selesai -> proses (buka kembali) tetap langsung seperti
+   sebelumnya karena tidak butuh data tambahan. */
+let maintenanceEditId = null;
 function renderMaintenance(){
   const wrap = document.getElementById('maintenanceTableWrap');
   const list = maintenanceList.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
   if(list.length === 0){ wrap.innerHTML = emptyState('Belum ada catatan perbaikan. Klik "Tambah Perbaikan" di atas untuk mulai mencatat.'); return; }
   const admin = isAdminUser();
-  wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th><th>Status</th><th></th></tr></thead><tbody>${list.map(m => `
+  wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th><th>Foto SPK</th><th>Status</th><th></th></tr></thead><tbody>${list.map(m => `
     <tr>
       <td>${fmtDate(m.tanggal)}</td>
       <td><span class="plate-cell">${esc(m.nopol)}</span></td>
       <td class="sv-left">${esc(m.jenis)}</td>
-      <td class="mono sv-num">${rupiah(m.biaya)}</td>
+      <td class="mono sv-num">${m.biaya ? rupiah(m.biaya) : '-'}</td>
       <td class="sv-left">${esc(m.catatan || '-')}</td>
+      <td>${m.fotoSpk ? `<button type="button" class="btn btn-secondary lihat-foto-spk" data-id="${m.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
       <td>${statusBadge(m.status)}</td>
       <td class="row-actions">
-        ${admin ? `<button class="icon-btn toggle" data-id="${m.id}" title="Ubah status">
+        ${admin ? `<button class="icon-btn toggle" data-id="${m.id}" title="${m.status === 'selesai' ? 'Buka kembali jadi On Proses' : 'Tandai Selesai (isi biaya & foto SPK)'}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
         </button>
         <button class="icon-btn del" data-id="${m.id}" title="Hapus">
@@ -8058,10 +8077,21 @@ function renderMaintenance(){
         </button>` : ''}
       </td>
     </tr>`).join('')}</tbody></table>`;
+  wrap.querySelectorAll('.lihat-foto-spk').forEach(btn => btn.addEventListener('click', function(){
+    const m = maintenanceList.find(x => String(x.id) === String(this.dataset.id));
+    if(m && m.fotoSpk) openPoFotoModal(m.fotoSpk, `Foto SPK — ${m.nopol || ''}`);
+  }));
   if(admin){
     wrap.querySelectorAll('.toggle').forEach(btn => btn.addEventListener('click', function(){
       const m = maintenanceList.find(x => x.id === this.dataset.id);
-      if(m){ m.status = m.status === 'selesai' ? 'proses' : 'selesai'; saveMaintenance(); renderMaintenance(); }
+      if(!m) return;
+      if(m.status === 'selesai'){
+        // Buka kembali jadi On Proses -- tidak ada syarat data tambahan, langsung tukar seperti sebelumnya.
+        m.status = 'proses'; saveMaintenance(); renderMaintenance();
+      }else{
+        // Tandai Selesai WAJIB isi biaya & foto SPK dulu -- buka modal mode "lengkapi", bukan langsung ditukar.
+        openMaintenanceModal(m.id);
+      }
     }));
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus catatan perbaikan ini?')){
@@ -8080,27 +8110,133 @@ function renderMaintenance(){
     }));
   }
 }
-document.getElementById('formMaintenance').addEventListener('submit', function(e){
+/* Toggle wajib-tidaknya Biaya & Foto SPK sesuai Status yang sedang dipilih di form -- dipanggil saat
+   modal dibuka & setiap kali dropdown Status berubah. */
+function updateMaintenanceRequiredFields(){
+  const status = document.getElementById('mStatus').value;
+  const wajib = status === 'selesai';
+  const biayaEl = document.getElementById('mBiaya');
+  const biayaHint = document.getElementById('mBiayaHint');
+  const fotoEl = document.getElementById('mFotoSpk');
+  const fotoHint = document.getElementById('mFotoSpkHint');
+  biayaEl.required = wajib;
+  biayaHint.textContent = wajib ? '(wajib diisi karena status Selesai)' : '(opsional dulu selama On Proses)';
+  const existing = maintenanceEditId ? maintenanceList.find(x => x.id === maintenanceEditId) : null;
+  // Foto SPK cuma dipaksa upload BARU kalau belum ada foto tersimpan sama sekali -- kalau sedang
+  // melengkapi record yang kebetulan sudah punya foto, boleh dikosongkan (foto lama tetap dipakai).
+  fotoEl.required = wajib && !(existing && existing.fotoSpk);
+  fotoHint.textContent = wajib
+    ? ((existing && existing.fotoSpk) ? '(bukti bon/perbaikan -- sudah ada foto, kosongkan kalau tidak mau ganti)' : '(bukti bon/perbaikan -- wajib diisi karena status Selesai)')
+    : '(bukti bon/perbaikan -- wajib diisi kalau status Selesai)';
+}
+document.getElementById('mStatus').addEventListener('change', updateMaintenanceRequiredFields);
+(function(){
+  const fileInput = document.getElementById('mFotoSpk');
+  if(!fileInput) return;
+  fileInput.addEventListener('change', async function(){
+    const errEl = document.getElementById('mFotoSpkError');
+    const previewWrap = document.getElementById('mFotoSpkPreviewWrap');
+    errEl.textContent = '';
+    const file = this.files[0];
+    if(!file){ previewWrap.style.display = 'none'; return; }
+    try{
+      const compressed = await compressImageFile(file, 1000, 0.65);
+      document.getElementById('mFotoSpkPreviewImg').src = compressed;
+      previewWrap.style.display = '';
+    }catch(err){
+      errEl.textContent = err.message || 'Gagal memproses foto.';
+      previewWrap.style.display = 'none';
+      this.value = '';
+    }
+  });
+})();
+document.getElementById('formMaintenance').addEventListener('submit', async function(e){
   e.preventDefault();
-  maintenanceList.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+  const errEl = document.getElementById('mFotoSpkError');
+  errEl.textContent = '';
+  const status = document.getElementById('mStatus').value;
+  const biayaVal = parseFloat(document.getElementById('mBiaya').value) || 0;
+  const existing = maintenanceEditId ? maintenanceList.find(x => x.id === maintenanceEditId) : null;
+  const fileInput = document.getElementById('mFotoSpk');
+  const file = fileInput.files[0];
+
+  if(status === 'selesai'){
+    if(biayaVal <= 0){
+      document.getElementById('mBiaya').focus();
+      showToast('Biaya wajib diisi kalau status Selesai.', 'danger');
+      return;
+    }
+    if(!file && !(existing && existing.fotoSpk)){
+      errEl.textContent = 'Foto SPK dari bengkel wajib diupload sebagai bukti kalau status Selesai.';
+      return;
+    }
+  }
+
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  let fotoSpk = existing ? (existing.fotoSpk || null) : null;
+  try{
+    if(file) fotoSpk = await compressImageFile(file, 1000, 0.65);
+  }catch(err){
+    errEl.textContent = 'Gagal memproses foto SPK: ' + (err.message || err);
+    btn.disabled = false;
+    return;
+  }
+
+  const data = {
     tanggal: document.getElementById('mTanggal').value,
     nopol: document.getElementById('mNopol').value.trim().toUpperCase(),
     jenis: document.getElementById('mJenis').value.trim(),
-    biaya: parseFloat(document.getElementById('mBiaya').value) || 0,
+    biaya: biayaVal,
     catatan: document.getElementById('mCatatan').value.trim(),
-    status: document.getElementById('mStatus').value,
-  });
+    status: status,
+    fotoSpk: fotoSpk,
+  };
+  if(existing){
+    Object.assign(existing, data);
+  }else{
+    maintenanceList.push(Object.assign({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6) }, data));
+  }
   saveMaintenance();
   renderMaintenance();
   closeMaintenanceModal();
-  showToast('Data perbaikan berhasil disimpan', 'success');
+  btn.disabled = false;
+  showToast(existing ? 'Status perbaikan berhasil diperbarui' : 'Data perbaikan berhasil disimpan', 'success');
 });
 
-/* ---------- MODAL TAMBAH PERBAIKAN ---------- */
-function openMaintenanceModal(){
-  document.getElementById('mTanggal').valueAsDate = new Date();
+/* ---------- MODAL TAMBAH PERBAIKAN ----------
+   editId diisi kalau modal ini dibuka untuk MELENGKAPI record yang sudah ada (transisi ke Selesai
+   lewat tombol ubah-status di tabel) -- form di-prefill dari data lama & submit akan meng-UPDATE
+   record itu, bukan bikin baru. editId kosong/null = mode tambah baru seperti biasa. */
+function openMaintenanceModal(editId){
+  maintenanceEditId = editId || null;
+  const existing = maintenanceEditId ? maintenanceList.find(x => x.id === maintenanceEditId) : null;
   const overlay = document.getElementById('maintenanceModalOverlay');
+  const titleEl = overlay ? overlay.querySelector('.form-modal-head h3') : null;
+  const subtitleEl = overlay ? overlay.querySelector('.form-modal-head p') : null;
+  document.getElementById('formMaintenance').reset();
+  document.getElementById('mFotoSpkPreviewWrap').style.display = 'none';
+  document.getElementById('mFotoSpkError').textContent = '';
+  if(existing){
+    if(titleEl) titleEl.textContent = 'Tandai perbaikan selesai';
+    if(subtitleEl) subtitleEl.textContent = 'Lengkapi biaya & foto SPK dari bengkel sebagai bukti perbaikan sudah selesai';
+    document.getElementById('mTanggal').value = existing.tanggal || '';
+    document.getElementById('mNopol').value = existing.nopol || '';
+    document.getElementById('mJenis').value = existing.jenis || '';
+    document.getElementById('mCatatan').value = existing.catatan || '';
+    document.getElementById('mBiaya').value = existing.biaya || '';
+    document.getElementById('mStatus').value = 'selesai';
+    if(existing.fotoSpk){
+      document.getElementById('mFotoSpkPreviewImg').src = existing.fotoSpk;
+      document.getElementById('mFotoSpkPreviewWrap').style.display = '';
+    }
+  }else{
+    if(titleEl) titleEl.textContent = 'Tambah catatan perbaikan';
+    if(subtitleEl) subtitleEl.textContent = 'Catat perbaikan kendaraan beserta biayanya — dipakai untuk perhitungan margin';
+    document.getElementById('mTanggal').valueAsDate = new Date();
+    document.getElementById('mStatus').value = 'proses';
+  }
+  updateMaintenanceRequiredFields();
   if(overlay) overlay.classList.add('show');
 }
 function closeMaintenanceModal(){
@@ -8108,13 +8244,15 @@ function closeMaintenanceModal(){
   if(overlay) overlay.classList.remove('show');
   const form = document.getElementById('formMaintenance');
   if(form) form.reset();
+  maintenanceEditId = null;
+  document.getElementById('mFotoSpkPreviewWrap').style.display = 'none';
 }
 (function(){
   const btnOpen = document.getElementById('btnTambahMaintenance');
   const btnClose = document.getElementById('btnCloseMaintenanceModal');
   const btnCancel = document.getElementById('btnBatalMaintenance');
   const overlay = document.getElementById('maintenanceModalOverlay');
-  if(btnOpen) btnOpen.addEventListener('click', openMaintenanceModal);
+  if(btnOpen) btnOpen.addEventListener('click', function(){ openMaintenanceModal(null); });
   if(btnClose) btnClose.addEventListener('click', closeMaintenanceModal);
   if(btnCancel) btnCancel.addEventListener('click', closeMaintenanceModal);
   if(overlay) overlay.addEventListener('click', function(e){
@@ -8726,8 +8864,12 @@ function renderPOMonitoring(){
 }
 
 /* ---------- MODAL: LIHAT FOTO PO ---------- */
-function openPoFotoModal(fotoDataUrl){
+/* title opsional -- dipakai ulang juga untuk lihat Foto SPK bengkel di Maintenance Perbaikan
+   (bukan cuma Foto PO), supaya tidak perlu bikin modal viewer gambar terpisah lagi. */
+function openPoFotoModal(fotoDataUrl, title){
   document.getElementById('poFotoModalImg').src = fotoDataUrl;
+  const titleEl = document.getElementById('poFotoModalTitle');
+  if(titleEl) titleEl.textContent = title || 'Foto PO';
   const overlay = document.getElementById('poFotoModalOverlay');
   if(overlay) overlay.classList.add('show');
 }
@@ -12211,7 +12353,8 @@ document.getElementById('formAddAccount').addEventListener('submit', async funct
   const nama = document.getElementById('newAccNama').value.trim();
   const email = document.getElementById('newAccEmail').value.trim();
   const pass = document.getElementById('newAccPass').value;
-  const role = document.getElementById('newAccRole').value === 'admin' ? 'admin' : 'user';
+  const roleSelVal = document.getElementById('newAccRole').value;
+  const role = (roleSelVal === 'admin' || roleSelVal === 'owner') ? roleSelVal : 'user';
 
   if(!isValidEmail(email)){ errEl.textContent = 'Format email tidak valid.'; return; }
   if(pass.length < 6){ errEl.textContent = 'Password minimal 6 karakter.'; return; }
