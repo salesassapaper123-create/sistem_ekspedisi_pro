@@ -1957,10 +1957,14 @@
             </div>
           </div>
           <div class="panel-body">
-            <div class="toolbar" style="margin-bottom:16px;">
+            <div class="toolbar" style="margin-bottom:16px; flex-wrap:wrap;">
               <div class="field">
-                <label>Filter tanggal</label>
-                <input type="date" id="rpcFilterTanggal">
+                <label>Dari tanggal</label>
+                <input type="date" id="rpcFilterDari">
+              </div>
+              <div class="field">
+                <label>Sampai tanggal</label>
+                <input type="date" id="rpcFilterSampai">
               </div>
               <div class="field">
                 <label>Filter bulan</label>
@@ -9103,10 +9107,11 @@ function computePOSisa(po, excludeRecordId){
    baris (1 per jenis barang/ukuran), dengan Tgl Pengiriman & No PO di-rowspan supaya tidak berulang.
    Kalau rincian tonase per barang TIDAK lengkap (data lama/legacy, sebelum fitur Jumlah Roll ada) --
    fallback ke 1 baris memakai Ukuran dari PO & tonase total DO, supaya total tidak salah hitung. */
-function computeRekapPengirimanCust(fTgl, fBln, fCust){
+function computeRekapPengirimanCust(fDari, fSampai, fBln, fCust){
   const data = records.filter(r => {
     if(!r.poId) return false;
-    if(fTgl && r.tanggal !== fTgl) return false;
+    if(fDari && (!r.tanggal || r.tanggal < fDari)) return false;
+    if(fSampai && (!r.tanggal || r.tanggal > fSampai)) return false;
     if(fBln && (!r.tanggal || !r.tanggal.startsWith(fBln))) return false;
     return true;
   });
@@ -9205,7 +9210,7 @@ function populateRpcCustomerDropdown(){
   const sel = document.getElementById('rpcFilterCustomer');
   if(!sel) return;
   const want = sel.value;
-  const allGroups = computeRekapPengirimanCust('', '', '');
+  const allGroups = computeRekapPengirimanCust('', '', '', '');
   const custNames = allGroups.map(g => g.customer);
   sel.innerHTML = '<option value="">Semua Customer</option>' + custNames.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   sel.value = custNames.includes(want) ? want : '';
@@ -9214,10 +9219,11 @@ function renderRekapPengirimanCust(){
   const wrap = document.getElementById('rekapPengirimanCustWrap');
   if(!wrap) return;
   populateRpcCustomerDropdown();
-  const fTgl = document.getElementById('rpcFilterTanggal') ? document.getElementById('rpcFilterTanggal').value : '';
+  const fDari = document.getElementById('rpcFilterDari') ? document.getElementById('rpcFilterDari').value : '';
+  const fSampai = document.getElementById('rpcFilterSampai') ? document.getElementById('rpcFilterSampai').value : '';
   const fBln = document.getElementById('rpcFilterBulan') ? document.getElementById('rpcFilterBulan').value : '';
   const fCust = document.getElementById('rpcFilterCustomer') ? document.getElementById('rpcFilterCustomer').value : '';
-  const groups = computeRekapPengirimanCust(fTgl, fBln, fCust);
+  const groups = computeRekapPengirimanCust(fDari, fSampai, fBln, fCust);
   if(groups.length === 0){ wrap.innerHTML = emptyState('Belum ada pengiriman (DO) yang terkait PO pada periode/customer ini.'); return; }
   wrap.innerHTML = buildRekapPengirimanCustTableHtml(groups);
 }
@@ -13212,17 +13218,25 @@ if(btnPoClearFilter) btnPoClearFilter.addEventListener('click', function(){
   if(poFilterBulanEl) poFilterBulanEl.value = '';
   renderPO();
 });
-/* Filter periode di Rekap Pengiriman ke Customer (Sesi kesembilanpuluhdua) -- pola sama persis
-   dengan filter periode di Konfirmasi PO di atas. */
-const rpcFilterTanggalEl = document.getElementById('rpcFilterTanggal');
+/* Filter periode di Rekap Pengiriman ke Customer (Sesi kesembilanpuluhdua, direvisi Sesi
+   keseratusduapuluhdelapan) -- semula "Filter tanggal" cuma bisa 1 hari, diminta bisa jadi rentang
+   bebas (Dari tanggal - Sampai tanggal, boleh cuma isi salah satu buat "dari tanggal X ke atas" atau
+   "sampai tanggal X"), sama seperti pola "Dari tanggal"/"Sampai tanggal" yang sudah dipakai di
+   Ritase per Nopol dkk. "Filter bulan" (sebulan penuh) tetap ada sebagai alternatif cepat -- isi
+   salah satu (rentang tanggal ATAU bulan) otomatis mengosongkan yang lain, sama pola dengan filter
+   periode di halaman lain. */
+const rpcFilterDariEl = document.getElementById('rpcFilterDari');
+const rpcFilterSampaiEl = document.getElementById('rpcFilterSampai');
 const rpcFilterBulanEl = document.getElementById('rpcFilterBulan');
 const rpcFilterCustomerEl = document.getElementById('rpcFilterCustomer');
 const btnRpcClearFilter = document.getElementById('btnRpcClearFilter');
-if(rpcFilterTanggalEl) rpcFilterTanggalEl.addEventListener('change', function(){ if(this.value && rpcFilterBulanEl) rpcFilterBulanEl.value=''; renderRekapPengirimanCust(); });
-if(rpcFilterBulanEl) rpcFilterBulanEl.addEventListener('change', function(){ if(this.value && rpcFilterTanggalEl) rpcFilterTanggalEl.value=''; renderRekapPengirimanCust(); });
+if(rpcFilterDariEl) rpcFilterDariEl.addEventListener('change', function(){ if(this.value && rpcFilterBulanEl) rpcFilterBulanEl.value=''; renderRekapPengirimanCust(); });
+if(rpcFilterSampaiEl) rpcFilterSampaiEl.addEventListener('change', function(){ if(this.value && rpcFilterBulanEl) rpcFilterBulanEl.value=''; renderRekapPengirimanCust(); });
+if(rpcFilterBulanEl) rpcFilterBulanEl.addEventListener('change', function(){ if(this.value){ if(rpcFilterDariEl) rpcFilterDariEl.value=''; if(rpcFilterSampaiEl) rpcFilterSampaiEl.value=''; } renderRekapPengirimanCust(); });
 if(rpcFilterCustomerEl) rpcFilterCustomerEl.addEventListener('change', function(){ renderRekapPengirimanCust(); });
 if(btnRpcClearFilter) btnRpcClearFilter.addEventListener('click', function(){
-  if(rpcFilterTanggalEl) rpcFilterTanggalEl.value = '';
+  if(rpcFilterDariEl) rpcFilterDariEl.value = '';
+  if(rpcFilterSampaiEl) rpcFilterSampaiEl.value = '';
   if(rpcFilterBulanEl) rpcFilterBulanEl.value = '';
   if(rpcFilterCustomerEl) rpcFilterCustomerEl.value = '';
   renderRekapPengirimanCust();
