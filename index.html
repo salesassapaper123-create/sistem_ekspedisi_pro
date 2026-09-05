@@ -3391,9 +3391,9 @@ function checkAndNotifyPoBaru(){
       + 'Customer: ' + (p.namaCustomer || '-') + '\n'
       + 'Sales: ' + (p.sales || '-') + '\n'
       + 'GSM / UK: ' + (p.gsm || '-') + ' / ' + (p.ukuran || '-') + '\n'
-      + 'Tonase: ' + (((Number(p.tonase)||0) / 1000).toLocaleString('id-ID')) + ' ton\n'
+      + 'Tonase: ' + Math.round((Number(p.tonase)||0) / 1000).toLocaleString('id-ID') + ' ton\n'
       + 'Harga: Rp ' + (Number(p.harga)||0).toLocaleString('id-ID') + '\n\n'
-      + 'Sisa updet PO : ' + (totalSisaPo / 1000).toLocaleString('id-ID') + ' ton\n\n'
+      + 'Sisa updet PO : ' + Math.round(totalSisaPo / 1000).toLocaleString('id-ID') + ' ton\n\n'
       + 'Mohon segera dicek & dikonfirmasi di menu Konfirmasi PO.';
     sendWhatsApp(msg, WA_TARGET_OWNER);
     p.notifWaSent = true;
