@@ -877,6 +877,11 @@
   }
 
   /* ---------- REKAP DATA / DETAIL DO: tabel profesional gaya rekap (header biru navy, border rapi, baris sejajar) ---------- */
+  /* Pembungkus scroll KHUSUS tabel ini (bukan cuma andalkan overflow-x:auto milik .panel-body) --
+     supaya header sticky di bawah punya kontainer scroll yang jelas & nyata, lihat penjelasan di
+     renderTable(). Tinggi dibatasi supaya toolbar filter di atasnya tetap kelihatan tanpa perlu
+     ikut ter-scroll keluar layar. */
+  .do-table-scroll{ max-height:70vh; overflow:auto; }
   .do-table{ border:1px solid var(--navy-700) !important; border-collapse:collapse; width:100%; }
   .do-table th{
     background:var(--navy-700) !important; color:#fff !important; font-weight:700 !important; font-size:11px !important; text-align:center !important;
@@ -11042,7 +11047,16 @@ function renderTable(){
      disembunyikan TOTAL dari HTML (bukan cuma disamarkan CSS) khusus saat yang login role Owner.
      Admin & staff biasa tetap melihat semua kolom seperti biasa -- tidak berubah. */
   const isOwnerView = accountRole(currentAccount()) === 'owner';
-  wrap.innerHTML = `<table class="do-table"><thead><tr>
+  /* PENTING (koreksi Sesi keseratusduapuluhtujuh): `position:sticky` cuma nempel ke pembungkus
+     SCROLL TERDEKAT -- ternyata `.panel-body` (pembungkus toolbar+tabel ini) sudah punya
+     `overflow-x:auto`, dan menurut aturan CSS itu otomatis membuat `overflow-y` ikut jadi `auto`
+     juga (bukan `visible`) walau tidak diset eksplisit -- jadi `.panel-body` sendiri yang dianggap
+     "kontainer scroll", padahal yang benar-benar scroll (waktu halaman digulir) adalah `.content`
+     di luarnya. Akibatnya header sticky tidak pernah kelihatan menempel karena course tidak
+     scroll relatif ke `.panel-body`. Diperbaiki dengan membungkus tabel dalam `.do-table-scroll`
+     sendiri (tinggi dibatasi + scroll sendiri) -- supaya scroll & sticky-nya jelas terjadi di
+     situ, bukan tergantung elemen luar. */
+  wrap.innerHTML = `<div class="do-table-scroll"><table class="do-table"><thead><tr>
     <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th>${isOwnerView ? '' : '<th class="do-th-pkb">No PKB</th><th class="do-th-do">No DO</th>'}<th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th>${isOwnerView ? '' : '<th class="do-th-biayalain">Biaya lain-lain</th>'}<th class="do-th-jenis">Jenis</th>
     <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-kotatujuan">Kota Tujuan</th>${isOwnerView ? '' : '<th class="do-th-keterangan">Keterangan</th>'}<th class="do-th-status">Status</th><th class="do-th-aksi"></th>
   </tr></thead><tbody>${list.map(r => `
@@ -11128,7 +11142,7 @@ function renderTable(){
       <td class="do-td-status"></td>
       <td class="do-td-aksi"></td>
     </tr>
-    </tbody></table>`;
+    </tbody></table></div>`;
 
   wrap.querySelectorAll('.surat').forEach(btn => btn.addEventListener('click', function(){
     openSuratTugasModal(this.dataset.id);
