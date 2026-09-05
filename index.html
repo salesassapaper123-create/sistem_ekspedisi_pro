@@ -8321,10 +8321,12 @@ function renderMonitoringBan(){
 let banDetailTargetId = null;
 let banGantiOpenPosisi = null;
 let banRotasiFormOpen = false;
+let banBulkFormOpen = false; // Sesi keseratustigapuluhsatu: form isi data awal beberapa posisi ban sekaligus
 function openBanDetailModal(id){
   banDetailTargetId = id;
   banGantiOpenPosisi = null;
   banRotasiFormOpen = false;
+  banBulkFormOpen = false;
   const k = kendaraanList.find(x => x.id === id);
   document.getElementById('banDetailModalTitle').textContent = `Kelola Ban — ${k ? k.nopol : ''}`;
   renderBanDetailModalBody(k || null);
@@ -8335,6 +8337,7 @@ function closeBanDetailModal(){
   banDetailTargetId = null;
   banGantiOpenPosisi = null;
   banRotasiFormOpen = false;
+  banBulkFormOpen = false;
 }
 (function(){
   const btnClose = document.getElementById('btnCloseBanDetailModal');
@@ -8352,7 +8355,11 @@ function renderBanDetailModalBody(k){
   }
   const posisiList = banPosisiUntuk(k);
   const rInfo = rotasiInfo(k);
-  let html = `<p class="hint" style="margin:0 0 10px;">${esc(jenisArmadaBanLabel(k))} — ${posisiList.length} posisi ban (termasuk cadangan).</p>
+  const posisiKosong = posisiList.filter(p => !banOf(k, p.key));
+  let html = `<div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">
+    <p class="hint" style="margin:0;">${esc(jenisArmadaBanLabel(k))} — ${posisiList.length} posisi ban (termasuk cadangan).</p>
+    ${posisiKosong.length > 0 ? `<button type="button" class="btn btn-secondary" id="btnToggleBanBulkForm" style="font-size:12px; padding:7px 12px; white-space:nowrap;">${banBulkFormOpen ? 'Batal' : `Isi Data Awal Massal (${posisiKosong.length} posisi kosong)`}</button>` : ''}
+  </div>
   <table class="sv-table" style="margin-bottom:16px;"><thead><tr>
       <th class="sv-left">Posisi</th><th class="sv-left">Merk</th><th class="sv-left">Kondisi</th><th>Tgl Pasang</th><th>KM Pasang</th><th>Estimasi</th><th>Status</th><th></th>
     </tr></thead><tbody>${posisiList.map(p => {
@@ -8370,6 +8377,47 @@ function renderBanDetailModalBody(k){
         <td><button type="button" class="btn btn-secondary btn-ganti-ban-toggle" data-posisi="${p.key}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap;">${banGantiOpenPosisi === p.key ? 'Batal' : (ban ? 'Ganti Ban' : '+ Pasang Ban')}</button></td>
       </tr>`;
     }).join('')}</tbody></table>`;
+
+  /* "Isi Data Awal Massal" (Sesi keseratustigapuluhsatu) -- supaya staff tidak perlu buka form
+     "+ Pasang Ban" satu-satu untuk tiap posisi kosong (bisa sampai 11 posisi per kendaraan) saat
+     mendata kondisi ban yang sudah terpasang tapi belum pernah dicatat di sistem. Tanggal/KM/Estimasi
+     diisi SEKALI berlaku untuk semua posisi (wajar untuk "mulai dipantau dari sekarang", karena
+     memang tidak selalu tahu tanggal pasang ASLI tiap ban) -- Merk & Kondisi tetap diisi PER POSISI
+     karena bisa beda-beda. Cuma untuk posisi yang MASIH KOSONG -- posisi yang sudah terisi tetap
+     lewat jalur "Ganti Ban" satu-satu seperti biasa (supaya riwayat penggantiannya tidak keliru). */
+  if(banBulkFormOpen && posisiKosong.length > 0){
+    html += `<div class="panel" style="margin:0 0 16px; background:var(--bg);">
+      <div class="panel-body" style="padding:16px;">
+        <h4 style="margin:0 0 4px; font-size:14px;">Isi Data Awal Massal — ${posisiKosong.length} posisi kosong</h4>
+        <p class="hint" style="margin:0 0 12px;">Tanggal, KM, & estimasi umur di bawah berlaku untuk SEMUA posisi sekaligus (kalau tanggal pasang asli tidak diketahui, isi saja tanggal hari ini & KM kendaraan saat ini sebagai mulai dipantau). Merk & Kondisi tetap diisi per posisi. Posisi yang Merk-nya dibiarkan kosong akan DILEWATI (tidak ikut disimpan).</p>
+        <div class="grid2" style="margin-bottom:14px;">
+          <div class="field"><label for="bbTanggal">Tanggal pasang (semua posisi)</label><input type="date" id="bbTanggal" value="${todayISO()}" required></div>
+          <div class="field"><label for="bbKmPasang">KM saat dipasang (semua posisi)</label><input type="number" id="bbKmPasang" min="0" step="1" value="${k.kmSaatIni || 0}" required></div>
+          <div class="field"><label for="bbEstBulan">Estimasi umur (bulan)</label><input type="number" id="bbEstBulan" min="1" step="1" value="24" required></div>
+          <div class="field"><label for="bbEstKm">Estimasi umur (km)</label><input type="number" id="bbEstKm" min="1" step="1" value="40000" required></div>
+        </div>
+        <form id="formBanBulk">
+          <div style="overflow-x:auto;"><table class="sv-table" style="margin-bottom:12px; min-width:480px;"><thead><tr>
+            <th class="sv-left">Posisi</th><th class="sv-left">Merk / tipe ban</th><th class="sv-left">Kondisi</th>
+          </tr></thead><tbody>
+            ${posisiKosong.map(p => `<tr>
+              <td class="sv-left">${esc(p.label)}</td>
+              <td class="sv-left"><input type="text" class="bb-merk" data-posisi="${p.key}" placeholder="cth. Bridgestone R150" style="width:100%;"></td>
+              <td class="sv-left"><select class="bb-kondisi" data-posisi="${p.key}" style="width:100%;">
+                <option value="">- Pilih -</option>
+                ${BAN_KONDISI_OPTIONS.map(o => `<option value="${o.value}">${esc(o.label)}</option>`).join('')}
+              </select></td>
+            </tr>`).join('')}
+          </tbody></table></div>
+          <div class="login-error" id="banBulkFormError" style="text-align:left;"></div>
+          <div class="btn-row" style="justify-content:flex-end; margin-top:10px;">
+            <button type="button" class="btn btn-secondary btn-batal-bulk-ban">Batal</button>
+            <button type="submit" class="btn btn-primary">Simpan Semua</button>
+          </div>
+        </form>
+      </div>
+    </div>`;
+  }
 
   if(banGantiOpenPosisi){
     const p = posisiList.find(x => x.key === banGantiOpenPosisi);
@@ -8477,8 +8525,61 @@ function wireBanDetailModalEvents(k){
   body.querySelectorAll('.btn-ganti-ban-toggle').forEach(btn => btn.addEventListener('click', function(){
     banGantiOpenPosisi = (banGantiOpenPosisi === this.dataset.posisi) ? null : this.dataset.posisi;
     banRotasiFormOpen = false;
+    banBulkFormOpen = false;
     renderBanDetailModalBody(k);
   }));
+
+  const btnToggleBulk = document.getElementById('btnToggleBanBulkForm');
+  if(btnToggleBulk) btnToggleBulk.addEventListener('click', function(){
+    banBulkFormOpen = !banBulkFormOpen;
+    banGantiOpenPosisi = null;
+    banRotasiFormOpen = false;
+    renderBanDetailModalBody(k);
+  });
+  const btnBatalBulk = body.querySelector('.btn-batal-bulk-ban');
+  if(btnBatalBulk) btnBatalBulk.addEventListener('click', function(){ banBulkFormOpen = false; renderBanDetailModalBody(k); });
+
+  const formBulk = document.getElementById('formBanBulk');
+  if(formBulk) formBulk.addEventListener('submit', function(e){
+    e.preventDefault();
+    const errEl = document.getElementById('banBulkFormError');
+    errEl.textContent = '';
+    const tanggal = document.getElementById('bbTanggal').value;
+    const kmPasang = document.getElementById('bbKmPasang').value;
+    const estimasiBulan = document.getElementById('bbEstBulan').value;
+    const estimasiKm = document.getElementById('bbEstKm').value;
+    if(!tanggal || kmPasang === '' || estimasiBulan === '' || estimasiKm === ''){
+      errEl.textContent = 'Tanggal, KM, & estimasi umur (berlaku untuk semua posisi) wajib diisi.';
+      return;
+    }
+    const rows = Array.from(formBulk.querySelectorAll('.bb-merk'))
+      .map(inp => ({
+        posisi: inp.dataset.posisi,
+        merk: inp.value.trim(),
+        kondisi: (formBulk.querySelector(`.bb-kondisi[data-posisi="${inp.dataset.posisi}"]`) || {}).value || '',
+      }))
+      .filter(r => r.merk); // posisi yang Merk-nya dibiarkan kosong dilewati, tidak ikut disimpan
+    if(rows.length === 0){
+      errEl.textContent = 'Isi Merk minimal 1 posisi untuk disimpan (posisi yang belum mau didata boleh dibiarkan kosong).';
+      return;
+    }
+    const rowsBelumKondisi = rows.filter(r => !r.kondisi);
+    if(rowsBelumKondisi.length > 0){
+      const labelBelum = rowsBelumKondisi.map(r => (posisiList.find(p => p.key === r.posisi) || {}).label || r.posisi).join(', ');
+      errEl.textContent = `Kondisi ban belum dipilih untuk posisi: ${labelBelum}.`;
+      return;
+    }
+    if(!k.banList) k.banList = {};
+    rows.forEach(r => {
+      k.banList[r.posisi] = { merk: r.merk, kondisi: r.kondisi, tanggalPasang: tanggal, kmPasang: Number(kmPasang) || 0, estimasiBulan: Number(estimasiBulan) || 0, estimasiKm: Number(estimasiKm) || 0 };
+    });
+    saveKendaraan();
+    banBulkFormOpen = false;
+    renderBanDetailModalBody(k);
+    renderMonitoringBan();
+    renderBanDashboardSummary();
+    showToast(`Data awal ${rows.length} posisi ban berhasil disimpan sekaligus`, 'success');
+  });
   const btnBatalGanti = body.querySelector('.btn-batal-ganti-ban');
   if(btnBatalGanti) btnBatalGanti.addEventListener('click', function(){ banGantiOpenPosisi = null; renderBanDetailModalBody(k); });
 
@@ -8529,6 +8630,7 @@ function wireBanDetailModalEvents(k){
   if(btnToggleRotasi) btnToggleRotasi.addEventListener('click', function(){
     banRotasiFormOpen = !banRotasiFormOpen;
     banGantiOpenPosisi = null;
+    banBulkFormOpen = false;
     renderBanDetailModalBody(k);
   });
   const btnBatalRotasi = body.querySelector('.btn-batal-rotasi');
