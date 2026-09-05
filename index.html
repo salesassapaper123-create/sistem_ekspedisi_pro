@@ -882,6 +882,10 @@
     background:var(--navy-700) !important; color:#fff !important; font-weight:700 !important; font-size:11px !important; text-align:center !important;
     border:1px solid var(--navy-700) !important; padding:8px 8px !important;
     letter-spacing:.02em;
+    /* Header "dibekukan" (sticky) supaya tetap kelihatan saat scroll ke bawah -- .content adalah
+       pembungkus yang benar-benar scroll (overflow-y:auto), jadi top:0 di sini nempel ke bagian
+       atas area scroll itu, bukan ke atas layar. Sesi keseratusduapuluhtujuh. */
+    position:sticky; top:0; z-index:3;
   }
   .do-table td{
     border:1px solid var(--border-strong) !important; padding:8px 8px !important;
@@ -11032,20 +11036,26 @@ function renderTable(){
   if(list.length === 0){ wrap.innerHTML = emptyState('Tidak ada data yang cocok.'); return; }
 
   const canEdit = canEditRekapDO(); // admin, atau akun non-admin yang diberi akses khusus lewat toggle "Bisa edit Rekap Data DO"
+  /* Tampilan khusus akun Owner (Sesi keseratusduapuluhtujuh): permintaan supaya tabel Rekap Data DO
+     kelihatan lebih simpel untuk pimpinan -- kolom No PKB, No DO, Biaya lain-lain, & Keterangan
+     (detail administratif operasional, bukan yang dibutuhkan pimpinan buat pantau pengiriman)
+     disembunyikan TOTAL dari HTML (bukan cuma disamarkan CSS) khusus saat yang login role Owner.
+     Admin & staff biasa tetap melihat semua kolom seperti biasa -- tidak berubah. */
+  const isOwnerView = accountRole(currentAccount()) === 'owner';
   wrap.innerHTML = `<table class="do-table"><thead><tr>
-    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th><th class="do-th-pkb">No PKB</th><th class="do-th-do">No DO</th><th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th><th class="do-th-biayalain">Biaya lain-lain</th><th class="do-th-jenis">Jenis</th>
-    <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-kotatujuan">Kota Tujuan</th><th class="do-th-keterangan">Keterangan</th><th class="do-th-status">Status</th><th class="do-th-aksi"></th>
+    <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th>${isOwnerView ? '' : '<th class="do-th-pkb">No PKB</th><th class="do-th-do">No DO</th>'}<th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th>${isOwnerView ? '' : '<th class="do-th-biayalain">Biaya lain-lain</th>'}<th class="do-th-jenis">Jenis</th>
+    <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-kotatujuan">Kota Tujuan</th>${isOwnerView ? '' : '<th class="do-th-keterangan">Keterangan</th>'}<th class="do-th-status">Status</th><th class="do-th-aksi"></th>
   </tr></thead><tbody>${list.map(r => `
     <tr>
       <td class="do-td-tanggal">${fmtDate(r.tanggal)}</td>
       <td class="do-td-nopol"><span class="plate-cell">${esc(r.nopol)}</span></td>
       <td class="do-td-armada">${esc(armadaLabel(r.jenisArmada))}</td>
       <td class="do-td-angkutan">${jenisAngkutanBadge(r)}</td>
-      <td class="do-td-pkb mono">${esc(r.noPKB || '-')}${r.noCOTerkait ? `<div class="hint" style="margin-top:2px;">PO: ${esc(r.noCOTerkait)}</div>` : ''}</td>
-      <td class="do-td-do mono">${esc(r.noDO || '-')}</td>
+      ${isOwnerView ? '' : `<td class="do-td-pkb mono">${esc(r.noPKB || '-')}${r.noCOTerkait ? `<div class="hint" style="margin-top:2px;">PO: ${esc(r.noCOTerkait)}</div>` : ''}</td>
+      <td class="do-td-do mono">${esc(r.noDO || '-')}</td>`}
       <td class="do-td-sopir">${esc(r.sopir || '-')}</td>
       <td class="do-td-uang mono">${rupiah(Number(r.uangJalan) || 0)}</td>
-      <td class="do-td-biayalain mono">${rupiah(Number(r.biayaLain) || 0)}</td>
+      ${isOwnerView ? '' : `<td class="do-td-biayalain mono">${rupiah(Number(r.biayaLain) || 0)}</td>`}
       <td class="do-td-jenis">${jenisBadge(r)}</td>
       <td class="do-td-rute">${tujuanList(r)}</td>
       <td class="do-td-bk">
@@ -11082,9 +11092,9 @@ function renderTable(){
           : `<span style="color:var(--text-faint);">-</span>`}
       </td>
       <td class="do-td-kotatujuan">${esc(r.kotaTujuan || '-')}</td>
-      <td class="do-td-keterangan">${canEdit
+      ${isOwnerView ? '' : `<td class="do-td-keterangan">${canEdit
           ? `<input type="text" class="keterangan-inline-input keterangan-edit" data-id="${r.id}" value="${esc(r.keterangan || '')}" placeholder="+ Isi keterangan">`
-          : esc(r.keterangan || '-')}</td>
+          : esc(r.keterangan || '-')}</td>`}
       <td class="do-td-status">${statusBadge(r.status)}</td>
       <td class="do-td-aksi row-actions">
         ${canEdit ? `<button class="icon-btn edit" data-id="${r.id}" title="Edit DO (termasuk tanggal)">
@@ -11105,16 +11115,16 @@ function renderTable(){
       </td>
     </tr>`).join('')}
     <tr class="do-total-row">
-      <td class="do-td-tanggal" colspan="7" style="text-align:right;">TOTAL (${list.length} DO)</td>
+      <td class="do-td-tanggal" colspan="${isOwnerView ? 5 : 7}" style="text-align:right;">TOTAL (${list.length} DO)</td>
       <td class="do-td-uang mono">${rupiah(list.reduce((s,r) => s + (Number(r.uangJalan)||0), 0))}</td>
-      <td class="do-td-biayalain mono">${rupiah(list.reduce((s,r) => s + (Number(r.biayaLain)||0), 0))}</td>
+      ${isOwnerView ? '' : `<td class="do-td-biayalain mono">${rupiah(list.reduce((s,r) => s + (Number(r.biayaLain)||0), 0))}</td>`}
       <td class="do-td-jenis"></td>
       <td class="do-td-rute"></td>
       <td class="do-td-bk mono">${list.reduce((s,r) => s + (Number(r.tonase1)||0), 0).toLocaleString('id-ID')} kg</td>
       <td class="do-td-roll mono">${list.reduce((s,r) => s + (Number(r.tonase2)||0), 0).toLocaleString('id-ID')} kg</td>
       <td class="do-td-occ mono">${list.reduce((s,r) => s + (Number(r.tonase3)||0), 0).toLocaleString('id-ID')} kg</td>
       <td class="do-td-kotatujuan"></td>
-      <td class="do-td-keterangan"></td>
+      ${isOwnerView ? '' : '<td class="do-td-keterangan"></td>'}
       <td class="do-td-status"></td>
       <td class="do-td-aksi"></td>
     </tr>
