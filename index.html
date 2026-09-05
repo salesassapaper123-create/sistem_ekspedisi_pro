@@ -21,6 +21,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     /* Sesi keempatpuluhlima: palet disesuaikan mengikuti referensi warna aplikasi Accurate Online
@@ -583,6 +584,9 @@
   .btn-primary:hover{background:var(--accent-700); box-shadow:0 2px 6px rgba(47,128,198,.35);}
   .btn-secondary{background:#fff; border:1px solid var(--border-strong); color:var(--text);}
   .btn-secondary:hover{background:#f3f4f6; border-color:var(--text-faint);}
+  .btn-success{background:#25D366; color:#fff; box-shadow:0 1px 2px rgba(37,211,102,.35);}
+  .btn-success:hover{background:#1ebc59; box-shadow:0 2px 6px rgba(37,211,102,.4);}
+  .btn-success:disabled{opacity:.6; cursor:default;}
   .btn-row{display:flex; gap:10px; margin-top:18px;}
 
   /* ---------- TABLE ---------- */
@@ -3835,6 +3839,10 @@ function syncOdometerFromCartrack(){
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
         Cetak / Download PKB
       </button>
+      <button type="button" class="btn btn-success" id="stModalShareWa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l3 3-8.5 8.5-3 1 1-3L17 2zM19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        Bagikan ke WA
+      </button>
       <button type="button" class="btn btn-secondary" id="stModalCloseBtn">Tutup</button>
     </div>
   </div>
@@ -6632,6 +6640,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   const vendorTarifPerKgVal = (isFrancoVal && vendorJenisTarifVal === 'perkg') ? (document.getElementById('doVendorTarifPerKg').value === '' ? 0 : parseFloat(document.getElementById('doVendorTarifPerKg').value)) : null;
 
   let uangJalanValRaw;
+  let uangJalanPendingTonaseVal = false;
   if(isLocoVal){
     /* Loco: ongkos angkutan tidak ditanggung Ekspedisi Jaya, jadi tidak ada tarif yang disimpan. */
     uangJalanValRaw = 0;
@@ -6640,11 +6649,12 @@ document.getElementById('formDO').addEventListener('submit', function(e){
       errEl.textContent = 'Tarif per KG wajib diisi untuk vendor luar Franco dengan jenis tarif Per KG.';
       return;
     }
-    if(!totalTonaseBarangVal || totalTonaseBarangVal <= 0){
-      errEl.textContent = 'Isi tonase pada Jenis Barang & Tonase terlebih dahulu supaya total tarif per KG bisa dihitung.';
-      return;
-    }
-    uangJalanValRaw = Math.round(vendorTarifPerKgVal * totalTonaseBarangVal);
+    /* Sesi keseratusduapuluhlima: tonase BOLEH dikosongkan dulu saat PKB vendor luar ini pertama kali
+       disimpan -- tidak lagi memblokir save. Uang jalan sementara tersimpan 0 kalau tonase belum
+       diisi, lalu OTOMATIS terhitung ulang begitu tonase diisi belakangan (lewat tombol "Isi tonase"
+       di Rekap Data DO -- lihat tonaseModalSave -- atau lewat Update DO ulang di form ini). */
+    uangJalanValRaw = (totalTonaseBarangVal > 0) ? Math.round(vendorTarifPerKgVal * totalTonaseBarangVal) : 0;
+    if(totalTonaseBarangVal <= 0) uangJalanPendingTonaseVal = true;
   }else{
     // parseRupiahLoose: kosong / "-" / karakter non-angka lain -> 0, digit yang ada tetap diambil.
     uangJalanValRaw = parseRupiahLoose(document.getElementById('uangJalan').value);
@@ -6708,7 +6718,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
       Object.assign(rec, fieldsData);
       savedRecordId = rec.id;
     }
-    showToast('Data DO berhasil diperbarui', 'success');
+    showToast(uangJalanPendingTonaseVal ? 'Data DO berhasil diperbarui. Uang jalan vendor belum terhitung -- isi tonase supaya otomatis terhitung.' : 'Data DO berhasil diperbarui', 'success');
   }else{
     const newId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
     records.push(Object.assign({
@@ -6716,7 +6726,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     }, fieldsData));
     savedRecordId = newId;
     bumpNextNoPKB(fieldsData.noPKB); // majukan nomor PKB berikutnya (DO baru saja, bukan edit)
-    showToast('Data DO berhasil disimpan', 'success');
+    showToast(uangJalanPendingTonaseVal ? 'Data DO berhasil disimpan. Uang jalan vendor belum terhitung -- isi tonase supaya otomatis terhitung.' : 'Data DO berhasil disimpan', 'success');
   }
   save();
   cancelEditDO();
@@ -6919,6 +6929,14 @@ document.getElementById('tonaseModalSave').addEventListener('click', function(){
     if(row3Visible) r.tonase3 = val3;
     if(tonaseModalMode === 'complete') r.status = 'selesai';
     r.pendapatan = calcPendapatan(r.jenisArmada, r.kota, r.tonase1, r.tonase2, r.tonase3);
+    /* Sesi keseratusduapuluhlima: kalau DO ini vendor luar Franco tarif Per KG (uang jalan-nya sengaja
+       ditunda 0 saat disimpan karena tonase belum diisi -- lihat submit form Input PKB), begitu
+       tonase-nya diisi/diubah lewat modal ini, uang jalan otomatis dihitung ulang dari tarif per KG
+       yang sudah tersimpan x total tonase saat ini -- staff tidak perlu balik buka form PKB lagi. */
+    if(r.jenisAngkutan === 'vendor' && r.vendorKet === 'franco' && r.vendorJenisTarif === 'perkg' && r.vendorTarifPerKg > 0){
+      const totalTonaseNow = recTotalTonase(r);
+      if(totalTonaseNow > 0) r.uangJalan = Math.round(r.vendorTarifPerKg * totalTonaseNow);
+    }
     save(); renderTable(); renderDashboard();
     showToast('Tonase berhasil disimpan', 'success');
   }
@@ -7013,6 +7031,52 @@ document.getElementById('stModalOverlay').addEventListener('click', function(e){
 });
 document.getElementById('stModalPrint').addEventListener('click', function(){
   window.print();
+});
+/* ---------- BAGIKAN PKB VIA WA (Sesi keseratusduapuluhenam) ----------
+   Tombol "Bagikan ke WA" di preview PKB: ambil screenshot dokumen PKB (pakai html2canvas) lalu
+   panggil Web Share API (navigator.share dengan file gambar) supaya menu share bawaan HP langsung
+   terbuka dengan foto PKB SUDAH TERLAMPIR -- staff tinggal pilih WhatsApp lalu pilih kontak staff
+   pabrik mana saja yang dituju (tidak perlu fix ke 1 nomor, tidak perlu API/token pihak ketiga).
+   Kalau HP/browser belum mendukung Web Share API dengan file (contoh: sebagian browser desktop),
+   otomatis fallback download foto PKB supaya staff bisa lampirkan manual ke WA. */
+document.getElementById('stModalShareWa').addEventListener('click', async function(){
+  const btn = this;
+  const printArea = document.getElementById('suratTugasPrintArea');
+  const target = printArea.querySelector('.pkb-doc') || printArea;
+  if(typeof html2canvas === 'undefined'){
+    showToast('Fitur bagikan foto belum siap, coba muat ulang halaman.', 'error');
+    return;
+  }
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Menyiapkan foto...';
+  function restoreBtn(){ btn.disabled = false; btn.innerHTML = originalHtml; }
+  try{
+    const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    canvas.toBlob(async function(blob){
+      restoreBtn();
+      if(!blob){ showToast('Gagal membuat foto PKB.', 'error'); return; }
+      const fileName = 'PKB-' + Date.now() + '.png';
+      const file = new File([blob], fileName, { type: 'image/png' });
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        try{
+          await navigator.share({ files: [file], title: 'PKB', text: 'PKB - LINTAS Ekspedisi Jaya' });
+        }catch(shareErr){
+          if(shareErr && shareErr.name !== 'AbortError') showToast('Gagal membagikan foto PKB.', 'error');
+        }
+      }else{
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = fileName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        showToast('Foto PKB tersimpan. HP/browser ini belum mendukung bagikan langsung -- lampirkan foto ke WA secara manual.', 'success');
+      }
+    }, 'image/png');
+  }catch(err){
+    restoreBtn();
+    showToast('Gagal membuat foto PKB.', 'error');
+  }
 });
 /* Kosongkan judul dokumen saat mencetak supaya header cetak browser (nama file/judul halaman)
    tidak ikut tercetak kecil di atas kertas Surat Tugas. Judul dikembalikan lagi setelah cetak. */
