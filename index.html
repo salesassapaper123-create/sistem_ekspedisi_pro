@@ -8224,6 +8224,21 @@ function banStatusBadge(info){
   if(info.status === 'waspada') return `<span class="badge badge-legal-warn"><span class="badge-dot"></span>Waspada</span>`;
   return `<span class="badge badge-legal-safe"><span class="badge-dot"></span>Aman</span>`;
 }
+/* Kondisi FISIK ban saat dipasang (Sesi keseratustigapuluh) -- BEDA dengan "Status" (Aman/Waspada/
+   Perlu Ganti) yang di atas, yang itu dihitung OTOMATIS dari estimasi umur bulan/km. Kondisi di sini
+   diisi MANUAL oleh staff saat pasang/ganti ban, karena kenyataannya (klarifikasi user) ban yang
+   dipasang di truk-truk ini hampir tidak pernah baru -- supaya ada catatan jelas kondisi fisiknya
+   (baru/bekas & seberapa layak) tanpa harus dihitung dari umur pakai. */
+const BAN_KONDISI_OPTIONS = [
+  { value: 'baru', label: 'Baru' },
+  { value: 'bekas-baik', label: 'Bekas (Kondisi Baik)' },
+  { value: 'bekas-sedang', label: 'Bekas (Kondisi Sedang)' },
+  { value: 'vulkanisir', label: 'Vulkanisir' },
+];
+function banKondisiLabel(kondisi){
+  const found = BAN_KONDISI_OPTIONS.find(o => o.value === kondisi);
+  return found ? found.label : (kondisi || '-');
+}
 /* status rotasi: kalau belum pernah dirotasi, baseline km diambil dari kmPasang ban PALING AWAL
    yang sudah diisi (asumsi: sejak dipasang pertama kali belum pernah dirotasi). Kalau belum ada
    ban terisi sama sekali, statusnya 'kosong' (belum ada data cukup untuk dihitung). */
@@ -8339,7 +8354,7 @@ function renderBanDetailModalBody(k){
   const rInfo = rotasiInfo(k);
   let html = `<p class="hint" style="margin:0 0 10px;">${esc(jenisArmadaBanLabel(k))} — ${posisiList.length} posisi ban (termasuk cadangan).</p>
   <table class="sv-table" style="margin-bottom:16px;"><thead><tr>
-      <th class="sv-left">Posisi</th><th class="sv-left">Merk</th><th>Tgl Pasang</th><th>KM Pasang</th><th>Estimasi</th><th>Status</th><th></th>
+      <th class="sv-left">Posisi</th><th class="sv-left">Merk</th><th class="sv-left">Kondisi</th><th>Tgl Pasang</th><th>KM Pasang</th><th>Estimasi</th><th>Status</th><th></th>
     </tr></thead><tbody>${posisiList.map(p => {
       const ban = banOf(k, p.key);
       const info = banStatusInfo(ban, k.kmSaatIni);
@@ -8347,6 +8362,7 @@ function renderBanDetailModalBody(k){
       return `<tr>
         <td class="sv-left">${esc(p.label)}</td>
         <td class="sv-left">${ban ? esc(ban.merk || '-') : '<span style="color:var(--text-faint);">-</span>'}</td>
+        <td class="sv-left">${ban && ban.kondisi ? esc(banKondisiLabel(ban.kondisi)) : '<span style="color:var(--text-faint);">-</span>'}</td>
         <td>${ban && ban.tanggalPasang ? fmtDate(ban.tanggalPasang) : '-'}</td>
         <td class="sv-num">${ban && ban.kmPasang != null ? Number(ban.kmPasang).toLocaleString('id-ID') : '-'}</td>
         <td>${estTxt}</td>
@@ -8364,6 +8380,10 @@ function renderBanDetailModalBody(k){
         <form id="formBanGanti">
           <div class="grid2">
             <div class="field"><label for="bgMerk">Merk / tipe ban</label><input type="text" id="bgMerk" placeholder="cth. Bridgestone R150" required></div>
+            <div class="field"><label for="bgKondisi">Kondisi ban</label><select id="bgKondisi" required>
+              <option value="">- Pilih kondisi -</option>
+              ${BAN_KONDISI_OPTIONS.map(o => `<option value="${o.value}">${esc(o.label)}</option>`).join('')}
+            </select></div>
             <div class="field"><label for="bgTanggal">Tanggal pasang</label><input type="date" id="bgTanggal" value="${todayISO()}" required></div>
             <div class="field"><label for="bgKmPasang">KM saat dipasang</label><input type="number" id="bgKmPasang" min="0" step="1" value="${k.kmSaatIni || 0}" required></div>
             <div class="field"><label for="bgEstBulan">Estimasi umur (bulan)</label><input type="number" id="bgEstBulan" min="1" step="1" value="24" required></div>
@@ -8422,12 +8442,13 @@ function renderBanDetailModalBody(k){
   html += `<div style="margin-bottom:16px;">
     <h4 style="margin:0 0 8px; font-size:14px;">Riwayat penggantian ban</h4>
     ${riwayatBan.length === 0 ? emptyState('Belum ada riwayat penggantian ban.') : `<table class="sv-table"><thead><tr>
-      <th>Tanggal</th><th class="sv-left">Posisi</th><th class="sv-left">Ban lama</th><th class="sv-left">Ban baru</th><th>Biaya</th>
+      <th>Tanggal</th><th class="sv-left">Posisi</th><th class="sv-left">Ban lama</th><th class="sv-left">Ban baru</th><th class="sv-left">Kondisi ban baru</th><th>Biaya</th>
     </tr></thead><tbody>${riwayatBan.map(r => `<tr>
       <td>${r.tanggal ? fmtDate(r.tanggal) : '-'}</td>
       <td class="sv-left">${esc((posisiList.find(p => p.key === r.posisi) || {}).label || r.posisi)}</td>
       <td class="sv-left">${r.merkLama ? esc(r.merkLama) : '<span style="color:var(--text-faint);">- (baru dipasang)</span>'}</td>
       <td class="sv-left">${esc(r.merkBaru || '-')}</td>
+      <td class="sv-left">${r.kondisiBaru ? esc(banKondisiLabel(r.kondisiBaru)) : '<span style="color:var(--text-faint);">-</span>'}</td>
       <td>${r.biaya ? rupiah(r.biaya) : '-'}</td>
     </tr>`).join('')}</tbody></table>`}
   </div>`;
@@ -8467,13 +8488,14 @@ function wireBanDetailModalEvents(k){
     const errEl = document.getElementById('banGantiFormError');
     errEl.textContent = '';
     const merk = document.getElementById('bgMerk').value.trim();
+    const kondisi = document.getElementById('bgKondisi').value;
     const tanggal = document.getElementById('bgTanggal').value;
     const kmPasang = document.getElementById('bgKmPasang').value;
     const estimasiBulan = document.getElementById('bgEstBulan').value;
     const estimasiKm = document.getElementById('bgEstKm').value;
     const biaya = document.getElementById('bgBiaya').value;
-    if(!merk || !tanggal || kmPasang === '' || estimasiBulan === '' || estimasiKm === ''){
-      errEl.textContent = 'Merk, tanggal pasang, KM pasang, & estimasi umur wajib diisi.';
+    if(!merk || !kondisi || !tanggal || kmPasang === '' || estimasiBulan === '' || estimasiKm === ''){
+      errEl.textContent = 'Merk, kondisi ban, tanggal pasang, KM pasang, & estimasi umur wajib diisi.';
       return;
     }
     const posisi = banGantiOpenPosisi;
@@ -8481,9 +8503,9 @@ function wireBanDetailModalEvents(k){
     if(!k.banList) k.banList = {};
     if(banLama){
       if(!k.riwayatBan) k.riwayatBan = [];
-      k.riwayatBan.push({ tanggal, posisi, merkLama: banLama.merk || '', merkBaru: merk, kmGanti: Number(kmPasang) || 0, biaya: Number(biaya) || 0 });
+      k.riwayatBan.push({ tanggal, posisi, merkLama: banLama.merk || '', merkBaru: merk, kondisiBaru: kondisi, kmGanti: Number(kmPasang) || 0, biaya: Number(biaya) || 0 });
     }
-    k.banList[posisi] = { merk, tanggalPasang: tanggal, kmPasang: Number(kmPasang) || 0, estimasiBulan: Number(estimasiBulan) || 0, estimasiKm: Number(estimasiKm) || 0 };
+    k.banList[posisi] = { merk, kondisi, tanggalPasang: tanggal, kmPasang: Number(kmPasang) || 0, estimasiBulan: Number(estimasiBulan) || 0, estimasiKm: Number(estimasiKm) || 0 };
     saveKendaraan();
     banGantiOpenPosisi = null;
     renderBanDetailModalBody(k);
