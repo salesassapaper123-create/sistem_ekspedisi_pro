@@ -7216,26 +7216,28 @@ function ensureReimburseLeg(r, key){
   if(!r.reimburseLegs[key]) r.reimburseLegs[key] = {};
   return r.reimburseLegs[key];
 }
-/* Urutan tetap jenis muatan dalam 1 DO -- dipakai sebagai salah satu penentu urutan No Seri kalau 1 DO
-   punya lebih dari 1 jenis muatan di tanggal yang sama (BK dulu, baru Roll, baru OCC), sama seperti
-   urutan yang dipakai reimburseLegDefs(). */
-const REIMBURSE_LEG_ORDER = { bk: 0, roll: 1, occ: 2 };
 /* Hitung ULANG No Seri SEMUA Bukti Reimbursement yang sudah pernah dibuka (ada isinya di
    r.reimburseLegs) supaya urut RAPI berdasarkan TANGGAL DO -- per bulan mulai dari 001 di tanggal
    paling awal, bukan berdasarkan urutan staf membuka/mengetik halamannya (itu penyebab nomornya
-   "acak-acakan" di versi sebelumnya). Format tetap "YYMM-NNN", dihitung terpisah tiap bulan. Kalau 1
-   DO punya beberapa jenis muatan di tanggal yang sama, urutannya BK -> Roll -> OCC.
+   "acak-acakan" di versi sebelumnya). Format tetap "YYMM-NNN", dihitung terpisah tiap bulan.
+
+   Sesi keseratustigapuluhempat: permintaan user -- No Seri Roll Assa & OCC masing-masing punya
+   URUTANNYA SENDIRI-SENDIRI (dikelompokkan per BULAN *dan* per JENIS muatan), bukan digabung jadi
+   satu urutan bersama seperti sebelumnya. Sebelumnya kalau bulan yang sama punya campuran Roll & OCC,
+   nomornya saling menyelip (mis. Roll dapat 001 & 003, OCC dapat 002) -- sekarang Roll Assa mulai dari
+   001 sendiri, OCC juga mulai dari 001 sendiri di bulan yang sama, sama sekali tidak berbagi urutan.
 
    Leg yang No Seri-nya SUDAH PERNAH DIUBAH MANUAL oleh admin (leg.noReimburseManual = true) TIDAK ikut
-   dihitung ulang -- nomornya dikunci apa adanya sesuai ketikan admin, dan leg otomatis lainnya akan
-   MELOMPATI nomor yang sudah dikunci itu supaya tidak dobel.
+   dihitung ulang -- nomornya dikunci apa adanya sesuai ketikan admin, dan leg otomatis LAIN DI JENIS
+   YANG SAMA akan MELOMPATI nomor yang sudah dikunci itu supaya tidak dobel (leg jenis lain tidak
+   terpengaruh sama sekali, karena urutannya sudah terpisah per jenis).
 
    Dipanggil tiap kali halaman "Bukti Reimbursement" menampilkan data (renderReimburseLegsForRecord),
    jadi begitu ada DO bertanggal lebih awal yang baru pertama kali dibuka Bukti Reimbursement-nya,
    nomor-nomor leg otomatis lain otomatis bergeser mengikuti supaya tetap urut sesuai tanggal.
-   Sesi keseratusempatbelas. */
+   Sesi keseratusempatbelas, dipisah per jenis di Sesi keseratustigapuluhempat. */
 function resyncReimburseNoSeri(){
-  const byMonth = {};
+  const byGroup = {};
   records.forEach(rr => {
     if(!rr.reimburseLegs || !rr.tanggal) return;
     const d = new Date(rr.tanggal + 'T00:00:00');
@@ -7244,22 +7246,22 @@ function resyncReimburseNoSeri(){
     reimburseLegDefs(rr).forEach(def => {
       const leg = rr.reimburseLegs[def.key];
       if(!leg) return;
-      if(!byMonth[yymm]) byMonth[yymm] = { locked: new Set(), items: [] };
+      const groupKey = yymm + ':' + def.key; // per bulan DAN per jenis (roll/occ) -- urutan No Seri terpisah
+      if(!byGroup[groupKey]) byGroup[groupKey] = { yymm, locked: new Set(), items: [] };
       if(leg.noReimburseManual && leg.noReimburse){
         const n = parseInt(String(leg.noReimburse).split('-')[1], 10);
-        if(!isNaN(n)) byMonth[yymm].locked.add(n);
+        if(!isNaN(n)) byGroup[groupKey].locked.add(n);
       }else{
-        byMonth[yymm].items.push({ leg, tanggal: rr.tanggal, id: rr.id || '', order: REIMBURSE_LEG_ORDER[def.key] || 0 });
+        byGroup[groupKey].items.push({ leg, tanggal: rr.tanggal, id: rr.id || '' });
       }
     });
   });
   let changed = false;
-  Object.keys(byMonth).forEach(yymm => {
-    const { locked, items } = byMonth[yymm];
+  Object.keys(byGroup).forEach(groupKey => {
+    const { yymm, locked, items } = byGroup[groupKey];
     items.sort((a, b) => {
       if(a.tanggal !== b.tanggal) return a.tanggal < b.tanggal ? -1 : 1;
-      if(a.id !== b.id) return a.id < b.id ? -1 : 1;
-      return a.order - b.order;
+      return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0);
     });
     let n = 1;
     items.forEach(item => {
