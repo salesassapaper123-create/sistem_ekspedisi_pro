@@ -1510,6 +1510,7 @@
                 </div>
                 <div class="field full" style="grid-column:1 / -1;">
                   <label>Jenis barang, jumlah roll &amp; tonase <span class="hint">(bisa lebih dari satu jenis dalam 1 PKB — jumlah roll opsional, isi tonase per jenis, total otomatis terhitung)</span></label>
+                  <div id="jenisBarangJenisHint" class="hint" style="display:none; margin-bottom:6px;">Karena lebih dari 1 jenis pengiriman dicentang (BK/Roll/OCC) di atas, tandai jenis pengiriman tiap baris lewat dropdown di kanan (BK/Roll/OCC) — supaya Tonase BK/Roll/OCC di Rekap Data DO otomatis terisi sendiri, tidak perlu diisi manual lagi.</div>
                   <div id="jenisBarangRows"></div>
                   <datalist id="barangDatalist"></datalist>
                   <button type="button" class="btn btn-secondary" id="btnAddJenisBarang" style="margin-top:4px;">+ Tambah jenis barang</button>
@@ -5686,6 +5687,10 @@ function toggleJenisSections(){
   document.getElementById('section1').style.display = bk ? 'contents' : 'none';
   document.getElementById('section2').style.display = roll ? 'contents' : 'none';
   document.getElementById('section3').style.display = occ ? 'contents' : 'none';
+  /* Sesi keseratustigapuluhdua: dropdown jenis per baris "Jenis Barang" (muncul kalau lebih dari
+     1 jenis pengiriman dicentang) ikut disesuaikan tiap kali centang BK/Roll/OCC diubah. */
+  if(typeof updateJenisBarangRowSelectors === 'function') updateJenisBarangRowSelectors();
+  if(typeof updateTotalTonaseBarang === 'function') updateTotalTonaseBarang();
 }
 document.getElementById('cbBK').addEventListener('change', toggleJenisSections);
 document.getElementById('cbRoll').addEventListener('change', toggleJenisSections);
@@ -5857,25 +5862,64 @@ document.getElementById('doVendorTarifPerKg').addEventListener('input', function
    semua baris, dan saat submit total tonase dijadikan sumber untuk field Tonase BK/Roll/OCC (kalau
    tepat satu jenis pengiriman yang dicentang) — lihat totalTonaseBarangVal di handler submit formDO.
    (Sesi kedelapanpuluhtiga: kolom Jumlah Roll ditambahkan sesuai permintaan user.) */
-function addJenisBarangRow(nama, jumlahRoll, tonase){
+function addJenisBarangRow(nama, jumlahRoll, tonase, jenis){
   const container = document.getElementById('jenisBarangRows');
   const row = document.createElement('div');
   row.className = 'jb-row';
   row.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
+  row.dataset.pendingJenis = jenis || ''; // dibaca sekali oleh updateJenisBarangRowSelectors() buat isi awal <select>
   const tonaseStr = (tonase === null || tonase === undefined || tonase === '') ? '' : esc(String(tonase));
   const jumlahRollStr = (jumlahRoll === null || jumlahRoll === undefined || jumlahRoll === '') ? '' : esc(String(jumlahRoll));
   row.innerHTML = `<input type="text" class="jb-row-input" list="barangDatalist" placeholder="cth. ML-68" style="flex:2;" value="${esc(nama || '')}">
     <input type="number" class="jb-row-jumlahroll" step="1" min="0" placeholder="Jumlah roll" style="flex:1; max-width:120px;" value="${jumlahRollStr}">
     <input type="number" class="jb-row-tonase" step="1" min="0" placeholder="Tonase (kg)" style="flex:1; max-width:150px;" value="${tonaseStr}">
+    <select class="jb-row-jenis" style="flex:0 0 108px; max-width:108px; display:none;" title="Baris ini tonasenya masuk jenis pengiriman yang mana? (supaya otomatis mengisi Tonase BK/Roll/OCC di Rekap Data DO)">
+      <option value="">— jenis? —</option>
+    </select>
     <button type="button" class="btn btn-secondary jb-row-remove" style="padding:6px 12px;" title="Hapus baris ini">&times;</button>`;
   container.appendChild(row);
+}
+/* Sesi keseratustigapuluhdua: kalau lebih dari 1 jenis pengiriman (BK/Roll/OCC) dicentang sekaligus
+   di 1 PKB, total tonase gabungan dari "Jenis Barang" tidak bisa dipastikan otomatis punya jenis
+   pengiriman yang mana -- makanya tiap baris barang dikasih dropdown jenis (BK/Roll/OCC, cuma yang
+   sedang dicentang yang muncul jadi pilihan) supaya user tinggal tandai baris mana punya jenis apa,
+   lalu totalnya dijumlah PER JENIS otomatis (lihat pemakaiannya di handler submit formDO). Dropdown
+   ini disembunyikan total kalau cuma 1 jenis yang dicentang -- karena kasus itu sudah otomatis (semua
+   baris jelas milik 1 jenis yang sama), tidak perlu ditandai satu-satu. */
+const JENIS_PENGIRIMAN_ROW_OPTIONS = [
+  { value: 'bk', label: 'BK' },
+  { value: 'roll', label: 'Roll' },
+  { value: 'occ', label: 'OCC' },
+];
+function updateJenisBarangRowSelectors(){
+  const checkedMap = {
+    bk: document.getElementById('cbBK').checked,
+    roll: document.getElementById('cbRoll').checked,
+    occ: document.getElementById('cbOCC').checked,
+  };
+  const checkedTypes = JENIS_PENGIRIMAN_ROW_OPTIONS.filter(o => checkedMap[o.value]);
+  const showSelector = checkedTypes.length > 1;
+  document.querySelectorAll('#jenisBarangRows .jb-row-jenis').forEach(sel => {
+    if(!showSelector){ sel.style.display = 'none'; return; }
+    const row = sel.closest('.jb-row');
+    const pending = row ? row.dataset.pendingJenis : '';
+    const desired = sel.value || pending || '';
+    const valid = checkedTypes.some(o => o.value === desired) ? desired : '';
+    sel.innerHTML = '<option value="">— jenis? —</option>' + checkedTypes.map(o => `<option value="${o.value}">${o.label}</option>`).join('');
+    sel.value = valid;
+    sel.style.display = '';
+    if(row) row.dataset.pendingJenis = '';
+  });
+  const hint = document.getElementById('jenisBarangJenisHint');
+  if(hint) hint.style.display = showSelector ? '' : 'none';
 }
 function resetJenisBarangRows(items){
   const container = document.getElementById('jenisBarangRows');
   container.innerHTML = '';
-  let list = (items && items.length) ? items : [{nama:'', jumlahRoll:'', tonase:''}];
-  list = list.map(it => typeof it === 'string' ? {nama: it, jumlahRoll: '', tonase: ''} : it);
-  list.forEach(it => addJenisBarangRow(it.nama, it.jumlahRoll, it.tonase));
+  let list = (items && items.length) ? items : [{nama:'', jumlahRoll:'', tonase:'', jenis:''}];
+  list = list.map(it => typeof it === 'string' ? {nama: it, jumlahRoll: '', tonase: '', jenis: ''} : it);
+  list.forEach(it => addJenisBarangRow(it.nama, it.jumlahRoll, it.tonase, it.jenis));
+  updateJenisBarangRowSelectors();
   updateTotalTonaseBarang();
 }
 function collectJenisBarangDetail(){
@@ -5885,7 +5929,9 @@ function collectJenisBarangDetail(){
     const jumlahRoll = jumlahRollRaw === '' ? null : parseFloat(jumlahRollRaw);
     const tonaseRaw = row.querySelector('.jb-row-tonase').value;
     const tonase = tonaseRaw === '' ? null : parseFloat(tonaseRaw);
-    return { nama: nama, jumlahRoll: jumlahRoll, tonase: tonase };
+    const jenisSel = row.querySelector('.jb-row-jenis');
+    const jenis = (jenisSel && jenisSel.value) ? jenisSel.value : null;
+    return { nama: nama, jumlahRoll: jumlahRoll, tonase: tonase, jenis: jenis };
   }).filter(it => it.nama);
 }
 function collectJenisBarangList(){
@@ -5896,7 +5942,23 @@ function updateTotalTonaseBarang(){
   const total = detail.reduce((s, it) => s + (Number(it.tonase) || 0), 0);
   const totalRoll = detail.reduce((s, it) => s + (Number(it.jumlahRoll) || 0), 0);
   const el = document.getElementById('totalTonaseBarang');
-  if(el) el.textContent = (totalRoll > 0 ? 'Total: ' + totalRoll.toLocaleString('id-ID') + ' roll — ' : 'Total tonase: ') + total.toLocaleString('id-ID') + ' kg';
+  const kirimBK = document.getElementById('cbBK').checked;
+  const kirimRoll = document.getElementById('cbRoll').checked;
+  const kirimOCC = document.getElementById('cbOCC').checked;
+  const jenisTerpilihCount = [kirimBK, kirimRoll, kirimOCC].filter(Boolean).length;
+  let breakdown = '';
+  if(jenisTerpilihCount > 1){
+    // Ringkasan per jenis (BK/Roll/OCC) supaya user langsung lihat baris mana yang sudah/belum
+    // ditandai jenisnya, sebelum submit -- lihat updateJenisBarangRowSelectors() untuk dropdownnya.
+    const totalPerJenis = { bk: 0, roll: 0, occ: 0 };
+    detail.forEach(it => { if(it.jenis && totalPerJenis.hasOwnProperty(it.jenis)) totalPerJenis[it.jenis] += (Number(it.tonase) || 0); });
+    const parts = [];
+    if(kirimBK) parts.push('BK: ' + (totalPerJenis.bk > 0 ? totalPerJenis.bk.toLocaleString('id-ID') + ' kg' : 'belum ditandai'));
+    if(kirimRoll) parts.push('Roll: ' + (totalPerJenis.roll > 0 ? totalPerJenis.roll.toLocaleString('id-ID') + ' kg' : 'belum ditandai'));
+    if(kirimOCC) parts.push('OCC: ' + (totalPerJenis.occ > 0 ? totalPerJenis.occ.toLocaleString('id-ID') + ' kg' : 'belum ditandai'));
+    breakdown = ' (' + parts.join(', ') + ')';
+  }
+  if(el) el.textContent = (totalRoll > 0 ? 'Total: ' + totalRoll.toLocaleString('id-ID') + ' roll — ' : 'Total tonase: ') + total.toLocaleString('id-ID') + ' kg' + breakdown;
   // Vendor Luar Franco + tarif Per KG: total tonase berubah -> total ongkos ikut dihitung ulang otomatis.
   if(document.getElementById('doVendorKet') && document.getElementById('doVendorKet').value === 'franco'
      && document.getElementById('doVendorJenisTarif').value === 'perkg'){
@@ -5922,8 +5984,12 @@ document.getElementById('jenisBarangRows').addEventListener('click', function(e)
 document.getElementById('jenisBarangRows').addEventListener('input', function(e){
   if(e.target.classList.contains('jb-row-tonase') || e.target.classList.contains('jb-row-jumlahroll')) updateTotalTonaseBarang();
 });
+document.getElementById('jenisBarangRows').addEventListener('change', function(e){
+  if(e.target.classList.contains('jb-row-jenis')) updateTotalTonaseBarang();
+});
 document.getElementById('btnAddJenisBarang').addEventListener('click', function(){
-  addJenisBarangRow('', '', '');
+  addJenisBarangRow('', '', '', '');
+  updateJenisBarangRowSelectors();
 });
 resetJenisBarangRows([]);
 
@@ -6617,6 +6683,20 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     if(kirimBK) tonase1Val = totalTonaseBarangVal;
     if(kirimRoll) tonase2Val = totalTonaseBarangVal;
     if(kirimOCC) tonase3Val = totalTonaseBarangVal;
+  } else if(jenisTerpilihCount > 1){
+    /* Sesi keseratustigapuluhdua: lebih dari 1 jenis pengiriman dicentang bareng (mis. Roll & OCC) --
+       total "Jenis Barang" tidak otomatis diketahui punya jenis yang mana KECUALI barisnya ditandai
+       lewat dropdown per baris (muncul otomatis di form saat kondisi ini terjadi -- lihat
+       updateJenisBarangRowSelectors). Baris yang sudah ditandai dijumlah PER JENIS & dipakai
+       menggantikan isian manual Tonase BK/Roll/OCC, persis seperti kasus 1 jenis di atas. Baris yang
+       belum ditandai jenisnya (atau kalau user belum sempat menandai sama sekali) TIDAK dihitung ke
+       jenis manapun -- aman, tidak ada yang salah atribusi -- dan field tonase punya jenis itu tetap
+       mengikuti isian manual seperti sebelum fitur ini ada. */
+    const totalPerJenisVal = { bk: 0, roll: 0, occ: 0 };
+    jenisBarangDetailVal.forEach(it => { if(it.jenis && totalPerJenisVal.hasOwnProperty(it.jenis)) totalPerJenisVal[it.jenis] += (Number(it.tonase) || 0); });
+    if(kirimBK && totalPerJenisVal.bk > 0) tonase1Val = totalPerJenisVal.bk;
+    if(kirimRoll && totalPerJenisVal.roll > 0) tonase2Val = totalPerJenisVal.roll;
+    if(kirimOCC && totalPerJenisVal.occ > 0) tonase3Val = totalPerJenisVal.occ;
   }
 
   if(kirimBK && (!tujuanMuatVal || !tujuanBongkarVal)){
