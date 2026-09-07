@@ -8456,7 +8456,10 @@ function renderBanDetailModalBody(k){
         <td class="sv-num">${ban && ban.kmPasang != null ? Number(ban.kmPasang).toLocaleString('id-ID') : '-'}</td>
         <td>${estTxt}</td>
         <td>${banStatusBadge(info)}</td>
-        <td><button type="button" class="btn btn-secondary btn-ganti-ban-toggle" data-posisi="${p.key}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap;">${banGantiOpenPosisi === p.key ? 'Batal' : (ban ? 'Ganti Ban' : '+ Pasang Ban')}</button></td>
+        <td style="white-space:nowrap;">
+          <button type="button" class="btn btn-secondary btn-ganti-ban-toggle" data-posisi="${p.key}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap;">${banGantiOpenPosisi === p.key ? 'Batal' : (ban ? 'Ganti Ban' : '+ Pasang Ban')}</button>
+          ${ban ? `<button type="button" class="btn btn-secondary btn-hapus-ban" data-posisi="${p.key}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap; margin-left:6px; color:#c0392b; border-color:#e0b4b4;" title="Hapus data ban di posisi ini -- posisi kembali kosong, riwayat penggantian sebelumnya tetap tersimpan">Hapus</button>` : ''}
+        </td>
       </tr>`;
     }).join('')}</tbody></table>`;
 
@@ -8611,6 +8614,24 @@ function wireBanDetailModalEvents(k){
     banRotasiFormOpen = false;
     banBulkFormOpen = false;
     renderBanDetailModalBody(k);
+  }));
+
+  /* Sesi keseratustigapuluhenam: tombol "Hapus" -- mengosongkan kembali data ban di 1 posisi
+     (misalnya salah input via "Isi Data Awal Massal" / "Pasang Ban") supaya posisinya balik jadi
+     "BELUM DIISI" seperti semula, TANPA menghapus riwayat penggantian ban yang sudah pernah tercatat
+     sebelumnya (riwayatBan dibiarkan apa adanya -- ini cuma menghapus data "ban yang sedang
+     terpasang", bukan riwayat). Selalu minta konfirmasi dulu karena tidak bisa dibatalkan. */
+  body.querySelectorAll('.btn-hapus-ban').forEach(btn => btn.addEventListener('click', function(){
+    const posisi = this.dataset.posisi;
+    const label = (posisiList.find(p => p.key === posisi) || {}).label || posisi;
+    if(!confirm(`Hapus data ban di posisi "${label}"? Posisi ini akan kembali kosong (Belum Diisi). Riwayat penggantian ban sebelumnya TIDAK ikut terhapus.`)) return;
+    if(k.banList) delete k.banList[posisi];
+    if(banGantiOpenPosisi === posisi) banGantiOpenPosisi = null;
+    saveKendaraan();
+    renderBanDetailModalBody(k);
+    renderMonitoringBan();
+    renderBanDashboardSummary();
+    showToast(`Data ban posisi ${label} berhasil dihapus`, 'danger');
   }));
 
   const btnToggleBulk = document.getElementById('btnToggleBanBulkForm');
@@ -11223,10 +11244,28 @@ function getRekapDOFilteredList(){
   const fStatus = document.getElementById('filterStatus').value;
   const fAngkutan = document.getElementById('filterAngkutan').value;
 
-  // Urutan tanggal NAIK (lama -> baru) -- tanggal terbaru tampil PALING BAWAH, sesuai permintaan user.
-  // Pakai localeCompare (bukan perbandingan < / > manual) supaya tanggal yang PERSIS SAMA dianggap
-  // "sama" (return 0), bukan dipaksa selalu tukar posisi -- lebih stabil & jelas urutannya.
-  let list = records.slice().sort((a,b) => String(a.tanggal || '').localeCompare(String(b.tanggal || '')));
+  /* Sesi keseratustigapuluhtujuh: urutan tabel Rekap Data DO diganti dari "urut TANGGAL" jadi "urut
+     No PKB" (naik, kecil -> besar) sesuai permintaan user -- supaya kalaupun No PKB 30 sempat dibuat
+     duluan (mis. tanggalnya lebih awal) tapi No PKB 29 baru dibuat besoknya, rekapan tetap tampil
+     berurutan 29 lalu 30 (BUKAN ikut urutan tanggal/kapan datanya diinput). No PKB diambil angkanya
+     saja (non-digit dibuang, mis. "1437" -> 1437) supaya perbandingannya numerik (bukan alfabetis --
+     kalau alfabetis "10" akan dianggap lebih kecil dari "9"). Data yang No PKB-nya kosong/tidak
+     berupa angka (jarang terjadi) ditaruh PALING BAWAH, diurutkan sesama mereka berdasarkan tanggal
+     seperti perilaku lama, supaya tidak "hilang"/tercampur di tengah urutan No PKB. */
+  function noPKBSortNum(r){
+    const digits = String(r.noPKB || '').replace(/[^\d]/g, '');
+    return digits ? parseInt(digits, 10) : null;
+  }
+  let list = records.slice().sort((a,b) => {
+    const na = noPKBSortNum(a), nb = noPKBSortNum(b);
+    if(na !== null && nb !== null){
+      if(na !== nb) return na - nb;
+      return String(a.tanggal || '').localeCompare(String(b.tanggal || '')); // No PKB sama persis -> fallback tanggal
+    }
+    if(na !== null) return -1; // yang ada No PKB-nya selalu didahulukan drpd yang kosong
+    if(nb !== null) return 1;
+    return String(a.tanggal || '').localeCompare(String(b.tanggal || '')); // keduanya tidak ada No PKB -> fallback tanggal (perilaku lama)
+  });
   if(fTgl) list = list.filter(r => r.tanggal === fTgl);
   else if(fBln) list = list.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
   if(fStatus) list = list.filter(r => normalizeStatus(r.status) === fStatus);
