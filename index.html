@@ -11168,6 +11168,15 @@ function getRekapDOFilterLabel(){
 function renderTable(){
   const list = getRekapDOFilteredList();
   const wrap = document.getElementById('tableWrap');
+  /* Sesi keseratustigapuluhdua: setiap renderTable() dipanggil ulang (misalnya sehabis klik
+     "Maju ke status berikutnya"), wrap.innerHTML ditulis ulang total -- termasuk div
+     `.do-table-scroll` yang jadi kontainer scroll sendiri (lihat catatan sticky-header di
+     bawah). Elemen scroll yang baru otomatis mulai dari scrollTop 0, jadi tampilan langsung
+     "lompat" balik ke baris paling atas walau user sedang lihat baris di tengah/bawah tabel --
+     harus scroll ulang ke bawah tiap habis klik. Diperbaiki dengan menyimpan posisi scroll
+     kontainer LAMA sebelum ditulis ulang, lalu mengembalikannya ke kontainer BARU setelahnya. */
+  const prevScrollEl = wrap.querySelector('.do-table-scroll');
+  const prevScrollTop = prevScrollEl ? prevScrollEl.scrollTop : 0;
   if(list.length === 0){ wrap.innerHTML = emptyState('Tidak ada data yang cocok.'); return; }
 
   const canEdit = canEditRekapDO(); // admin, atau akun non-admin yang diberi akses khusus lewat toggle "Bisa edit Rekap Data DO"
@@ -11273,6 +11282,9 @@ function renderTable(){
       <td class="do-td-aksi"></td>
     </tr>
     </tbody></table></div>`;
+
+  const newScrollEl = wrap.querySelector('.do-table-scroll');
+  if(newScrollEl && prevScrollTop > 0) newScrollEl.scrollTop = prevScrollTop;
 
   wrap.querySelectorAll('.surat').forEach(btn => btn.addEventListener('click', function(){
     openSuratTugasModal(this.dataset.id);
