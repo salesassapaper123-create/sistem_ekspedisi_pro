@@ -1475,6 +1475,7 @@
                        dianggap 0 saat disimpan, lewat parseRupiahLoose() (fungsi yang sama dipakai di field
                        tarif Ongkos Borongan lain). -->
                   <input type="text" id="uangJalan" placeholder="cth. 250000 (boleh kosong atau &quot;-&quot;)">
+                  <p class="hint" id="uangJalanVendorHint" style="margin:6px 0 0; display:none;">Boleh dikosongkan/diisi "-" dulu kalau ongkos DO ini digabung jadi 1 tagihan dengan PO/DO lain & belum diketahui angka pastinya (PO gabungan) -- bisa disusulkan kapan saja lewat Edit DO begitu sudah pasti.</p>
                 </div>
                 <div class="field" id="biayaLainBlock">
                   <label for="biayaLain">Biaya lain-lain (Rp)</label>
@@ -5843,6 +5844,11 @@ function updateVendorKetUI(){
     // Vendor Luar dipilih tapi Franco/Loco belum ditentukan -- sembunyikan dulu field tarif.
     document.getElementById('uangJalanBlock').style.display = 'none';
   }
+  /* Sesi keseratustigapuluhdelapan: hint "boleh kosong (PO gabungan)" cuma relevan utk Franco + tarif
+     Plat/borongan (field-nya diisi manual bebas) -- BUKAN utk Loco (field disembunyikan total) atau
+     Per KG (otomatis terhitung dari tonase, ada hint & pesan pending sendiri, lihat vendorTarifPerKgBlock). */
+  const hintEl = document.getElementById('uangJalanVendorHint');
+  if(hintEl) hintEl.style.display = (isFranco && !isPerKg) ? '' : 'none';
 }
 function recalcVendorTarifPerKg(){
   const tarifPerKg = document.getElementById('doVendorTarifPerKg').value === '' ? 0 : parseFloat(document.getElementById('doVendorTarifPerKg').value);
@@ -6734,6 +6740,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
 
   let uangJalanValRaw;
   let uangJalanPendingTonaseVal = false;
+  let uangJalanPendingManualVal = false;
   if(isLocoVal){
     /* Loco: ongkos angkutan tidak ditanggung Ekspedisi Jaya, jadi tidak ada tarif yang disimpan. */
     uangJalanValRaw = 0;
@@ -6751,11 +6758,17 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   }else{
     // parseRupiahLoose: kosong / "-" / karakter non-angka lain -> 0, digit yang ada tetap diambil.
     uangJalanValRaw = parseRupiahLoose(document.getElementById('uangJalan').value);
-    if(isFrancoVal && (!uangJalanValRaw || uangJalanValRaw <= 0)){
-      errEl.textContent = 'Tarif ongkos vendor wajib diisi (pilih rute dari Ongkos Borongan, atau isi manual).';
-      return;
-    }
+    /* Sesi keseratustigapuluhdelapan: sebelumnya tarif ongkos vendor (Franco, tarif Plat/borongan)
+       WAJIB diisi > 0, diblokir kalau kosong/"-". User melaporkan ada kasus "PO gabungan" -- ongkos
+       beberapa DO/PKB memang sengaja digabung jadi 1 tagihan yang baru dihitung/diketahui belakangan
+       (bukan per-DO) -- jadi field ini sekarang BOLEH dikosongkan/diisi "-" sama seperti Loco,
+       tersimpan sementara Rp 0 & bisa disusulkan/diedit kapan saja lewat "Edit DO" begitu ongkosnya
+       sudah pasti (tidak lagi memblokir Simpan DO). */
+    if(isFrancoVal && uangJalanValRaw <= 0) uangJalanPendingManualVal = true;
   }
+  const uangJalanPendingMsg = uangJalanPendingTonaseVal
+    ? 'Uang jalan vendor belum terhitung -- isi tonase supaya otomatis terhitung.'
+    : (uangJalanPendingManualVal ? 'Tarif ongkos vendor belum diisi -- bisa disusulkan kapan saja lewat Edit DO.' : '');
   const vendorRuteTextVal = isVendorVal ? document.getElementById('doVendorRute').value.trim() : '';
   const vendorMatch = isVendorVal ? vendorRuteLookup[vendorRuteTextVal] : null;
   const vendorNamaVal = isVendorVal ? (document.getElementById('doVendorNamaShow').textContent === '-' ? '' : document.getElementById('doVendorNamaShow').textContent) : '';
@@ -6811,7 +6824,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
       Object.assign(rec, fieldsData);
       savedRecordId = rec.id;
     }
-    showToast(uangJalanPendingTonaseVal ? 'Data DO berhasil diperbarui. Uang jalan vendor belum terhitung -- isi tonase supaya otomatis terhitung.' : 'Data DO berhasil diperbarui', 'success');
+    showToast(uangJalanPendingMsg ? 'Data DO berhasil diperbarui. ' + uangJalanPendingMsg : 'Data DO berhasil diperbarui', 'success');
   }else{
     const newId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
     records.push(Object.assign({
@@ -6819,7 +6832,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     }, fieldsData));
     savedRecordId = newId;
     bumpNextNoPKB(fieldsData.noPKB); // majukan nomor PKB berikutnya (DO baru saja, bukan edit)
-    showToast(uangJalanPendingTonaseVal ? 'Data DO berhasil disimpan. Uang jalan vendor belum terhitung -- isi tonase supaya otomatis terhitung.' : 'Data DO berhasil disimpan', 'success');
+    showToast(uangJalanPendingMsg ? 'Data DO berhasil disimpan. ' + uangJalanPendingMsg : 'Data DO berhasil disimpan', 'success');
   }
   save();
   cancelEditDO();
