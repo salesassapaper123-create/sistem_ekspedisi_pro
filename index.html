@@ -8461,13 +8461,14 @@ function renderBanDetailModalBody(k){
     ${posisiKosong.length > 0 ? `<button type="button" class="btn btn-secondary" id="btnToggleBanBulkForm" style="font-size:12px; padding:7px 12px; white-space:nowrap;">${banBulkFormOpen ? 'Batal' : `Isi Data Awal Massal (${posisiKosong.length} posisi kosong)`}</button>` : ''}
   </div>
   <table class="sv-table" style="margin-bottom:16px;"><thead><tr>
-      <th class="sv-left">Posisi</th><th class="sv-left">Merk</th><th class="sv-left">Kondisi</th><th>Tgl Pasang</th><th>KM Pasang</th><th>Estimasi</th><th>Status</th><th></th>
+      <th class="sv-left">Posisi</th><th class="sv-left">Kode Ban</th><th class="sv-left">Merk</th><th class="sv-left">Kondisi</th><th>Tgl Pasang</th><th>KM Pasang</th><th>Estimasi</th><th>Status</th><th></th>
     </tr></thead><tbody>${posisiList.map(p => {
       const ban = banOf(k, p.key);
       const info = banStatusInfo(ban, k.kmSaatIni);
       const estTxt = ban ? `${Number(ban.estimasiBulan)||0} bln / ${(Number(ban.estimasiKm)||0).toLocaleString('id-ID')} km` : '-';
       return `<tr>
         <td class="sv-left">${esc(p.label)}</td>
+        <td class="sv-left">${ban && ban.kodeBan ? esc(ban.kodeBan) : '<span style="color:var(--text-faint);">-</span>'}</td>
         <td class="sv-left">${ban ? esc(ban.merk || '-') : '<span style="color:var(--text-faint);">-</span>'}</td>
         <td class="sv-left">${ban && ban.kondisi ? esc(banKondisiLabel(ban.kondisi)) + (ban.kondisiKet ? `<div class="hint" style="margin-top:2px;">${esc(ban.kondisiKet)}</div>` : '') : '<span style="color:var(--text-faint);">-</span>'}</td>
         <td>${ban && ban.tanggalPasang ? fmtDate(ban.tanggalPasang) : '-'}</td>
@@ -8480,6 +8481,36 @@ function renderBanDetailModalBody(k){
         </td>
       </tr>`;
     }).join('')}</tbody></table>`;
+
+  /* Sesi keseratusempatpuluh: tabel "Pelacakan Rotasi per Ban" -- per permintaan user yang butuh
+     pencatatan rotasi ban REAKTIF (bukan jadwal tetap): tiap ban fisik ditandai pakai Kode Ban, dan
+     "target ganti (km)" nya dihitung dari titik pasang ASLI ban tsb (kmPasang + estimasiKm) --
+     TETAP jalan terus walau ban itu sudah dipindah posisi (misal dari depan ke belakang) karena
+     objek ban (termasuk kmPasang/estimasiKm) ikut dipindah utuh oleh formBanRotasi, bukan direset.
+     kmPindahTerakhir/tanggalPindahTerakhir hanya keisi kalau ban itu memang sudah pernah ikut
+     dirotasi (submit formBanRotasi mengubah posisinya) -- ban yang dari awal pasang belum pernah
+     dipindah akan tampil "-" di kolom itu, & Posisi Awal = Posisi Sekarang. */
+  const banTerpasang = posisiList.map(p => ({ p, ban: banOf(k, p.key) })).filter(x => x.ban);
+  html += `<div style="margin-bottom:16px;">
+    <h4 style="margin:0 0 4px; font-size:14px;">Pelacakan rotasi per ban</h4>
+    <p class="hint" style="margin:0 0 8px;">Target ganti dihitung dari titik pasang ASLI tiap ban (ikut ban walau sudah pindah posisi) -- isi "Kode Ban" saat Pasang/Ganti ban supaya bisa dilacak per fisik ban.</p>
+    ${banTerpasang.length === 0 ? emptyState('Belum ada ban terpasang.') : `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:720px;"><thead><tr>
+      <th class="sv-left">Kode Ban</th><th class="sv-num">KM Pasang Awal</th><th class="sv-left">Posisi Awal</th><th class="sv-num">KM Pindah Terakhir</th><th class="sv-left">Posisi Sekarang</th><th class="sv-num">Target Ganti (KM)</th><th class="sv-num">Sisa KM</th>
+    </tr></thead><tbody>${banTerpasang.map(({p, ban}) => {
+      const posisiAwalLabel = ban.posisiAwal ? ((posisiList.find(x => x.key === ban.posisiAwal) || {}).label || ban.posisiAwal) : p.label;
+      const target = (Number(ban.kmPasang) || 0) + (Number(ban.estimasiKm) || 0);
+      const sisa = target - (Number(k.kmSaatIni) || 0);
+      return `<tr>
+        <td class="sv-left">${ban.kodeBan ? esc(ban.kodeBan) : '<span style="color:var(--text-faint);">-</span>'}</td>
+        <td class="sv-num">${ban.kmPasang != null ? Number(ban.kmPasang).toLocaleString('id-ID') : '-'}</td>
+        <td class="sv-left">${esc(posisiAwalLabel)}</td>
+        <td class="sv-num">${ban.kmPindahTerakhir != null ? Number(ban.kmPindahTerakhir).toLocaleString('id-ID') + (ban.tanggalPindahTerakhir ? ` <span class="hint">(${fmtDate(ban.tanggalPindahTerakhir)})</span>` : '') : '<span style="color:var(--text-faint);">-</span>'}</td>
+        <td class="sv-left">${esc(p.label)}</td>
+        <td class="sv-num">${target.toLocaleString('id-ID')}</td>
+        <td class="sv-num" style="${sisa <= 0 ? 'color:#c0392b; font-weight:600;' : ''}">${sisa.toLocaleString('id-ID')}</td>
+      </tr>`;
+    }).join('')}</tbody></table></div>`}
+  </div>`;
 
   /* "Isi Data Awal Massal" (Sesi keseratustigapuluhsatu) -- supaya staff tidak perlu buka form
      "+ Pasang Ban" satu-satu untuk tiap posisi kosong (bisa sampai 11 posisi per kendaraan) saat
@@ -8501,10 +8532,11 @@ function renderBanDetailModalBody(k){
         </div>
         <form id="formBanBulk">
           <div style="overflow-x:auto;"><table class="sv-table" style="margin-bottom:12px; min-width:640px;"><thead><tr>
-            <th class="sv-left">Posisi</th><th class="sv-left">Merk / tipe ban</th><th class="sv-left">Kondisi</th><th class="sv-left">Keterangan kondisi <span class="hint">(opsional)</span></th>
+            <th class="sv-left">Posisi</th><th class="sv-left">Kode Ban <span class="hint">(opsional)</span></th><th class="sv-left">Merk / tipe ban</th><th class="sv-left">Kondisi</th><th class="sv-left">Keterangan kondisi <span class="hint">(opsional)</span></th>
           </tr></thead><tbody>
             ${posisiKosong.map(p => `<tr>
               <td class="sv-left">${esc(p.label)}</td>
+              <td class="sv-left"><input type="text" class="bb-kode" data-posisi="${p.key}" placeholder="cth. BAN-01" style="width:100%;"></td>
               <td class="sv-left"><input type="text" class="bb-merk" data-posisi="${p.key}" placeholder="cth. Bridgestone R150" style="width:100%;"></td>
               <td class="sv-left"><select class="bb-kondisi" data-posisi="${p.key}" style="width:100%;">
                 <option value="">- Pilih -</option>
@@ -8532,6 +8564,7 @@ function renderBanDetailModalBody(k){
         <form id="formBanGanti">
           <div class="grid2">
             <div class="field"><label for="bgMerk">Merk / tipe ban</label><input type="text" id="bgMerk" placeholder="cth. Bridgestone R150" required></div>
+            <div class="field"><label for="bgKodeBan">Kode ban <span class="hint">(opsional, untuk lacak ban ini kalau nanti dirotasi)</span></label><input type="text" id="bgKodeBan" placeholder="cth. BAN-01"></div>
             <div class="field"><label for="bgKondisi">Kondisi ban</label><select id="bgKondisi" required>
               <option value="">- Pilih kondisi -</option>
               ${BAN_KONDISI_OPTIONS.map(o => `<option value="${o.value}">${esc(o.label)}</option>`).join('')}
@@ -8679,6 +8712,7 @@ function wireBanDetailModalEvents(k){
       .map(inp => ({
         posisi: inp.dataset.posisi,
         merk: inp.value.trim(),
+        kodeBan: ((formBulk.querySelector(`.bb-kode[data-posisi="${inp.dataset.posisi}"]`) || {}).value || '').trim(),
         kondisi: (formBulk.querySelector(`.bb-kondisi[data-posisi="${inp.dataset.posisi}"]`) || {}).value || '',
         kondisiKet: ((formBulk.querySelector(`.bb-kondisi-ket[data-posisi="${inp.dataset.posisi}"]`) || {}).value || '').trim(),
       }))
@@ -8695,7 +8729,7 @@ function wireBanDetailModalEvents(k){
     }
     if(!k.banList) k.banList = {};
     rows.forEach(r => {
-      k.banList[r.posisi] = { merk: r.merk, kondisi: r.kondisi, kondisiKet: r.kondisiKet, tanggalPasang: tanggal, kmPasang: Number(kmPasang) || 0, estimasiBulan: Number(estimasiBulan) || 0, estimasiKm: Number(estimasiKm) || 0 };
+      k.banList[r.posisi] = { merk: r.merk, kodeBan: r.kodeBan, kondisi: r.kondisi, kondisiKet: r.kondisiKet, tanggalPasang: tanggal, kmPasang: Number(kmPasang) || 0, estimasiBulan: Number(estimasiBulan) || 0, estimasiKm: Number(estimasiKm) || 0, posisiAwal: r.posisi, kmPindahTerakhir: null, tanggalPindahTerakhir: null };
     });
     saveKendaraan();
     banBulkFormOpen = false;
@@ -8713,6 +8747,7 @@ function wireBanDetailModalEvents(k){
     const errEl = document.getElementById('banGantiFormError');
     errEl.textContent = '';
     const merk = document.getElementById('bgMerk').value.trim();
+    const kodeBan = document.getElementById('bgKodeBan').value.trim();
     const kondisi = document.getElementById('bgKondisi').value;
     const kondisiKet = document.getElementById('bgKondisiKet').value.trim();
     const tanggal = document.getElementById('bgTanggal').value;
@@ -8731,7 +8766,7 @@ function wireBanDetailModalEvents(k){
       if(!k.riwayatBan) k.riwayatBan = [];
       k.riwayatBan.push({ tanggal, posisi, merkLama: banLama.merk || '', merkBaru: merk, kondisiBaru: kondisi, kondisiKetBaru: kondisiKet, kmGanti: Number(kmPasang) || 0, biaya: Number(biaya) || 0 });
     }
-    k.banList[posisi] = { merk, kondisi, kondisiKet, tanggalPasang: tanggal, kmPasang: Number(kmPasang) || 0, estimasiBulan: Number(estimasiBulan) || 0, estimasiKm: Number(estimasiKm) || 0 };
+    k.banList[posisi] = { merk, kodeBan, kondisi, kondisiKet, tanggalPasang: tanggal, kmPasang: Number(kmPasang) || 0, estimasiBulan: Number(estimasiBulan) || 0, estimasiKm: Number(estimasiKm) || 0, posisiAwal: posisi, kmPindahTerakhir: null, tanggalPindahTerakhir: null };
     saveKendaraan();
     banGantiOpenPosisi = null;
     renderBanDetailModalBody(k);
@@ -8788,7 +8823,15 @@ function wireBanDetailModalEvents(k){
     const newBanList = {};
     posisiList.forEach(p => {
       const ban = banOf(k, p.key);
-      if(ban) newBanList[targets[p.key]] = ban;
+      if(!ban) return;
+      if(targets[p.key] !== p.key){
+        // Sesi keseratusempatpuluh: ban ini benar2 pindah posisi -> catat titik pindah terakhirnya
+        // (posisiAwal & kmPasang/estimasiKm dari pemasangan ASLI tetap tidak diubah -- itu yang
+        // dipakai untuk hitung "target ganti (km)" supaya tetap ikut ban walau sudah dirotasi).
+        ban.kmPindahTerakhir = Number(km) || 0;
+        ban.tanggalPindahTerakhir = tanggal;
+      }
+      newBanList[targets[p.key]] = ban;
     });
     k.banList = newBanList;
     k.rotasiTerakhirTanggal = tanggal;
