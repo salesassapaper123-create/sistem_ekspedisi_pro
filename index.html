@@ -2482,6 +2482,12 @@
             <div>
               <h2>Monitoring ban (kondisi &amp; rotasi)</h2>
             </div>
+            <div class="field" style="max-width:220px; margin-bottom:0;">
+              <select id="banViewModeSelect">
+                <option value="daftar">Daftar Kendaraan</option>
+                <option value="rotasi">Laporan Rotasi Ban</option>
+              </select>
+            </div>
           </div>
           <div class="panel-body">
             <div id="banTableWrap"></div>
@@ -8393,13 +8399,24 @@ function banSummaryBadge(k){
 }
 
 /* ---------- HALAMAN MONITORING BAN (daftar semua kendaraan) ---------- */
+/* Sesi keseratusempatpuluhsatu: "banViewMode" -- Monitoring Ban punya 2 tampilan yang dipilih lewat
+   dropdown #banViewModeSelect: 'daftar' (tabel kendaraan biasa, default) & 'rotasi' (laporan
+   terpisah "Rotasi Ban" lintas armada -- daftar semua ban yang terpasang di SEMUA kendaraan
+   sekaligus, diurutkan dari yang paling dekat/lewat target ganti). Dipisah dari modal Kelola Ban
+   per kendaraan supaya bisa lihat status semua ban seluruh armada dalam 1 tabel, bukan buka
+   modal 1-1 per kendaraan. */
+let banViewMode = 'daftar';
+
 function renderMonitoringBan(){
   const wrap = document.getElementById('banTableWrap');
   if(!wrap) return;
+  const modeSel = document.getElementById('banViewModeSelect');
+  if(modeSel) modeSel.value = banViewMode;
   if(kendaraanList.length === 0){
     wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan lewat menu Administrasi &gt; Input Data Kendaraan.');
     return;
   }
+  if(banViewMode === 'rotasi'){ renderBanRotasiReport(wrap); return; }
   wrap.innerHTML = `<table class="sv-table"><thead><tr>
     <th>No</th><th>Nopol</th><th class="sv-left">Merk</th><th class="sv-left">Jenis Armada</th>
     <th class="sv-left">Status Ban</th><th>Status Rotasi</th><th></th>
@@ -8416,6 +8433,67 @@ function renderMonitoringBan(){
     openBanDetailModal(this.dataset.id);
   }));
 }
+
+/* Kumpulkan 1 baris per ban yang TERPASANG (bukan per posisi kosong) dari SEMUA kendaraan --
+   dipakai oleh laporan "Rotasi Ban". Target ganti = kmPasang + estimasiKm dari titik pasang ASLI
+   ban itu (posisiAwal/kmPasang tidak berubah walau sudah dirotasi ke posisi lain -- lihat
+   formBanRotasi), jadi laporan ini otomatis tetap akurat lintas kendaraan & lintas waktu. */
+function computeBanRotasiReportRows(){
+  const rows = [];
+  kendaraanList.forEach(k => {
+    const posisiList = banPosisiUntuk(k);
+    posisiList.forEach(p => {
+      const ban = banOf(k, p.key);
+      if(!ban) return;
+      const posisiAwalLabel = ban.posisiAwal ? ((posisiList.find(x => x.key === ban.posisiAwal) || {}).label || ban.posisiAwal) : p.label;
+      const target = (Number(ban.kmPasang) || 0) + (Number(ban.estimasiKm) || 0);
+      const sisa = target - (Number(k.kmSaatIni) || 0);
+      rows.push({
+        kendaraanId: k.id, nopol: k.nopol || '-', kodeBan: ban.kodeBan || '',
+        kmPasangAwal: ban.kmPasang, posisiAwal: posisiAwalLabel,
+        posisiSekarang: p.label, kmPindahTerakhir: ban.kmPindahTerakhir,
+        tanggalPindahTerakhir: ban.tanggalPindahTerakhir, target, sisa,
+        statusInfo: banStatusInfo(ban, k.kmSaatIni),
+      });
+    });
+  });
+  rows.sort((a, b) => a.sisa - b.sisa); // paling dekat/lewat target ganti tampil paling atas
+  return rows;
+}
+
+function renderBanRotasiReport(wrap){
+  const rows = computeBanRotasiReportRows();
+  if(rows.length === 0){
+    wrap.innerHTML = emptyState('Belum ada data ban yang terpasang di kendaraan manapun.');
+    return;
+  }
+  wrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Diurutkan dari yang paling dekat/lewat target ganti. Target ganti dihitung dari titik pasang ASLI tiap ban -- tetap ikut ban itu walau sudah pindah posisi lewat rotasi. Isi "Kode Ban" saat Pasang/Ganti ban supaya lebih mudah dilacak.</p>
+    <div style="overflow-x:auto;"><table class="sv-table" style="min-width:960px;"><thead><tr>
+      <th class="sv-left">Nopol</th><th class="sv-left">Kode Ban</th><th class="sv-left">Posisi Sekarang</th><th class="sv-left">Posisi Awal</th><th class="sv-num">KM Pasang Awal</th><th class="sv-num">KM Pindah Terakhir</th><th class="sv-num">Target Ganti (KM)</th><th class="sv-num">Sisa KM</th><th>Status</th><th></th>
+    </tr></thead><tbody>${rows.map(r => `<tr>
+      <td class="sv-left"><span class="plate-cell">${esc(r.nopol)}</span></td>
+      <td class="sv-left">${r.kodeBan ? esc(r.kodeBan) : '<span style="color:var(--text-faint);">-</span>'}</td>
+      <td class="sv-left">${esc(r.posisiSekarang)}</td>
+      <td class="sv-left">${esc(r.posisiAwal)}</td>
+      <td class="sv-num">${r.kmPasangAwal != null ? Number(r.kmPasangAwal).toLocaleString('id-ID') : '-'}</td>
+      <td class="sv-num">${r.kmPindahTerakhir != null ? Number(r.kmPindahTerakhir).toLocaleString('id-ID') + (r.tanggalPindahTerakhir ? ` <span class="hint">(${fmtDate(r.tanggalPindahTerakhir)})</span>` : '') : '<span style="color:var(--text-faint);">-</span>'}</td>
+      <td class="sv-num">${r.target.toLocaleString('id-ID')}</td>
+      <td class="sv-num" style="${r.sisa <= 0 ? 'color:#c0392b; font-weight:600;' : ''}">${r.sisa.toLocaleString('id-ID')}</td>
+      <td>${banStatusBadge(r.statusInfo)}</td>
+      <td><button type="button" class="btn btn-secondary btn-kelola-ban" data-id="${r.kendaraanId}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap;">Kelola</button></td>
+    </tr>`).join('')}</tbody></table></div>`;
+  wrap.querySelectorAll('.btn-kelola-ban').forEach(btn => btn.addEventListener('click', function(){
+    openBanDetailModal(this.dataset.id);
+  }));
+}
+
+(function(){
+  const sel = document.getElementById('banViewModeSelect');
+  if(sel) sel.addEventListener('change', function(){
+    banViewMode = this.value;
+    renderMonitoringBan();
+  });
+})();
 
 /* ---------- MODAL: KELOLA BAN PER KENDARAAN ---------- */
 let banDetailTargetId = null;
