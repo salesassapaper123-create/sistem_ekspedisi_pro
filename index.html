@@ -8406,6 +8406,7 @@ function banSummaryBadge(k){
    per kendaraan supaya bisa lihat status semua ban seluruh armada dalam 1 tabel, bukan buka
    modal 1-1 per kendaraan. */
 let banViewMode = 'daftar';
+let banRotasiFilterId = null; // Sesi keseratusempatpuluhdua: laporan Rotasi Ban difilter per 1 nopol lewat dropdown, tidak lagi tampil semua kendaraan sekaligus
 
 function renderMonitoringBan(){
   const wrap = document.getElementById('banTableWrap');
@@ -8462,12 +8463,32 @@ function computeBanRotasiReportRows(){
 }
 
 function renderBanRotasiReport(wrap){
-  const rows = computeBanRotasiReportRows();
-  if(rows.length === 0){
-    wrap.innerHTML = emptyState('Belum ada data ban yang terpasang di kendaraan manapun.');
+  // Sesi keseratusempatpuluhdua: user minta laporan ini JANGAN tampil semua kendaraan sekaligus
+  // (kepanjangan, semua posisi tiap kendaraan ikut kebawa) -- sekarang wajib pilih 1 Nopol dulu
+  // lewat dropdown, baru tabelnya muncul khusus utk kendaraan itu.
+  if(banRotasiFilterId && !kendaraanList.some(k => k.id === banRotasiFilterId)) banRotasiFilterId = null; // kendaraan sudah dihapus
+  const kendaraanSorted = kendaraanList.slice().sort((a, b) => String(a.nopol || '').localeCompare(String(b.nopol || '')));
+  const pickerHtml = `<div class="field" style="max-width:280px; margin-bottom:14px;">
+    <label for="banRotasiNopolSelect">Pilih Nopol</label>
+    <select id="banRotasiNopolSelect">
+      <option value="">- Pilih Nopol -</option>
+      ${kendaraanSorted.map(k => `<option value="${k.id}" ${k.id === banRotasiFilterId ? 'selected' : ''}>${esc(k.nopol)}</option>`).join('')}
+    </select>
+  </div>`;
+
+  if(!banRotasiFilterId){
+    wrap.innerHTML = pickerHtml + emptyState('Pilih Nopol dulu di atas untuk lihat laporan rotasi ban kendaraan tsb.');
+    wireBanRotasiNopolSelect(wrap);
     return;
   }
-  wrap.innerHTML = `<p class="hint" style="margin:0 0 10px;">Diurutkan dari yang paling dekat/lewat target ganti. Target ganti dihitung dari titik pasang ASLI tiap ban -- tetap ikut ban itu walau sudah pindah posisi lewat rotasi. Isi "Kode Ban" saat Pasang/Ganti ban supaya lebih mudah dilacak.</p>
+
+  const rows = computeBanRotasiReportRows().filter(r => r.kendaraanId === banRotasiFilterId);
+  if(rows.length === 0){
+    wrap.innerHTML = pickerHtml + emptyState('Belum ada data ban yang terpasang untuk kendaraan ini.');
+    wireBanRotasiNopolSelect(wrap);
+    return;
+  }
+  wrap.innerHTML = pickerHtml + `<p class="hint" style="margin:0 0 10px;">Diurutkan dari yang paling dekat/lewat target ganti. Target ganti dihitung dari titik pasang ASLI tiap ban -- tetap ikut ban itu walau sudah pindah posisi lewat rotasi. Isi "Kode Ban" saat Pasang/Ganti ban supaya lebih mudah dilacak.</p>
     <div style="overflow-x:auto;"><table class="sv-table" style="min-width:960px;"><thead><tr>
       <th class="sv-left">Nopol</th><th class="sv-left">Kode Ban</th><th class="sv-left">Posisi Sekarang</th><th class="sv-left">Posisi Awal</th><th class="sv-num">KM Pasang Awal</th><th class="sv-num">KM Pindah Terakhir</th><th class="sv-num">Target Ganti (KM)</th><th class="sv-num">Sisa KM</th><th>Status</th><th></th>
     </tr></thead><tbody>${rows.map(r => `<tr>
@@ -8485,6 +8506,15 @@ function renderBanRotasiReport(wrap){
   wrap.querySelectorAll('.btn-kelola-ban').forEach(btn => btn.addEventListener('click', function(){
     openBanDetailModal(this.dataset.id);
   }));
+  wireBanRotasiNopolSelect(wrap);
+}
+
+function wireBanRotasiNopolSelect(wrap){
+  const sel = wrap.querySelector('#banRotasiNopolSelect');
+  if(sel) sel.addEventListener('change', function(){
+    banRotasiFilterId = this.value || null;
+    renderBanRotasiReport(wrap);
+  });
 }
 
 (function(){
