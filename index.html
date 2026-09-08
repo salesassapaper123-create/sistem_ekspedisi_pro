@@ -8324,11 +8324,16 @@ function banStatusBadge(info){
    diisi MANUAL oleh staff saat pasang/ganti ban, karena kenyataannya (klarifikasi user) ban yang
    dipasang di truk-truk ini hampir tidak pernah baru -- supaya ada catatan jelas kondisi fisiknya
    (baru/bekas & seberapa layak) tanpa harus dihitung dari umur pakai. */
+/* Sesi keseratustigapuluhsembilan: pilihan "Vulkanisir" (ban remanufaktur/re-tread) diganti labelnya
+   jadi "Bekas (Kondisi Kurang Baik)" sesuai permintaan user -- supaya konsisten dengan skala kondisi
+   Baru -> Bekas Baik -> Bekas Sedang -> Bekas Kurang Baik. Value internalnya SENGAJA dipertahankan
+   tetap 'vulkanisir' (tidak diganti) supaya data ban yang sudah pernah disimpan dengan kondisi ini
+   sebelumnya tetap otomatis tampil dengan label baru, tidak perlu migrasi data. */
 const BAN_KONDISI_OPTIONS = [
   { value: 'baru', label: 'Baru' },
   { value: 'bekas-baik', label: 'Bekas (Kondisi Baik)' },
   { value: 'bekas-sedang', label: 'Bekas (Kondisi Sedang)' },
-  { value: 'vulkanisir', label: 'Vulkanisir' },
+  { value: 'vulkanisir', label: 'Bekas (Kondisi Kurang Baik)' },
 ];
 function banKondisiLabel(kondisi){
   const found = BAN_KONDISI_OPTIONS.find(o => o.value === kondisi);
