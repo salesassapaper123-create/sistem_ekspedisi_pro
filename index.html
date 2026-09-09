@@ -2552,6 +2552,14 @@
                   <label for="mBiaya">Biaya (Rp) <span class="hint" id="mBiayaHint">(opsional dulu selama On Proses)</span></label>
                   <input type="number" id="mBiaya" min="0" step="1" placeholder="cth. 750000">
                 </div>
+                <div class="field">
+                  <label for="mKm">KM kendaraan saat ini <span class="hint">(opsional)</span></label>
+                  <input type="number" id="mKm" min="0" step="1" placeholder="cth. 402218">
+                </div>
+                <div class="field full" style="grid-column:1 / -1; display:flex; align-items:flex-start; gap:8px; margin-top:-6px;">
+                  <input type="checkbox" id="mIsServiceBerkala" style="width:16px; height:16px; margin-top:3px; cursor:pointer; flex-shrink:0;">
+                  <label for="mIsServiceBerkala" style="margin:0; cursor:pointer; font-weight:500;">Ini Service Berkala <span class="hint" style="display:block; font-weight:400; margin-top:2px;">Kalau dicentang &amp; status Selesai, KM di atas otomatis dipakai untuk update "KM Service Berkala Terakhir" &amp; tanggalnya di Monitoring Service Berkala kendaraan ini -- tidak perlu input ulang manual disana.</span></label>
+                </div>
                 <div class="field full" style="grid-column:1 / -1;">
                   <label for="mCatatan">Catatan <span class="hint">(opsional)</span></label>
                   <input type="text" id="mCatatan" placeholder="cth. bengkel, no. bon, dsb.">
@@ -9160,12 +9168,13 @@ function renderMaintenance(){
   const list = maintenanceList.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
   if(list.length === 0){ wrap.innerHTML = emptyState('Belum ada catatan perbaikan. Klik "Tambah Perbaikan" di atas untuk mulai mencatat.'); return; }
   const admin = isAdminUser();
-  wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>Catatan</th><th>Foto SPK</th><th>Status</th><th></th></tr></thead><tbody>${list.map(m => `
+  wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Tanggal</th><th>Nopol</th><th>Jenis Perbaikan</th><th>Biaya</th><th>KM</th><th>Catatan</th><th>Foto SPK</th><th>Status</th><th></th></tr></thead><tbody>${list.map(m => `
     <tr>
       <td>${fmtDate(m.tanggal)}</td>
       <td><span class="plate-cell">${esc(m.nopol)}</span></td>
       <td class="sv-left">${esc(m.jenis)}</td>
       <td class="mono sv-num">${m.biaya ? rupiah(m.biaya) : '-'}</td>
+      <td class="sv-num">${m.km != null && m.km !== '' ? Number(m.km).toLocaleString('id-ID') + (m.isServiceBerkala ? ' <span class="hint" title="Ikut update Monitoring Service Berkala">&#128260;</span>' : '') : '-'}</td>
       <td class="sv-left">${esc(m.catatan || '-')}</td>
       <td>${m.fotoSpk ? `<button type="button" class="btn btn-secondary lihat-foto-spk" data-id="${m.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
       <td>${statusBadge(m.status)}</td>
@@ -9284,11 +9293,15 @@ document.getElementById('formMaintenance').addEventListener('submit', async func
     return;
   }
 
+  const kmVal = document.getElementById('mKm').value;
+  const isServiceBerkala = document.getElementById('mIsServiceBerkala').checked;
   const data = {
     tanggal: document.getElementById('mTanggal').value,
     nopol: document.getElementById('mNopol').value.trim().toUpperCase(),
     jenis: document.getElementById('mJenis').value.trim(),
     biaya: biayaVal,
+    km: kmVal !== '' ? Number(kmVal) : null,
+    isServiceBerkala: isServiceBerkala,
     catatan: document.getElementById('mCatatan').value.trim(),
     status: status,
     fotoSpk: fotoSpk,
@@ -9299,10 +9312,35 @@ document.getElementById('formMaintenance').addEventListener('submit', async func
     maintenanceList.push(Object.assign({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6) }, data));
   }
   saveMaintenance();
+
+  // Sesi keseratusempatpuluhlima: kalau perbaikan ini ditandai "Ini Service Berkala" & sudah isi KM &
+  // statusnya Selesai (baru dianggap "beneran sudah diservis" begitu Selesai, bukan pas masih On
+  // Proses) -- otomatis update KM Service Berkala Terakhir & tanggalnya di data kendaraan (dipakai
+  // Monitoring Service Berkala), supaya staf tidak perlu input ulang KM yang sama di 2 tempat.
+  let syncedServiceMsg = '';
+  if(status === 'selesai' && isServiceBerkala && data.km !== null && data.km > 0){
+    const k = kendaraanList.find(x => (x.nopol || '').trim().toUpperCase() === data.nopol);
+    if(k){
+      k.kmServiceTerakhir = data.km;
+      k.tglServiceTerakhir = data.tanggal;
+      // KM live kendaraan (kmSaatIni) TIDAK disentuh kalau sudah ada & lebih baru dari input ini
+      // (mis. sudah ter-update otomatis dari GPS Cartrack) -- cuma dinaikkan kalau memang belum
+      // pernah diisi sama sekali, atau angka di sistem ternyata lebih rendah/basi dibanding KM
+      // odometer asli yang baru saja dicatat bengkel saat servis ini.
+      if(k.kmSaatIni == null || k.kmSaatIni === '' || Number(k.kmSaatIni) < data.km) k.kmSaatIni = data.km;
+      if(!k.serviceInterval) k.serviceInterval = 10000; // default kalau kendaraan ini belum pernah diatur intervalnya sama sekali, supaya langsung tampil di Monitoring Service Berkala
+      saveKendaraan();
+      if(typeof renderServiceMonitoring === 'function') renderServiceMonitoring();
+      syncedServiceMsg = ` & Monitoring Service Berkala ${k.nopol} ikut ter-update`;
+    }else{
+      syncedServiceMsg = ` (Monitoring Service Berkala TIDAK ikut ter-update -- nopol "${data.nopol}" tidak ditemukan di Data Kendaraan)`;
+    }
+  }
+
   renderMaintenance();
   closeMaintenanceModal();
   btn.disabled = false;
-  showToast(existing ? 'Status perbaikan berhasil diperbarui' : 'Data perbaikan berhasil disimpan', 'success');
+  showToast((existing ? 'Status perbaikan berhasil diperbarui' : 'Data perbaikan berhasil disimpan') + syncedServiceMsg, 'success');
 });
 
 /* ---------- MODAL TAMBAH PERBAIKAN ----------
@@ -9326,6 +9364,8 @@ function openMaintenanceModal(editId){
     document.getElementById('mJenis').value = existing.jenis || '';
     document.getElementById('mCatatan').value = existing.catatan || '';
     document.getElementById('mBiaya').value = existing.biaya || '';
+    document.getElementById('mKm').value = (existing.km != null && existing.km !== '') ? existing.km : '';
+    document.getElementById('mIsServiceBerkala').checked = !!existing.isServiceBerkala;
     document.getElementById('mStatus').value = 'selesai';
     if(existing.fotoSpk){
       document.getElementById('mFotoSpkPreviewImg').src = existing.fotoSpk;
