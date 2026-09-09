@@ -1716,6 +1716,10 @@
               <h2>Daftar kendaraan</h2>
               <p>Seluruh armada yang terdaftar di sistem</p>
             </div>
+            <button class="btn btn-secondary" id="btnExportKendaraanExcel" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+              Export Excel
+            </button>
           </div>
           <div class="panel-body">
             <div id="kendaraanTableWrap"></div>
@@ -7569,6 +7573,8 @@ document.getElementById('rbLookupInput').addEventListener('input', function(){
 function renderKendaraan(){
   const wrap = document.getElementById('kendaraanTableWrap');
   const admin = isAdminUser();
+  const btnExportKendaraan = document.getElementById('btnExportKendaraanExcel');
+  if(btnExportKendaraan) btnExportKendaraan.style.display = admin ? '' : 'none';
   if(kendaraanList.length === 0){
     wrap.innerHTML = emptyState('Belum ada kendaraan terdaftar. Tambahkan lewat menu Administrasi &gt; Input Data Kendaraan.');
   }else{
@@ -11860,6 +11866,118 @@ function exportRekapDOExcel(){
   }
 }
 document.getElementById('btnRekapExportExcel').addEventListener('click', exportRekapDOExcel);
+
+/* ---------- Data Kendaraan -- Export Excel (admin only) (Sesi keseratusempatpuluhtujuh)
+   Kolom persis meniru tabel Daftar Kendaraan di layar (renderKendaraan). Pola ZIP-XLSX sama persis
+   dengan Rekap Data DO / Monitoring Organik (makeZip, XS, LAPORAN_XLSX_STYLES_XML). Tombol Export
+   hanya tampil untuk admin (lihat renderKendaraan), dan fungsi ini juga menolak dijalankan kalau
+   entah bagaimana dipanggil oleh akun non-admin (defense-in-depth). ---- */
+const KENDARAAN_XLSX_HEADERS = ['Nopol','Jenis Armada','Tahun','A/N','Rute & Area','Kapasitas Muatan (ton)','No. Mesin','No. Rangka','Bak (P-L-T)'];
+const KENDARAAN_XLSX_WIDTHS = [14,16,8,18,26,18,18,18,18];
+function buildKendaraanSheetXml(list){
+  const nCols = KENDARAAN_XLSX_HEADERS.length;
+  const headerRowIdx = 4;
+  const firstDataRow = headerRowIdx + 1;
+  const lastDataRow = firstDataRow + list.length - 1;
+  const totalRowIdx = lastDataRow + 1;
+
+  let rowsXml = '';
+  rowsXml += `<row r="1"><c r="A1" t="inlineStr" s="${XS.TITLE}"><is><t>${esc('DATA KENDARAAN')}</t></is></c></row>`;
+  rowsXml += `<row r="2"><c r="A2" t="inlineStr" s="${XS.SUB}"><is><t>${esc('Seluruh armada terdaftar di sistem (' + list.length + ' kendaraan)')}</t></is></c></row>`;
+  rowsXml += `<row r="3"></row>`;
+  let headerCells = '';
+  KENDARAAN_XLSX_HEADERS.forEach((h,i) => { headerCells += `<c r="${xlsxColLetter(i+1)}${headerRowIdx}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
+  rowsXml += `<row r="${headerRowIdx}">${headerCells}</row>`;
+
+  list.forEach((k, i) => {
+    const rowIdx = firstDataRow + i;
+    const alt = i % 2 === 1;
+    const sText = alt ? XS.CELL_ALT : XS.CELL;
+    const sNum = alt ? XS.NUM_ALT : XS.NUM;
+    let cells = '';
+    cells += `<c r="A${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(k.nopol || '-')}</t></is></c>`;
+    cells += `<c r="B${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(armadaLabel(k.jenisArmada))}</t></is></c>`;
+    cells += `<c r="C${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(k.tahun || '-')}</t></is></c>`;
+    cells += `<c r="D${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(k.supir || '-')}</t></is></c>`;
+    cells += `<c r="E${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(k.rute || '-')}</t></is></c>`;
+    const kap = k.kapasitas ? Number(k.kapasitas) : null;
+    cells += kap != null ? `<c r="F${rowIdx}" s="${sNum}"><v>${kap}</v></c>` : `<c r="F${rowIdx}" s="${sNum}"/>`;
+    cells += `<c r="G${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(k.noMesin || '-')}</t></is></c>`;
+    cells += `<c r="H${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(k.noRangka || '-')}</t></is></c>`;
+    const bak = (k.panjang || k.lebar || k.tinggi) ? `${k.panjang||'-'} x ${k.lebar||'-'} x ${k.tinggi||'-'} m` : '-';
+    cells += `<c r="I${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(bak)}</t></is></c>`;
+    rowsXml += `<row r="${rowIdx}">${cells}</row>`;
+  });
+
+  const sumKapasitas = list.reduce((s,k) => s + (Number(k.kapasitas)||0), 0);
+  let totalCells = `<c r="A${totalRowIdx}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>${esc('TOTAL (' + list.length + ' kendaraan)')}</t></is></c>`;
+  for(let ci = 2; ci <= 5; ci++) totalCells += `<c r="${xlsxColLetter(ci)}${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="F${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(F${firstDataRow}:F${lastDataRow})</f><v>${sumKapasitas}</v></c>`;
+  for(let ci = 7; ci <= 9; ci++) totalCells += `<c r="${xlsxColLetter(ci)}${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
+
+  const colsXml = KENDARAAN_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const dimensionRef = `A1:${xlsxColLetter(nCols)}${totalRowIdx}`;
+  const lastCol = xlsxColLetter(nCols);
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="${dimensionRef}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colsXml}</cols>
+<sheetData>${rowsXml}</sheetData>
+<mergeCells count="2"><mergeCell ref="A1:${lastCol}1"/><mergeCell ref="A2:${lastCol}2"/></mergeCells>
+</worksheet>`;
+}
+function exportKendaraanExcel(){
+  if(!isAdminUser()){ alert('Hanya admin yang bisa export data kendaraan ke Excel.'); return; }
+  if(kendaraanList.length === 0){ alert('Belum ada data kendaraan untuk diexport.'); return; }
+  try{
+    const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+    const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+    const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Data Kendaraan" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+    const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+    const sheetXml = buildKendaraanSheetXml(kendaraanList);
+
+    const zipBytes = makeZip([
+      { name: '[Content_Types].xml', data: contentTypesXml },
+      { name: '_rels/.rels', data: rootRelsXml },
+      { name: 'xl/workbook.xml', data: workbookXml },
+      { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
+      { name: 'xl/styles.xml', data: LAPORAN_XLSX_STYLES_XML },
+      { name: 'xl/worksheets/sheet1.xml', data: sheetXml },
+    ]);
+
+    const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const todayIso = new Date().toISOString().slice(0,10);
+    a.href = url; a.download = `data_kendaraan_${todayIso}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Data Kendaraan (Excel) berhasil diunduh', 'success');
+  }catch(err){
+    alert('Gagal membuat file Excel: ' + err.message);
+  }
+}
+document.getElementById('btnExportKendaraanExcel').addEventListener('click', exportKendaraanExcel);
 
 /* ---- Cetak / Export PDF -- buka jendela cetak (sama pola dgn Monitoring Organik/Laporan Sisa PO),
    lalu pakai fitur "Simpan sebagai PDF" bawaan browser saat mencetak. ---- */
