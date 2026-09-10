@@ -1497,7 +1497,7 @@
                       <input type="checkbox" id="cbKosongan" style="width:16px; height:16px; cursor:pointer;"> Kosongan
                     </label>
                   </div>
-                  <p class="hint" id="kosonganHint" style="margin:6px 0 0; display:none;">Rute ASSA - BK1 (Bandung ke ASSA) tanpa bawa barang apa pun. Tidak perlu isi tujuan/tonase/jenis barang -- ritase kosongan ini otomatis ikut terhitung &amp; dipantau terpisah di Monitoring Ritase supaya bisa jadi bahan evaluasi.</p>
+                  <p class="hint" style="margin:6px 0 0;">"Kosongan" = perjalanan menuju ASSA (Bandung -&gt; ASSA) tidak bawa muatan. Boleh dicentang BARENGAN dengan BK/Roll/OCC -- mis. Bandung-&gt;ASSA kosongan, lalu ASSA-&gt;BK1 tetap bawa Roll: centang Kosongan DAN Roll sekaligus, tujuan &amp; tonase Roll tetap diisi seperti biasa.</p>
                 </div>
                 <div class="field">
                   <label for="jenisArmada">Jenis armada</label>
@@ -5716,16 +5716,9 @@ function toggleJenisSections(){
   const bk = document.getElementById('cbBK').checked;
   const roll = document.getElementById('cbRoll').checked;
   const occ = document.getElementById('cbOCC').checked;
-  const kosongan = document.getElementById('cbKosongan').checked;
   document.getElementById('section1').style.display = bk ? 'contents' : 'none';
   document.getElementById('section2').style.display = roll ? 'contents' : 'none';
   document.getElementById('section3').style.display = occ ? 'contents' : 'none';
-  /* Kosongan (Sesi keseratusempatpuluhdelapan) = rute ASSA - BK1 kosong, tidak bawa barang apa pun --
-     tidak perlu isi jenis barang sama sekali, jadi seksi itu disembunyikan total saat dicentang. */
-  const jbSection = document.getElementById('jenisBarangSection');
-  if(jbSection) jbSection.style.display = kosongan ? 'none' : '';
-  const kosonganHint = document.getElementById('kosonganHint');
-  if(kosonganHint) kosonganHint.style.display = kosongan ? '' : 'none';
   /* Sesi keseratustigapuluhdua: dropdown jenis per baris "Jenis Barang" (muncul kalau lebih dari
      1 jenis pengiriman dicentang) ikut disesuaikan tiap kali centang BK/Roll/OCC diubah. */
   if(typeof updateJenisBarangRowSelectors === 'function') updateJenisBarangRowSelectors();
@@ -5734,21 +5727,12 @@ function toggleJenisSections(){
 document.getElementById('cbBK').addEventListener('change', toggleJenisSections);
 document.getElementById('cbRoll').addEventListener('change', toggleJenisSections);
 document.getElementById('cbOCC').addEventListener('change', toggleJenisSections);
-/* Kosongan (rute ASSA - BK1 tanpa muatan) SALING EKSKLUSIF dengan BK/Roll/OCC -- tidak masuk akal
-   dicentang bareng (kalau kosongan, memang tidak ada barang apa pun yang dibawa). Centang salah satu
-   otomatis membatalkan centang yang lain (dilakukan lewat .checked langsung, BUKAN klik simulasi,
-   jadi tidak memicu event 'change' berantai / infinite loop). */
-document.getElementById('cbBK').addEventListener('change', function(){ if(this.checked) document.getElementById('cbKosongan').checked = false; });
-document.getElementById('cbRoll').addEventListener('change', function(){ if(this.checked) document.getElementById('cbKosongan').checked = false; });
-document.getElementById('cbOCC').addEventListener('change', function(){ if(this.checked) document.getElementById('cbKosongan').checked = false; });
-document.getElementById('cbKosongan').addEventListener('change', function(){
-  if(this.checked){
-    document.getElementById('cbBK').checked = false;
-    document.getElementById('cbRoll').checked = false;
-    document.getElementById('cbOCC').checked = false;
-  }
-  toggleJenisSections();
-});
+/* Kosongan (Sesi keseratusempatpuluhsembilan, koreksi dari Sesi keseratusempatpuluhdelapan): TIDAK
+   saling eksklusif dengan BK/Roll/OCC -- ditegaskan user, "Kosongan" cuma menandai perjalanan MENUJU
+   ASSA (Bandung -> ASSA) yang tidak bawa muatan, sedangkan perjalanan LANJUTAN dari ASSA -> BK1 pada
+   PKB yang sama tetap bisa bawa muatan (mis. Roll) yang tujuan/tonasenya tetap diisi seperti biasa.
+   Jadi cbKosongan berdiri sendiri, tidak lagi otomatis membatalkan/dibatalkan checkbox BK/Roll/OCC,
+   & tidak lagi menyembunyikan seksi Jenis Barang/tujuan muat-bongkar. */
 
 /* ---------- ORGANIK vs VENDOR LUAR (Input Surat Tugas) ----------
    Angkutan organik = armada milik sendiri (Tronton/Engkel/CDD/dst, seperti selama ini).
