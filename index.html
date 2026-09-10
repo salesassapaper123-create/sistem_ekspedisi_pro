@@ -1322,7 +1322,7 @@
             <span class="dash-period-select" id="dashMonitoringOrganikPeriodLabel">&nbsp;</span>
           </div>
           <div class="dash-card-body" style="padding:0;"><div id="dashMonitoringOrganikWrap"></div></div>
-          <div class="dash-card-foot">Ritase/Tonase OCC &amp; BK dari seluruh DO Organik periode ini. "Roll Buyer Luar" = kirim ke customer Cust Luar (bukan BK 1) tapi tetap pakai armada Organik sendiri (bukan vendor angkutan luar) -- dicek dari PO terkait DO Roll tersebut.</div>
+          <div class="dash-card-foot">Ritase/Tonase OCC &amp; BK dari seluruh DO Organik periode ini. "Roll Buyer Luar" = kirim ke customer Cust Luar (bukan BK 1) tapi tetap pakai armada Organik sendiri (bukan vendor angkutan luar) -- dicek dari PO terkait DO Roll tersebut. "Kosongan" = rute ASSA - BK1 (Bandung ke ASSA) tanpa bawa barang apa pun -- dipantau terpisah supaya bisa jadi bahan evaluasi meminimalisir rute kosongan.</div>
         </div>
 
         <!-- BARIS 3: grafik tren Ritase & Tonase (6 bulan terakhir) -->
@@ -1483,7 +1483,7 @@
                 </div>
                 <div class="field">
                   <label>Jenis pengiriman</label>
-                  <div style="display:flex; gap:18px; align-items:center; height:38px;">
+                  <div style="display:flex; gap:18px; align-items:center; height:38px; flex-wrap:wrap;">
                     <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin:0;">
                       <input type="checkbox" id="cbBK" checked style="width:16px; height:16px; cursor:pointer;"> BK
                     </label>
@@ -1493,7 +1493,11 @@
                     <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin:0;">
                       <input type="checkbox" id="cbOCC" style="width:16px; height:16px; cursor:pointer;"> OCC
                     </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin:0;">
+                      <input type="checkbox" id="cbKosongan" style="width:16px; height:16px; cursor:pointer;"> Kosongan
+                    </label>
                   </div>
+                  <p class="hint" id="kosonganHint" style="margin:6px 0 0; display:none;">Rute ASSA - BK1 (Bandung ke ASSA) tanpa bawa barang apa pun. Tidak perlu isi tujuan/tonase/jenis barang -- ritase kosongan ini otomatis ikut terhitung &amp; dipantau terpisah di Monitoring Ritase supaya bisa jadi bahan evaluasi.</p>
                 </div>
                 <div class="field">
                   <label for="jenisArmada">Jenis armada</label>
@@ -1509,7 +1513,7 @@
                   <input type="text" id="doKota" list="doKotaList" placeholder="cth. Bandung">
                   <datalist id="doKotaList"></datalist>
                 </div>
-                <div class="field full" style="grid-column:1 / -1;">
+                <div class="field full" id="jenisBarangSection" style="grid-column:1 / -1;">
                   <label>Jenis barang, jumlah roll &amp; tonase <span class="hint">(bisa lebih dari satu jenis dalam 1 PKB — jumlah roll opsional, isi tonase per jenis, total otomatis terhitung)</span></label>
                   <div id="jenisBarangJenisHint" class="hint" style="display:none; margin-bottom:6px;">Karena lebih dari 1 jenis pengiriman dicentang (BK/Roll/OCC) di atas, tandai jenis pengiriman tiap baris lewat dropdown di kanan (BK/Roll/OCC) — supaya Tonase BK/Roll/OCC di Rekap Data DO otomatis terisi sendiri, tidak perlu diisi manual lagi.</div>
                   <div id="jenisBarangRows"></div>
@@ -5329,11 +5333,18 @@ function recKirimRoll(r){
 function recKirimOCC(r){
   return !!r.kirimOCC;
 }
+/* Kosongan (Sesi keseratusempatpuluhdelapan) = rute ASSA - BK1 (Bandung -> ASSA) TANPA bawa barang
+   apa pun -- ritase kosong, sengaja dipantau terpisah dari BK/Roll/OCC karena perusahaan ingin
+   meminimalisir rute kosongan ini (bahan evaluasi armada/rute), bukan jenis muatan seperti yang lain. */
+function recKirimKosongan(r){
+  return !!r.kirimKosongan;
+}
 function jenisLabel(r){
   const parts = [];
   if(recKirimBK(r)) parts.push('BK');
   if(recKirimRoll(r)) parts.push('Roll');
   if(recKirimOCC(r)) parts.push('OCC');
+  if(recKirimKosongan(r)) parts.push('Kosongan');
   return parts.join(' + ') || '-';
 }
 function jenisBadge(r){
@@ -5341,6 +5352,7 @@ function jenisBadge(r){
   if(recKirimBK(r)) parts.push('<span class="badge" style="background:var(--accent-100); color:var(--accent-700);">BK</span>');
   if(recKirimRoll(r)) parts.push('<span class="badge" style="background:#e6ecfb; color:var(--navy-700);">Roll</span>');
   if(recKirimOCC(r)) parts.push('<span class="badge" style="background:#dcf1f7; color:#0f6e8c;">OCC</span>');
+  if(recKirimKosongan(r)) parts.push('<span class="badge" style="background:#fbe0e0; color:#9c2b2b;">Kosongan</span>');
   return parts.join(' ') || '-';
 }
 /* Badge Organik (armada milik sendiri) vs Vendor Luar — dipakai di Rekap Data, Laporan Pengiriman,
@@ -5704,9 +5716,16 @@ function toggleJenisSections(){
   const bk = document.getElementById('cbBK').checked;
   const roll = document.getElementById('cbRoll').checked;
   const occ = document.getElementById('cbOCC').checked;
+  const kosongan = document.getElementById('cbKosongan').checked;
   document.getElementById('section1').style.display = bk ? 'contents' : 'none';
   document.getElementById('section2').style.display = roll ? 'contents' : 'none';
   document.getElementById('section3').style.display = occ ? 'contents' : 'none';
+  /* Kosongan (Sesi keseratusempatpuluhdelapan) = rute ASSA - BK1 kosong, tidak bawa barang apa pun --
+     tidak perlu isi jenis barang sama sekali, jadi seksi itu disembunyikan total saat dicentang. */
+  const jbSection = document.getElementById('jenisBarangSection');
+  if(jbSection) jbSection.style.display = kosongan ? 'none' : '';
+  const kosonganHint = document.getElementById('kosonganHint');
+  if(kosonganHint) kosonganHint.style.display = kosongan ? '' : 'none';
   /* Sesi keseratustigapuluhdua: dropdown jenis per baris "Jenis Barang" (muncul kalau lebih dari
      1 jenis pengiriman dicentang) ikut disesuaikan tiap kali centang BK/Roll/OCC diubah. */
   if(typeof updateJenisBarangRowSelectors === 'function') updateJenisBarangRowSelectors();
@@ -5715,6 +5734,21 @@ function toggleJenisSections(){
 document.getElementById('cbBK').addEventListener('change', toggleJenisSections);
 document.getElementById('cbRoll').addEventListener('change', toggleJenisSections);
 document.getElementById('cbOCC').addEventListener('change', toggleJenisSections);
+/* Kosongan (rute ASSA - BK1 tanpa muatan) SALING EKSKLUSIF dengan BK/Roll/OCC -- tidak masuk akal
+   dicentang bareng (kalau kosongan, memang tidak ada barang apa pun yang dibawa). Centang salah satu
+   otomatis membatalkan centang yang lain (dilakukan lewat .checked langsung, BUKAN klik simulasi,
+   jadi tidak memicu event 'change' berantai / infinite loop). */
+document.getElementById('cbBK').addEventListener('change', function(){ if(this.checked) document.getElementById('cbKosongan').checked = false; });
+document.getElementById('cbRoll').addEventListener('change', function(){ if(this.checked) document.getElementById('cbKosongan').checked = false; });
+document.getElementById('cbOCC').addEventListener('change', function(){ if(this.checked) document.getElementById('cbKosongan').checked = false; });
+document.getElementById('cbKosongan').addEventListener('change', function(){
+  if(this.checked){
+    document.getElementById('cbBK').checked = false;
+    document.getElementById('cbRoll').checked = false;
+    document.getElementById('cbOCC').checked = false;
+  }
+  toggleJenisSections();
+});
 
 /* ---------- ORGANIK vs VENDOR LUAR (Input Surat Tugas) ----------
    Angkutan organik = armada milik sendiri (Tronton/Engkel/CDD/dst, seperti selama ini).
@@ -6693,9 +6727,10 @@ document.getElementById('formDO').addEventListener('submit', function(e){
   const kirimBK = document.getElementById('cbBK').checked;
   const kirimRoll = document.getElementById('cbRoll').checked;
   const kirimOCC = document.getElementById('cbOCC').checked;
+  const kirimKosongan = document.getElementById('cbKosongan').checked;
 
-  if(!kirimBK && !kirimRoll && !kirimOCC){
-    errEl.textContent = 'Pilih minimal satu jenis pengiriman (BK, Roll, atau OCC).';
+  if(!kirimBK && !kirimRoll && !kirimOCC && !kirimKosongan){
+    errEl.textContent = 'Pilih minimal satu jenis pengiriman (BK, Roll, OCC, atau Kosongan).';
     return;
   }
 
@@ -6823,6 +6858,7 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     kirimBK: kirimBK,
     kirimRoll: kirimRoll,
     kirimOCC: kirimOCC,
+    kirimKosongan: kirimKosongan,
     jenisArmada: document.getElementById('jenisArmada').value,
     jenisAngkutan: jenisAngkutanVal,
     vendorNama: vendorNamaVal,
@@ -6890,6 +6926,7 @@ function editRecordDO(id){
   document.getElementById('cbBK').checked = recKirimBK(rec);
   document.getElementById('cbRoll').checked = recKirimRoll(rec);
   document.getElementById('cbOCC').checked = recKirimOCC(rec);
+  document.getElementById('cbKosongan').checked = recKirimKosongan(rec);
   document.getElementById('jenisArmada').value = rec.jenisArmada || 'tronton';
   document.getElementById('doKota').value = rec.kota || '';
   resetJenisBarangRows(
@@ -11360,7 +11397,7 @@ function computeMonitoringOrganikNopolSopir(startDate, endDate){
     if(!byNopol[nopolKey]) byNopol[nopolKey] = { nopol: nopolKey, sopirs: {} };
     const ng = byNopol[nopolKey];
     const sKey = r.sopir || '-';
-    if(!ng.sopirs[sKey]) ng.sopirs[sKey] = { sopir: sKey, ritOCC: 0, tonOCC: 0, ritBK: 0, tonBK: 0, ritRollBL: 0, tonRoll: 0, tonRollBL: 0 };
+    if(!ng.sopirs[sKey]) ng.sopirs[sKey] = { sopir: sKey, ritOCC: 0, tonOCC: 0, ritBK: 0, tonBK: 0, ritRollBL: 0, tonRoll: 0, tonRollBL: 0, ritKosongan: 0 };
     const g = ng.sopirs[sKey];
     if(recKirimOCC(r)){ g.ritOCC += 1; g.tonOCC += (Number(r.tonase3)||0); }
     if(recKirimBK(r)){ g.ritBK += 1; g.tonBK += (Number(r.tonase1)||0); }
@@ -11368,12 +11405,16 @@ function computeMonitoringOrganikNopolSopir(startDate, endDate){
       g.tonRoll += (Number(r.tonase2)||0);
       if(isRollBuyerLuar(r)){ g.ritRollBL += 1; g.tonRollBL += (Number(r.tonase2)||0); }
     }
+    /* Ritase Kosongan (rute ASSA - BK1 tanpa muatan) -- dipantau HANYA sebagai jumlah ritase (tidak
+       ada tonase, karena memang tidak bawa barang), supaya bisa jadi bahan evaluasi perusahaan untuk
+       meminimalisir rute kosongan. */
+    if(recKirimKosongan(r)){ g.ritKosongan += 1; }
   });
   return Object.values(byNopol).sort((a,b) => a.nopol.localeCompare(b.nopol)).map(ng => Object.assign({}, ng, {
     sopirRows: Object.values(ng.sopirs).sort((a,b) => a.sopir.localeCompare(b.sopir)),
   }));
 }
-const MONORG_COL = { ritOcc:'#fde3d4', ritBk:'#d7ecc7', ritRoll:'#dde2f5', ton:'#fff6b0' };
+const MONORG_COL = { ritOcc:'#fde3d4', ritBk:'#d7ecc7', ritRoll:'#dde2f5', ton:'#fff6b0', ritKosongan:'#fbe0e0' };
 /* Bangun HTML tabel (dengan Nopol rowspan per sopir + baris TOTAL KIRIMAN) dari hasil
    computeMonitoringOrganikNopolSopir() -- dipakai bersama oleh kartu Dashboard & layar Laporan >
    "Monitoring Organik (Nopol/Sopir)" supaya tampilannya selalu identik di kedua tempat. */
@@ -11390,6 +11431,7 @@ function buildMonitoringOrganikTableHtml(groups){
         <td class="mono sv-num" style="background:${COL.ritOcc};">${g.ritOCC || '-'}</td>
         <td class="mono sv-num" style="background:${COL.ritBk};">${g.ritBK || '-'}</td>
         <td class="mono sv-num" style="background:${COL.ritRoll};">${g.ritRollBL || '-'}</td>
+        <td class="mono sv-num" style="background:${COL.ritKosongan};">${g.ritKosongan || '-'}</td>
         <td class="mono sv-num" style="background:${COL.ton};">${g.tonOCC ? g.tonOCC.toLocaleString('id-ID') : '-'}</td>
         <td class="mono sv-num" style="background:${COL.ton};">${g.tonBK ? g.tonBK.toLocaleString('id-ID') : '-'}</td>
         <td class="mono sv-num" style="background:${COL.ton};">${g.tonRoll ? g.tonRoll.toLocaleString('id-ID') : '-'}</td>
@@ -11398,12 +11440,13 @@ function buildMonitoringOrganikTableHtml(groups){
     });
   });
   const sum = fn => groups.reduce((s,ng) => s + ng.sopirRows.reduce((s2,g) => s2 + fn(g), 0), 0);
-  return `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:900px;">
+  return `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:1000px;">
     <thead><tr>
       <th>Nopol</th><th>Sopir</th>
       <th style="background:${COL.ritOcc}; color:var(--text);">Total Ritase OCC</th>
       <th style="background:${COL.ritBk}; color:var(--text);">Total Ritase BK</th>
       <th style="background:${COL.ritRoll}; color:var(--text);">Total Ritase Roll Buyer Luar</th>
+      <th style="background:${COL.ritKosongan}; color:var(--text);">Total Ritase Kosongan</th>
       <th style="background:${COL.ton}; color:var(--text);">Total Tonase OCC (Kg)</th>
       <th style="background:${COL.ton}; color:var(--text);">Total Tonase BK (Kg)</th>
       <th style="background:${COL.ton}; color:var(--text);">Total Tonase Roll (Kg)</th>
@@ -11415,6 +11458,7 @@ function buildMonitoringOrganikTableHtml(groups){
       <td class="mono sv-num">${sum(g=>g.ritOCC)}</td>
       <td class="mono sv-num">${sum(g=>g.ritBK)}</td>
       <td class="mono sv-num">${sum(g=>g.ritRollBL)}</td>
+      <td class="mono sv-num">${sum(g=>g.ritKosongan)}</td>
       <td class="mono sv-num">${sum(g=>g.tonOCC).toLocaleString('id-ID')}</td>
       <td class="mono sv-num">${sum(g=>g.tonBK).toLocaleString('id-ID')}</td>
       <td class="mono sv-num">${sum(g=>g.tonRoll).toLocaleString('id-ID')}</td>
@@ -13295,8 +13339,8 @@ function getMonitoringOrganikDataForExport(){
    gampang dipakai lagi untuk olah data/pivot lanjutan di Excel), + baris TOTAL KIRIMAN dengan rumus
    SUM hidup. Pakai util ZIP & style (XS/LAPORAN_XLSX_STYLES_XML) yang SAMA dengan Rekap Ritase per
    Nopol -- style-nya generik (judul/subjudul/header/sel/total), tidak perlu style baru. ---- */
-const MONORG_XLSX_HEADERS = ['Nopol','Sopir','Ritase OCC','Ritase BK','Ritase Roll Buyer Luar','Tonase OCC (Kg)','Tonase BK (Kg)','Tonase Roll (Kg)','Tonase Roll Buyer Luar (Kg)'];
-const MONORG_XLSX_WIDTHS = [12,14,11,11,18,14,14,14,20];
+const MONORG_XLSX_HEADERS = ['Nopol','Sopir','Ritase OCC','Ritase BK','Ritase Roll Buyer Luar','Ritase Kosongan','Tonase OCC (Kg)','Tonase BK (Kg)','Tonase Roll (Kg)','Tonase Roll Buyer Luar (Kg)'];
+const MONORG_XLSX_WIDTHS = [12,14,11,11,18,15,14,14,14,20];
 function buildMonitoringOrganikSheetXml(periodLabel, groups){
   const flatRows = [];
   groups.forEach(ng => ng.sopirRows.forEach(g => flatRows.push(Object.assign({ nopol: ng.nopol }, g))));
@@ -13325,10 +13369,11 @@ function buildMonitoringOrganikSheetXml(periodLabel, groups){
     cells += `<c r="C${rowIdx}" s="${sNum}"><v>${g.ritOCC}</v></c>`;
     cells += `<c r="D${rowIdx}" s="${sNum}"><v>${g.ritBK}</v></c>`;
     cells += `<c r="E${rowIdx}" s="${sNum}"><v>${g.ritRollBL}</v></c>`;
-    cells += `<c r="F${rowIdx}" s="${sNum}"><v>${g.tonOCC}</v></c>`;
-    cells += `<c r="G${rowIdx}" s="${sNum}"><v>${g.tonBK}</v></c>`;
-    cells += `<c r="H${rowIdx}" s="${sNum}"><v>${g.tonRoll}</v></c>`;
-    cells += `<c r="I${rowIdx}" s="${sNum}"><v>${g.tonRollBL}</v></c>`;
+    cells += `<c r="F${rowIdx}" s="${sNum}"><v>${g.ritKosongan}</v></c>`;
+    cells += `<c r="G${rowIdx}" s="${sNum}"><v>${g.tonOCC}</v></c>`;
+    cells += `<c r="H${rowIdx}" s="${sNum}"><v>${g.tonBK}</v></c>`;
+    cells += `<c r="I${rowIdx}" s="${sNum}"><v>${g.tonRoll}</v></c>`;
+    cells += `<c r="J${rowIdx}" s="${sNum}"><v>${g.tonRollBL}</v></c>`;
     rowsXml += `<row r="${rowIdx}">${cells}</row>`;
   });
 
@@ -13338,10 +13383,11 @@ function buildMonitoringOrganikSheetXml(periodLabel, groups){
   totalCells += `<c r="C${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(C${firstDataRow}:C${lastDataRow})</f><v>${sum('ritOCC')}</v></c>`;
   totalCells += `<c r="D${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(D${firstDataRow}:D${lastDataRow})</f><v>${sum('ritBK')}</v></c>`;
   totalCells += `<c r="E${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(E${firstDataRow}:E${lastDataRow})</f><v>${sum('ritRollBL')}</v></c>`;
-  totalCells += `<c r="F${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(F${firstDataRow}:F${lastDataRow})</f><v>${sum('tonOCC')}</v></c>`;
-  totalCells += `<c r="G${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(G${firstDataRow}:G${lastDataRow})</f><v>${sum('tonBK')}</v></c>`;
-  totalCells += `<c r="H${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(H${firstDataRow}:H${lastDataRow})</f><v>${sum('tonRoll')}</v></c>`;
-  totalCells += `<c r="I${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(I${firstDataRow}:I${lastDataRow})</f><v>${sum('tonRollBL')}</v></c>`;
+  totalCells += `<c r="F${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(F${firstDataRow}:F${lastDataRow})</f><v>${sum('ritKosongan')}</v></c>`;
+  totalCells += `<c r="G${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(G${firstDataRow}:G${lastDataRow})</f><v>${sum('tonOCC')}</v></c>`;
+  totalCells += `<c r="H${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(H${firstDataRow}:H${lastDataRow})</f><v>${sum('tonBK')}</v></c>`;
+  totalCells += `<c r="I${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(I${firstDataRow}:I${lastDataRow})</f><v>${sum('tonRoll')}</v></c>`;
+  totalCells += `<c r="J${totalRowIdx}" s="${XS.TOTAL_NUM}"><f>SUM(J${firstDataRow}:J${lastDataRow})</f><v>${sum('tonRollBL')}</v></c>`;
   rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
 
   const colsXml = MONORG_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
@@ -13428,6 +13474,7 @@ function buildMonitoringOrganikPrintHtml(periodLabel, groups){
         <td style="text-align:right; ${cellStyle(COL.ritOcc)}">${g.ritOCC || '-'}</td>
         <td style="text-align:right; ${cellStyle(COL.ritBk)}">${g.ritBK || '-'}</td>
         <td style="text-align:right; ${cellStyle(COL.ritRoll)}">${g.ritRollBL || '-'}</td>
+        <td style="text-align:right; ${cellStyle(COL.ritKosongan)}">${g.ritKosongan || '-'}</td>
         <td style="text-align:right; ${cellStyle(COL.ton)}">${g.tonOCC ? g.tonOCC.toLocaleString('id-ID') : '-'}</td>
         <td style="text-align:right; ${cellStyle(COL.ton)}">${g.tonBK ? g.tonBK.toLocaleString('id-ID') : '-'}</td>
         <td style="text-align:right; ${cellStyle(COL.ton)}">${g.tonRoll ? g.tonRoll.toLocaleString('id-ID') : '-'}</td>
@@ -13441,6 +13488,7 @@ function buildMonitoringOrganikPrintHtml(periodLabel, groups){
     <td style="text-align:right;">${sum(g=>g.ritOCC)}</td>
     <td style="text-align:right;">${sum(g=>g.ritBK)}</td>
     <td style="text-align:right;">${sum(g=>g.ritRollBL)}</td>
+    <td style="text-align:right;">${sum(g=>g.ritKosongan)}</td>
     <td style="text-align:right;">${sum(g=>g.tonOCC).toLocaleString('id-ID')}</td>
     <td style="text-align:right;">${sum(g=>g.tonBK).toLocaleString('id-ID')}</td>
     <td style="text-align:right;">${sum(g=>g.tonRoll).toLocaleString('id-ID')}</td>
@@ -13465,7 +13513,7 @@ function buildMonitoringOrganikPrintHtml(periodLabel, groups){
   <p class="sub">Periode: ${esc(periodLabel)}</p>
   <table>
     <thead><tr>
-      <th>Nopol</th><th>Sopir</th><th>Ritase OCC</th><th>Ritase BK</th><th>Ritase Roll Buyer Luar</th><th>Tonase OCC (Kg)</th><th>Tonase BK (Kg)</th><th>Tonase Roll (Kg)</th><th>Tonase Roll Buyer Luar (Kg)</th>
+      <th>Nopol</th><th>Sopir</th><th>Ritase OCC</th><th>Ritase BK</th><th>Ritase Roll Buyer Luar</th><th>Ritase Kosongan</th><th>Tonase OCC (Kg)</th><th>Tonase BK (Kg)</th><th>Tonase Roll (Kg)</th><th>Tonase Roll Buyer Luar (Kg)</th>
     </tr></thead>
     <tbody>${bodyHtml}${footHtml}</tbody>
   </table>
