@@ -8584,11 +8584,13 @@ function wireBanRotasiNopolSelect(wrap){
 let banDetailTargetId = null;
 let banGantiOpenPosisi = null;
 let banRotasiFormOpen = false;
+let banRotasiMoves = []; // Sesi keseratuslimapuluh: daftar baris "ban di posisi X pindah ke posisi Y" (dipersimple dari form lama yang wajib isi dropdown SEMUA posisi)
 let banBulkFormOpen = false; // Sesi keseratustigapuluhsatu: form isi data awal beberapa posisi ban sekaligus
 function openBanDetailModal(id){
   banDetailTargetId = id;
   banGantiOpenPosisi = null;
   banRotasiFormOpen = false;
+  banRotasiMoves = [];
   banBulkFormOpen = false;
   const k = kendaraanList.find(x => x.id === id);
   document.getElementById('banDetailModalTitle').textContent = `Kelola Ban — ${k ? k.nopol : ''}`;
@@ -8600,7 +8602,44 @@ function closeBanDetailModal(){
   banDetailTargetId = null;
   banGantiOpenPosisi = null;
   banRotasiFormOpen = false;
+  banRotasiMoves = [];
   banBulkFormOpen = false;
+}
+/* Sesi keseratuslimapuluh: render 1 baris form rotasi ("ban di posisi X" -> "pindah ke posisi Y").
+   Dropdown "ban di posisi" dikasih keterangan kode ban / "(kosong)" biar user tidak perlu bolak-balik
+   lihat tabel di atas buat tau ban mana yang ada di posisi mana. */
+function banRotasiMoveRowHtml(move, idx, posisiList, k){
+  return `<div class="grid2" style="align-items:flex-end; margin-bottom:8px;">
+    <div class="field" style="margin:0;">
+      <label>Ban di posisi</label>
+      <select class="br-move-dari" data-idx="${idx}">
+        <option value="">- Pilih posisi -</option>
+        ${posisiList.map(p => {
+          const ban = banOf(k, p.key);
+          const ket = ban ? (ban.kodeBan ? ` (${ban.kodeBan})` : '') : ' (kosong)';
+          return `<option value="${p.key}" ${move.dari === p.key ? 'selected' : ''}>${esc(p.label + ket)}</option>`;
+        }).join('')}
+      </select>
+    </div>
+    <div class="field" style="margin:0; display:flex; gap:8px; align-items:flex-end;">
+      <div style="flex:1;">
+        <label>Pindah ke posisi</label>
+        <select class="br-move-ke" data-idx="${idx}">
+          <option value="">- Pilih posisi -</option>
+          ${posisiList.map(p => `<option value="${p.key}" ${move.ke === p.key ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
+        </select>
+      </div>
+      <button type="button" class="btn btn-secondary btn-hapus-rotasi-move" data-idx="${idx}" style="padding:8px 10px; white-space:nowrap;" title="Hapus baris ini">&times;</button>
+    </div>
+  </div>`;
+}
+/* Baca ulang isi semua baris dari DOM ke banRotasiMoves -- dipanggil sebelum tambah/hapus baris atau
+   submit, supaya pilihan user di baris lain tidak hilang saat modal body di-render ulang. */
+function syncBanRotasiMovesFromDom(){
+  const dariSels = [...document.querySelectorAll('#banRotasiMovesWrap .br-move-dari')];
+  const keSels = [...document.querySelectorAll('#banRotasiMovesWrap .br-move-ke')];
+  if(dariSels.length === 0) return;
+  banRotasiMoves = dariSels.map((sel, i) => ({ dari: sel.value, ke: keSels[i] ? keSels[i].value : '' }));
 }
 (function(){
   const btnClose = document.getElementById('btnCloseBanDetailModal');
@@ -8767,14 +8806,10 @@ function renderBanDetailModalBody(k){
       </div>
       ${banRotasiFormOpen ? `
       <form id="formBanRotasi" style="margin-top:16px; padding-top:16px; border-top:1px solid var(--border);">
-        <p class="hint" style="margin:0 0 10px;">Pilih posisi baru tiap ban (posisi yang tidak dipindah biarkan sama).</p>
+        <p class="hint" style="margin:0 0 10px;">Catat ban mana saja yang pindah posisi -- posisi yang tidak dipindah tidak perlu disebut sama sekali. Klik "+ Tambah ban yang pindah" untuk tiap ban yang dirotasi.</p>
+        <div id="banRotasiMovesWrap">${(banRotasiMoves.length ? banRotasiMoves : [{dari:'', ke:''}]).map((m, i) => banRotasiMoveRowHtml(m, i, posisiList, k)).join('')}</div>
+        <button type="button" class="btn btn-secondary" id="btnTambahRotasiMove" style="font-size:12px; padding:7px 12px; margin-bottom:14px;">+ Tambah ban yang pindah</button>
         <div class="grid2">
-          ${posisiList.map(p => `<div class="field">
-            <label for="brTo${p.key}">${esc(p.label)} pindah ke</label>
-            <select id="brTo${p.key}" data-dari="${p.key}">
-              ${posisiList.map(p2 => `<option value="${p2.key}" ${p2.key === p.key ? 'selected' : ''}>${esc(p2.label)}</option>`).join('')}
-            </select>
-          </div>`).join('')}
           <div class="field"><label for="brTanggal">Tanggal rotasi</label><input type="date" id="brTanggal" value="${todayISO()}" required></div>
           <div class="field"><label for="brKm">KM saat rotasi</label><input type="number" id="brKm" min="0" step="1" value="${k.kmSaatIni || 0}" required></div>
         </div>
@@ -8952,12 +8987,30 @@ function wireBanDetailModalEvents(k){
   const btnToggleRotasi = document.getElementById('btnToggleRotasiForm');
   if(btnToggleRotasi) btnToggleRotasi.addEventListener('click', function(){
     banRotasiFormOpen = !banRotasiFormOpen;
+    if(banRotasiFormOpen) banRotasiMoves = [{dari:'', ke:''}];
     banGantiOpenPosisi = null;
     banBulkFormOpen = false;
     renderBanDetailModalBody(k);
   });
   const btnBatalRotasi = body.querySelector('.btn-batal-rotasi');
-  if(btnBatalRotasi) btnBatalRotasi.addEventListener('click', function(){ banRotasiFormOpen = false; renderBanDetailModalBody(k); });
+  if(btnBatalRotasi) btnBatalRotasi.addEventListener('click', function(){ banRotasiFormOpen = false; banRotasiMoves = []; renderBanDetailModalBody(k); });
+
+  const btnTambahRotasiMove = document.getElementById('btnTambahRotasiMove');
+  if(btnTambahRotasiMove) btnTambahRotasiMove.addEventListener('click', function(){
+    syncBanRotasiMovesFromDom();
+    banRotasiMoves.push({ dari: '', ke: '' });
+    renderBanDetailModalBody(k);
+  });
+  const rotasiMovesWrap = document.getElementById('banRotasiMovesWrap');
+  if(rotasiMovesWrap) rotasiMovesWrap.addEventListener('click', function(e){
+    const btnHapus = e.target.closest('.btn-hapus-rotasi-move');
+    if(!btnHapus) return;
+    syncBanRotasiMovesFromDom();
+    const idx = Number(btnHapus.dataset.idx);
+    banRotasiMoves.splice(idx, 1);
+    if(banRotasiMoves.length === 0) banRotasiMoves.push({ dari: '', ke: '' });
+    renderBanDetailModalBody(k);
+  });
 
   const formRotasi = document.getElementById('formBanRotasi');
   if(formRotasi) formRotasi.addEventListener('submit', function(e){
@@ -8970,23 +9023,57 @@ function wireBanDetailModalEvents(k){
       errEl.textContent = 'Tanggal & KM saat rotasi wajib diisi.';
       return;
     }
-    const targets = {};
-    posisiList.forEach(p => { targets[p.key] = document.getElementById(`brTo${p.key}`).value; });
-    const targetValues = Object.values(targets);
-    const uniqueTargets = new Set(targetValues);
-    if(uniqueTargets.size !== targetValues.length){
+    syncBanRotasiMovesFromDom();
+    // Sesi keseratuslimapuluh: form disederhanakan -- user cuma isi baris utk ban yang BENERAN pindah
+    // (dulu wajib pilih dropdown utk SEMUA posisi, termasuk yang tidak dipindah). Baris kosong (belum
+    // pilih dari/ke) diabaikan begitu saja, tidak dianggap error.
+    const moves = banRotasiMoves.filter(m => m.dari && m.ke);
+    if(moves.length === 0){
+      errEl.textContent = 'Belum ada ban yang dipindah -- isi minimal satu baris "ban di posisi" & "pindah ke posisi".';
+      return;
+    }
+    for(const m of moves){
+      if(!banOf(k, m.dari)){
+        const posLabel = (posisiList.find(p => p.key === m.dari) || {}).label || m.dari;
+        errEl.textContent = `Posisi "${posLabel}" tidak ada ban terpasang — tidak bisa dipindah.`;
+        return;
+      }
+    }
+    const dariKeys = moves.map(m => m.dari);
+    if(new Set(dariKeys).size !== dariKeys.length){
+      errEl.textContent = 'Satu posisi asal (ban yang sama) tidak boleh muncul dua kali dalam daftar perpindahan.';
+      return;
+    }
+    const keKeys = moves.map(m => m.ke);
+    if(new Set(keKeys).size !== keKeys.length){
       errEl.textContent = 'Satu posisi tujuan tidak boleh dipilih dua kali — pastikan tiap posisi tujuan hanya dipakai sekali.';
       return;
     }
-    const mapping = posisiList.filter(p => targets[p.key] !== p.key).map(p => ({ dari: p.key, ke: targets[p.key] }));
+    if(moves.some(m => m.dari === m.ke)){
+      errEl.textContent = 'Posisi asal & tujuan tidak boleh sama — pilih posisi tujuan yang berbeda, atau hapus baris ini kalau ban tsb memang tidak pindah.';
+      return;
+    }
+    // Hanya posisi yang benar2 ada ban terpasang yang ikut dicek/dipindah -- posisi kosong tidak
+    // dianggap "menempati" dirinya sendiri, supaya memindahkan ban ke posisi kosong tidak keliru
+    // dianggap tabrakan.
+    const posisiTerisi = posisiList.filter(p => banOf(k, p.key));
+    const targets = {};
+    posisiTerisi.forEach(p => { targets[p.key] = p.key; });
+    moves.forEach(m => { targets[m.dari] = m.ke; });
+    const targetValues = Object.values(targets);
+    const uniqueTargets = new Set(targetValues);
+    if(uniqueTargets.size !== targetValues.length){
+      errEl.textContent = 'Posisi tujuan bentrok — dua ban tidak bisa menempati posisi yang sama. Kalau mau menukar 2 ban, tambahkan juga baris sebaliknya (posisi B pindah ke posisi A).';
+      return;
+    }
+    const mapping = posisiTerisi.filter(p => targets[p.key] !== p.key).map(p => ({ dari: p.key, ke: targets[p.key] }));
     if(mapping.length === 0){
       errEl.textContent = 'Belum ada perubahan posisi yang dipilih — pilih posisi tujuan yang berbeda untuk minimal satu ban.';
       return;
     }
     const newBanList = {};
-    posisiList.forEach(p => {
+    posisiTerisi.forEach(p => {
       const ban = banOf(k, p.key);
-      if(!ban) return;
       if(targets[p.key] !== p.key){
         // Sesi keseratusempatpuluh: ban ini benar2 pindah posisi -> catat titik pindah terakhirnya
         // (posisiAwal & kmPasang/estimasiKm dari pemasangan ASLI tetap tidak diubah -- itu yang
@@ -9003,6 +9090,7 @@ function wireBanDetailModalEvents(k){
     k.riwayatRotasi.push({ tanggal, km: Number(km) || 0, mapping });
     saveKendaraan();
     banRotasiFormOpen = false;
+    banRotasiMoves = [];
     renderBanDetailModalBody(k);
     renderMonitoringBan();
     renderBanDashboardSummary();
