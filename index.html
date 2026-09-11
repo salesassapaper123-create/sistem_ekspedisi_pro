@@ -8517,6 +8517,55 @@ function computeBanRotasiReportRows(){
   return rows;
 }
 
+/* Sesi keseratuslimapuluhdua: "Rekap Rotasi Ban" -- unroll SEMUA event k.riwayatRotasi (bukan cuma
+   yang terakhir) jadi 1 baris per perpindahan/pelepasan fisik ban, supaya user bisa lihat riwayat
+   lengkap "posisi awal (+ km pasang awal) -> posisi rotasi (atau Dilepas) + km saat itu" dari waktu
+   ke waktu, termasuk ban yang sudah Dilepas (yang sudah tidak lagi tampil di tabel status "posisi
+   sekarang" karena sudah tidak ada di k.banList). Event LAMA (sebelum Sesi keseratuslimapuluhdua)
+   tidak punya kodeBan/posisiAwal/kmPasangAwal per-entri -- fallback ke kode posisi mentah & "-".
+   Diurutkan dari yang PALING BARU, supaya gampang dihitung "berapa ban dilepas dalam setahun". */
+function computeBanRekapRotasiRows(kendaraanId){
+  const k = kendaraanList.find(x => x.id === kendaraanId);
+  if(!k) return [];
+  const posisiList = banPosisiUntuk(k);
+  const rows = [];
+  (k.riwayatRotasi || []).forEach(ev => {
+    (ev.mapping || []).forEach(m => {
+      rows.push({
+        kodeBan: m.kodeBan || '',
+        posisiAwalLabel: banPosisiOrLepasLabel(m.posisiAwal || m.dari, posisiList),
+        kmPasangAwal: (m.kmPasangAwal != null) ? m.kmPasangAwal : null,
+        posisiRotasiLabel: banPosisiOrLepasLabel(m.ke, posisiList),
+        dilepas: m.ke === BAN_LEPAS_VALUE,
+        tanggal: ev.tanggal,
+        kmRotasi: ev.km,
+      });
+    });
+  });
+  rows.sort((a, b) => String(b.tanggal || '').localeCompare(String(a.tanggal || '')));
+  return rows;
+}
+function banRekapRotasiHtml(kendaraanId){
+  const rows = computeBanRekapRotasiRows(kendaraanId);
+  const cutoff = new Date();
+  cutoff.setFullYear(cutoff.getFullYear() - 1);
+  const cutoffISO = `${cutoff.getFullYear()}-${String(cutoff.getMonth()+1).padStart(2,'0')}-${String(cutoff.getDate()).padStart(2,'0')}`;
+  const dilepasSetahun = rows.filter(r => r.dilepas && r.tanggal && r.tanggal >= cutoffISO).length;
+  return `<div style="margin-top:20px;">
+    <h4 style="margin:0 0 4px; font-size:14px;">Rekap Rotasi Ban</h4>
+    <p class="hint" style="margin:0 0 10px;">Riwayat tiap ban pindah posisi -- "Posisi Awal" = posisi & KM pertama kali ban itu dipasang, "Posisi Rotasi" = posisi tujuan (atau "Dilepas" kalau ban dilepas total, bukan pindah posisi) & KM saat rotasi itu terjadi. Termasuk ban yang sudah Dilepas (walau sudah tidak tampil lagi di tabel status di atas), supaya kelihatan berapa banyak ban dipakai/diganti dalam periode tertentu.${dilepasSetahun > 0 ? ` <strong style="color:#c0392b;">${dilepasSetahun} ban dilepas dalam 1 tahun terakhir.</strong>` : ''}</p>
+    ${rows.length === 0 ? emptyState('Belum ada riwayat rotasi/pelepasan ban untuk kendaraan ini.') : `<div style="overflow-x:auto;"><table class="sv-table" style="min-width:820px;"><thead><tr>
+      <th class="sv-left">Kode Ban</th><th class="sv-left">Posisi Awal</th><th class="sv-num">KM Pasang Awal</th><th class="sv-left">Posisi Rotasi</th><th class="sv-num">KM Rotasi</th><th>Tanggal</th>
+    </tr></thead><tbody>${rows.map(r => `<tr>
+      <td class="sv-left">${r.kodeBan ? esc(r.kodeBan) : '<span style="color:var(--text-faint);">-</span>'}</td>
+      <td class="sv-left">${esc(r.posisiAwalLabel)}</td>
+      <td class="sv-num">${r.kmPasangAwal != null ? Number(r.kmPasangAwal).toLocaleString('id-ID') : '<span style="color:var(--text-faint);">-</span>'}</td>
+      <td class="sv-left">${r.dilepas ? '<span style="color:#c0392b; font-weight:600;">Dilepas</span>' : esc(r.posisiRotasiLabel)}</td>
+      <td class="sv-num">${Number(r.kmRotasi || 0).toLocaleString('id-ID')}</td>
+      <td>${r.tanggal ? fmtDate(r.tanggal) : '-'}</td>
+    </tr>`).join('')}</tbody></table></div>`}
+  </div>`;
+}
 function renderBanRotasiReport(wrap){
   // Sesi keseratusempatpuluhdua: user minta laporan ini JANGAN tampil semua kendaraan sekaligus
   // (kepanjangan, semua posisi tiap kendaraan ikut kebawa) -- sekarang wajib pilih 1 Nopol dulu
@@ -8538,8 +8587,12 @@ function renderBanRotasiReport(wrap){
   }
 
   const rows = computeBanRotasiReportRows().filter(r => r.kendaraanId === banRotasiFilterId);
+  // Sesi keseratuslimapuluhdua: "Rekap Rotasi Ban" ditampilkan DI BAWAH tabel status ini (sesuai
+  // permintaan user) -- dihitung terpisah dari `rows` di atas supaya tetap muncul walau kendaraan
+  // ini kebetulan tidak ada ban terpasang sama sekali (mis. semua sudah Dilepas).
+  const rekapHtml = banRekapRotasiHtml(banRotasiFilterId);
   if(rows.length === 0){
-    wrap.innerHTML = pickerHtml + emptyState('Belum ada data ban yang terpasang untuk kendaraan ini.');
+    wrap.innerHTML = pickerHtml + emptyState('Belum ada data ban yang terpasang untuk kendaraan ini.') + rekapHtml;
     wireBanRotasiNopolSelect(wrap);
     return;
   }
@@ -8557,7 +8610,7 @@ function renderBanRotasiReport(wrap){
       <td class="sv-num" style="${r.sisa <= 0 ? 'color:#c0392b; font-weight:600;' : ''}">${r.sisa.toLocaleString('id-ID')}</td>
       <td>${banStatusBadge(r.statusInfo)}</td>
       <td><button type="button" class="btn btn-secondary btn-kelola-ban" data-id="${r.kendaraanId}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap;">Kelola</button></td>
-    </tr>`).join('')}</tbody></table></div>`;
+    </tr>`).join('')}</tbody></table></div>` + rekapHtml;
   wrap.querySelectorAll('.btn-kelola-ban').forEach(btn => btn.addEventListener('click', function(){
     openBanDetailModal(this.dataset.id);
   }));
@@ -9078,7 +9131,20 @@ function wireBanDetailModalEvents(k){
       errEl.textContent = 'Posisi tujuan bentrok — dua ban tidak bisa menempati posisi yang sama. Kalau mau menukar 2 ban, tambahkan juga baris sebaliknya (posisi B pindah ke posisi A).';
       return;
     }
-    const mapping = posisiTerisi.filter(p => targets[p.key] !== p.key).map(p => ({ dari: p.key, ke: targets[p.key] }));
+    // Sesi keseratuslimapuluhdua: tiap entri mapping direkam LENGKAP dengan identitas fisik ban-nya
+    // (kodeBan, posisiAwal & kmPasangAwal ASLI ban tsb) -- bukan cuma kode posisi dari/ke seperti
+    // sebelumnya -- supaya "Rekap Rotasi Ban" bisa menampilkan riwayat per fisik ban (termasuk yang
+    // sudah Dilepas) walau ban itu sudah beberapa kali berpindah/dilepas sejak saat ini.
+    const mapping = posisiTerisi.filter(p => targets[p.key] !== p.key).map(p => {
+      const ban = banOf(k, p.key);
+      return {
+        dari: p.key,
+        ke: targets[p.key],
+        kodeBan: (ban && ban.kodeBan) || '',
+        posisiAwal: (ban && ban.posisiAwal) || p.key,
+        kmPasangAwal: (ban && ban.kmPasang != null) ? Number(ban.kmPasang) : null,
+      };
+    });
     if(mapping.length === 0){
       errEl.textContent = 'Belum ada perubahan posisi yang dipilih — pilih posisi tujuan yang berbeda untuk minimal satu ban.';
       return;
