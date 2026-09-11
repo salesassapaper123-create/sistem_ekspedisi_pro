@@ -8585,6 +8585,7 @@ let banDetailTargetId = null;
 let banGantiOpenPosisi = null;
 let banRotasiFormOpen = false;
 let banRotasiMoves = []; // Sesi keseratuslimapuluh: daftar baris "ban di posisi X pindah ke posisi Y" (dipersimple dari form lama yang wajib isi dropdown SEMUA posisi)
+const BAN_LEPAS_VALUE = '__LEPAS__'; // Sesi keseratuslimapuluhsatu: nilai sentinel opsi "Dilepas" di dropdown "pindah ke posisi" -- ban yg aus & dilepas total dari kendaraan (bukan pindah ke posisi lain), jadi tidak perlu/tidak boleh dianggap "menempati" posisi manapun (biar tidak bentrok kalau lebih dari 1 ban dilepas sekaligus)
 let banBulkFormOpen = false; // Sesi keseratustigapuluhsatu: form isi data awal beberapa posisi ban sekaligus
 function openBanDetailModal(id){
   banDetailTargetId = id;
@@ -8627,6 +8628,7 @@ function banRotasiMoveRowHtml(move, idx, posisiList, k){
         <select class="br-move-ke" data-idx="${idx}">
           <option value="">- Pilih posisi -</option>
           ${posisiList.map(p => `<option value="${p.key}" ${move.ke === p.key ? 'selected' : ''}>${esc(p.label)}</option>`).join('')}
+          <option value="${BAN_LEPAS_VALUE}" ${move.ke === BAN_LEPAS_VALUE ? 'selected' : ''}>— Dilepas (aus, tidak dipasang lagi) —</option>
         </select>
       </div>
       <button type="button" class="btn btn-secondary btn-hapus-rotasi-move" data-idx="${idx}" style="padding:8px 10px; white-space:nowrap;" title="Hapus baris ini">&times;</button>
@@ -8640,6 +8642,12 @@ function syncBanRotasiMovesFromDom(){
   const keSels = [...document.querySelectorAll('#banRotasiMovesWrap .br-move-ke')];
   if(dariSels.length === 0) return;
   banRotasiMoves = dariSels.map((sel, i) => ({ dari: sel.value, ke: keSels[i] ? keSels[i].value : '' }));
+}
+/* Label posisi tujuan utk ditampilkan di riwayat -- "Dilepas" kalau sentinel BAN_LEPAS_VALUE,
+   selain itu label posisi biasa (fallback ke key mentah kalau posisi sudah tidak ada di posisiList). */
+function banPosisiOrLepasLabel(keyOrLepas, posisiList){
+  if(keyOrLepas === BAN_LEPAS_VALUE) return 'Dilepas';
+  return (posisiList.find(p => p.key === keyOrLepas) || {}).label || keyOrLepas;
 }
 (function(){
   const btnClose = document.getElementById('btnCloseBanDetailModal');
@@ -8831,7 +8839,7 @@ function renderBanDetailModalBody(k){
       <td>${r.tanggal ? fmtDate(r.tanggal) : '-'}</td>
       <td class="sv-left">${esc((posisiList.find(p => p.key === r.posisi) || {}).label || r.posisi)}</td>
       <td class="sv-left">${r.merkLama ? esc(r.merkLama) : '<span style="color:var(--text-faint);">- (baru dipasang)</span>'}</td>
-      <td class="sv-left">${esc(r.merkBaru || '-')}</td>
+      <td class="sv-left">${r.dilepas ? '<span style="color:#c0392b;">Dilepas (belum diganti)</span>' : esc(r.merkBaru || '-')}</td>
       <td class="sv-left">${r.kondisiBaru ? esc(banKondisiLabel(r.kondisiBaru)) + (r.kondisiKetBaru ? `<div class="hint" style="margin-top:2px;">${esc(r.kondisiKetBaru)}</div>` : '') : '<span style="color:var(--text-faint);">-</span>'}</td>
       <td>${r.biaya ? rupiah(r.biaya) : '-'}</td>
     </tr>`).join('')}</tbody></table>`}
@@ -8845,7 +8853,7 @@ function renderBanDetailModalBody(k){
     </tr></thead><tbody>${riwayatRotasi.map(r => `<tr>
       <td>${r.tanggal ? fmtDate(r.tanggal) : '-'}</td>
       <td class="sv-num">${Number(r.km || 0).toLocaleString('id-ID')}</td>
-      <td class="sv-left">${(r.mapping || []).map(m => `${esc(m.dari)}&rarr;${esc(m.ke)}`).join(', ') || '-'}</td>
+      <td class="sv-left">${(r.mapping || []).map(m => `${esc(banPosisiOrLepasLabel(m.dari, posisiList))}&rarr;${esc(banPosisiOrLepasLabel(m.ke, posisiList))}`).join(', ') || '-'}</td>
     </tr>`).join('')}</tbody></table>`}
   </div>`;
 
@@ -9044,8 +9052,11 @@ function wireBanDetailModalEvents(k){
       errEl.textContent = 'Satu posisi asal (ban yang sama) tidak boleh muncul dua kali dalam daftar perpindahan.';
       return;
     }
-    const keKeys = moves.map(m => m.ke);
-    if(new Set(keKeys).size !== keKeys.length){
+    // Sesi keseratuslimapuluhsatu: opsi "Dilepas" (BAN_LEPAS_VALUE) BUKAN posisi fisik sungguhan --
+    // ban yg dilepas/aus tidak "menempati" slot apapun, jadi boleh dipilih di lebih dari 1 baris
+    // sekaligus (beberapa ban dilepas bareng dalam 1x rotasi) tanpa dianggap bentrok posisi tujuan.
+    const keKeysPosisi = moves.map(m => m.ke).filter(ke => ke !== BAN_LEPAS_VALUE);
+    if(new Set(keKeysPosisi).size !== keKeysPosisi.length){
       errEl.textContent = 'Satu posisi tujuan tidak boleh dipilih dua kali — pastikan tiap posisi tujuan hanya dipakai sekali.';
       return;
     }
@@ -9055,14 +9066,15 @@ function wireBanDetailModalEvents(k){
     }
     // Hanya posisi yang benar2 ada ban terpasang yang ikut dicek/dipindah -- posisi kosong tidak
     // dianggap "menempati" dirinya sendiri, supaya memindahkan ban ke posisi kosong tidak keliru
-    // dianggap tabrakan.
+    // dianggap tabrakan. Target "Dilepas" juga tidak ikut masuk pengecekan tabrakan posisi (lihat
+    // catatan di atas).
     const posisiTerisi = posisiList.filter(p => banOf(k, p.key));
     const targets = {};
     posisiTerisi.forEach(p => { targets[p.key] = p.key; });
     moves.forEach(m => { targets[m.dari] = m.ke; });
-    const targetValues = Object.values(targets);
-    const uniqueTargets = new Set(targetValues);
-    if(uniqueTargets.size !== targetValues.length){
+    const targetValuesPosisi = Object.values(targets).filter(v => v !== BAN_LEPAS_VALUE);
+    const uniqueTargets = new Set(targetValuesPosisi);
+    if(uniqueTargets.size !== targetValuesPosisi.length){
       errEl.textContent = 'Posisi tujuan bentrok — dua ban tidak bisa menempati posisi yang sama. Kalau mau menukar 2 ban, tambahkan juga baris sebaliknya (posisi B pindah ke posisi A).';
       return;
     }
@@ -9072,16 +9084,25 @@ function wireBanDetailModalEvents(k){
       return;
     }
     const newBanList = {};
+    if(!k.riwayatBan) k.riwayatBan = [];
     posisiTerisi.forEach(p => {
       const ban = banOf(k, p.key);
-      if(targets[p.key] !== p.key){
-        // Sesi keseratusempatpuluh: ban ini benar2 pindah posisi -> catat titik pindah terakhirnya
-        // (posisiAwal & kmPasang/estimasiKm dari pemasangan ASLI tetap tidak diubah -- itu yang
-        // dipakai untuk hitung "target ganti (km)" supaya tetap ikut ban walau sudah dirotasi).
-        ban.kmPindahTerakhir = Number(km) || 0;
-        ban.tanggalPindahTerakhir = tanggal;
+      const target = targets[p.key];
+      if(target === p.key) { newBanList[p.key] = ban; return; }
+      if(target === BAN_LEPAS_VALUE){
+        // Sesi keseratuslimapuluhsatu: ban benar2 dilepas dari kendaraan (aus, bukan pindah posisi) --
+        // TIDAK dimasukkan lagi ke newBanList (posisinya jadi kosong), tapi dicatat ke "Riwayat
+        // penggantian ban" (r.dilepas = true) supaya tetap tertelusur per fisik ban sesuai kode-nya,
+        // konsisten dgn kebiasaan user "tiap ban diberi kode tersendiri, catat km pasang & km rotasi".
+        k.riwayatBan.push({ tanggal, posisi: p.key, merkLama: ban.merk || '', kodeBanLama: ban.kodeBan || '', kmGanti: Number(km) || 0, dilepas: true });
+        return;
       }
-      newBanList[targets[p.key]] = ban;
+      // Sesi keseratusempatpuluh: ban ini benar2 pindah posisi -> catat titik pindah terakhirnya
+      // (posisiAwal & kmPasang/estimasiKm dari pemasangan ASLI tetap tidak diubah -- itu yang
+      // dipakai untuk hitung "target ganti (km)" supaya tetap ikut ban walau sudah dirotasi).
+      ban.kmPindahTerakhir = Number(km) || 0;
+      ban.tanggalPindahTerakhir = tanggal;
+      newBanList[target] = ban;
     });
     k.banList = newBanList;
     k.rotasiTerakhirTanggal = tanggal;
