@@ -12161,8 +12161,17 @@ document.getElementById('btnClearFilter').addEventListener('click', function(){
    Kolom & baris TOTAL persis meniru tabel di layar (renderTable), dan selalu mengikuti filter yang
    sedang aktif (getRekapDOFilteredList / getRekapDOFilterLabel di atas). Pola ZIP-XLSX & jendela
    cetak sama persis dengan "Monitoring Organik" / "Laporan Pengiriman" (makeZip, XS, LAPORAN_XLSX_STYLES_XML). ---- */
-const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','No DO','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Kota Tujuan','Keterangan','Status'];
-const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,18,16,15,17,12,36,14,17,14,18,26,16];
+/* Sesi keseratuslimapuluhlima: kolom 'Bulan' ditambahkan di UJUNG (bukan disisipkan di tengah) supaya
+   TIDAK menggeser huruf kolom H..Q yang sudah dipakai di banyak tempat di buildRekapDOSheetXml() di
+   bawah -- menyisipkan di tengah berisiko salah satu referensi kolom lupa digeser. Kolom ini dipakai
+   sebagai field "Bulan" siap pakai di PivotTable baru (lihat buildRekapDOPivotSheetXml dkk di bawah),
+   supaya tidak perlu grouping tanggal otomatis Excel (rumit & rapuh kalau dibuat manual lewat XML). */
+const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','No DO','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Kota Tujuan','Keterangan','Status','Bulan'];
+const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,18,16,15,17,12,36,14,17,14,18,26,16,16];
+function rekapDOBulanLabel(r){
+  const bulanKey = (r.tanggal || '').slice(0,7); // "YYYY-MM-DD" -> "YYYY-MM"
+  return bulanKey ? bulanLabel(bulanKey) : '-';
+}
 function buildRekapDOSheetXml(filterLabel, list){
   const nCols = REKAPDO_XLSX_HEADERS.length;
   const headerRowIdx = 4;
@@ -12211,6 +12220,7 @@ function buildRekapDOSheetXml(filterLabel, list){
     cells += `<c r="O${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(r.kotaTujuan || '-')}</t></is></c>`;
     cells += `<c r="P${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(r.keterangan || '-')}</t></is></c>`;
     cells += `<c r="Q${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc((STATUS_META[normalizeStatus(r.status)] || {}).label || '-')}</t></is></c>`;
+    cells += `<c r="R${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(rekapDOBulanLabel(r))}</t></is></c>`;
     rowsXml += `<row r="${rowIdx}">${cells}</row>`;
   });
 
@@ -12231,6 +12241,7 @@ function buildRekapDOSheetXml(filterLabel, list){
   totalCells += `<c r="O${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   totalCells += `<c r="P${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   totalCells += `<c r="Q${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="R${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
 
   const colsXml = REKAPDO_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
@@ -12260,22 +12271,45 @@ function exportRekapDOExcel(){
 <Default Extension="xml" ContentType="application/xml"/>
 <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
 <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
 <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+<Override PartName="/xl/pivotCache/pivotCacheDefinition1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheDefinition+xml"/>
+<Override PartName="/xl/pivotCache/pivotCacheRecords1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotCacheRecords+xml"/>
+<Override PartName="/xl/pivotTables/pivotTable1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml"/>
 </Types>`;
     const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
 </Relationships>`;
+    /* Sesi keseratuslimapuluhlima: sheet ke-2 "Pivot" (PivotTable asli) + workbook-level pivotCaches
+       ditambahkan di sini -- lihat blok "Sheet Pivot (PivotTable Excel ASLI)" di bawah fungsi ini
+       untuk detail struktur & alasan setiap bagiannya. */
     const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<sheets><sheet name="Rekap Data DO" sheetId="1" r:id="rId1"/></sheets>
+<sheets><sheet name="Rekap Data DO" sheetId="1" r:id="rId1"/><sheet name="Pivot" sheetId="2" r:id="rId3"/></sheets>
+<pivotCaches><pivotCache cacheId="1" r:id="rId4"/></pivotCaches>
 </workbook>`;
     const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
 <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/>
+<Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheDefinition" Target="pivotCache/pivotCacheDefinition1.xml"/>
+</Relationships>`;
+    const sheet2RelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotTable" Target="../pivotTables/pivotTable1.xml"/>
+</Relationships>`;
+    const pivotCacheDefRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/pivotCacheRecords" Target="pivotCacheRecords1.xml"/>
 </Relationships>`;
     const sheetXml = buildRekapDOSheetXml(filterLabel, list);
+    const headerRowIdx = 4, firstDataRow = 5, lastDataRow = firstDataRow + list.length - 1; // sama persis seperti di buildRekapDOSheetXml
+    const pivotCacheDefXml = buildRekapDOPivotCacheDefinitionXml(headerRowIdx, lastDataRow, list.length);
+    const pivotCacheRecordsXml = buildRekapDOPivotCacheRecordsXml(list);
+    const pivotTableXml = buildRekapDOPivotTableXml();
+    const pivotSheetXml = buildRekapDOPivotSheetXml();
 
     const zipBytes = makeZip([
       { name: '[Content_Types].xml', data: contentTypesXml },
@@ -12284,6 +12318,12 @@ function exportRekapDOExcel(){
       { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
       { name: 'xl/styles.xml', data: LAPORAN_XLSX_STYLES_XML },
       { name: 'xl/worksheets/sheet1.xml', data: sheetXml },
+      { name: 'xl/worksheets/sheet2.xml', data: pivotSheetXml },
+      { name: 'xl/worksheets/_rels/sheet2.xml.rels', data: sheet2RelsXml },
+      { name: 'xl/pivotCache/pivotCacheDefinition1.xml', data: pivotCacheDefXml },
+      { name: 'xl/pivotCache/pivotCacheRecords1.xml', data: pivotCacheRecordsXml },
+      { name: 'xl/pivotCache/_rels/pivotCacheDefinition1.xml.rels', data: pivotCacheDefRelsXml },
+      { name: 'xl/pivotTables/pivotTable1.xml', data: pivotTableXml },
     ]);
 
     const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -12300,6 +12340,115 @@ function exportRekapDOExcel(){
   }
 }
 document.getElementById('btnRekapExportExcel').addEventListener('click', exportRekapDOExcel);
+
+/* ---------- Sesi keseratuslimapuluhlima: sheet "Pivot" (PivotTable Excel ASLI) di file Export Excel
+   Rekap Data DO -- diminta user supaya hasil export sudah rapi/siap pakai (bisa digeser-geser field-nya
+   sendiri di Excel), tidak perlu bikin pivot manual sendiri tiap kali. Dibangun TANPA library (konsisten
+   dengan makeZip/XS/LAPORAN_XLSX_STYLES_XML yang sudah dipakai sistem ini) -- XML pivot cache & pivot
+   table ditulis manual mengikuti struktur minimal OOXML yang sudah diverifikasi bisa dibuka & dihitung
+   dengan benar (diuji lewat LibreOffice sebelum dipasang ke sini: nilai SUM/COUNT pivotnya cocok persis
+   dengan perhitungan manual). Field & angka SELALU mengikuti filter yang sedang aktif (list yang sama
+   dipakai sheet data biasa), jadi pivotnya juga otomatis ikut ke-filter.
+
+   Layout default: Baris = Nopol, Kolom = Bulan, Filter = Kota Tujuan & Status, Nilai = Total Tonase
+   BK/Roll Assa/OCC (sum) + Jumlah DO (count). Field lain (Tanggal, No PKB, Sopir, dst) tetap tersedia
+   di daftar field Excel -- field di atas cuma tata letak AWAL, user bebas geser-geser sendiri karena
+   ini PivotTable asli bawaan Excel, bukan tabel ringkasan statis. */
+const REKAPDO_PIVOT_NUMERIC_FIELDS = [7,8,11,12,13]; // index 0-based ke REKAPDO_XLSX_HEADERS -- kolom yang harus dianggap ANGKA di pivot cache (Uang Jalan, Biaya Lain-lain, 3 kolom Tonase)
+const REKAPDO_PIVOT_ROW_FIELD = 1;   // Nopol
+const REKAPDO_PIVOT_COL_FIELD = 17;  // Bulan
+const REKAPDO_PIVOT_PAGE_FIELDS = [14, 16]; // Kota Tujuan, Status
+const REKAPDO_PIVOT_DATA_FIELDS = [
+  [11, 'Total Tonase BK (Kg)', 'sum'],
+  [12, 'Total Tonase Roll Assa (Kg)', 'sum'],
+  [13, 'Total Tonase OCC (Kg)', 'sum'],
+  [4, 'Jumlah DO', 'count'],
+];
+/* Nilai 18 kolom untuk 1 baris data DO, urutannya PERSIS sama seperti REKAPDO_XLSX_HEADERS & isi sheet
+   data biasa (buildRekapDOSheetXml) -- bedanya kolom angka di sini SELALU angka (0 kalau kosong, bukan
+   sel kosong) supaya SUM di pivot cache tidak meleset/terpotong gara-gara ada baris yang nilainya blank. */
+function rekapDOPivotRecordValues(r){
+  const isVendor = r.jenisAngkutan === 'vendor';
+  return [
+    fmtDate(r.tanggal),
+    r.nopol || '-',
+    armadaLabel(r.jenisArmada),
+    isVendor ? 'Vendor Luar' : 'Organik',
+    r.noPKB || '-',
+    r.noDO || '-',
+    r.sopir || '-',
+    Number(r.uangJalan) || 0,
+    Number(r.biayaLain) || 0,
+    jenisLabel(r),
+    tujuanListText(r),
+    Number(r.tonase1) || 0,
+    Number(r.tonase2) || 0,
+    Number(r.tonase3) || 0,
+    r.kotaTujuan || '-',
+    r.keterangan || '-',
+    (STATUS_META[normalizeStatus(r.status)] || {}).label || '-',
+    rekapDOBulanLabel(r),
+  ];
+}
+function buildRekapDOPivotCacheDefinitionXml(headerRowIdx, lastDataRow, recordCount){
+  const nCols = REKAPDO_XLSX_HEADERS.length;
+  const cacheFieldsXml = REKAPDO_XLSX_HEADERS.map((h, i) => {
+    if(REKAPDO_PIVOT_NUMERIC_FIELDS.includes(i)){
+      return `<cacheField name="${esc(h)}" numFmtId="0"><sharedItems containsSemiMixedTypes="0" containsString="0" containsNumber="1"/></cacheField>`;
+    }
+    return `<cacheField name="${esc(h)}" numFmtId="0"><sharedItems/></cacheField>`;
+  }).join('');
+  const srcRef = `A${headerRowIdx}:${xlsxColLetter(nCols)}${lastDataRow}`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<pivotCacheDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1" refreshOnLoad="1" recordCount="${recordCount}">
+<cacheSource type="worksheet"><worksheetSource ref="${srcRef}" sheet="Rekap Data DO"/></cacheSource>
+<cacheFields count="${nCols}">${cacheFieldsXml}</cacheFields>
+</pivotCacheDefinition>`;
+}
+function buildRekapDOPivotCacheRecordsXml(list){
+  const recs = list.map(r => {
+    const vals = rekapDOPivotRecordValues(r);
+    const cells = vals.map((v, i) => REKAPDO_PIVOT_NUMERIC_FIELDS.includes(i) ? `<n v="${Number(v)||0}"/>` : `<s v="${esc(v)}"/>`).join('');
+    return `<r>${cells}</r>`;
+  }).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<pivotCacheRecords xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" count="${list.length}">${recs}</pivotCacheRecords>`;
+}
+function buildRekapDOPivotTableXml(){
+  const nCols = REKAPDO_XLSX_HEADERS.length;
+  const pivotFieldsXml = REKAPDO_XLSX_HEADERS.map((h, i) => {
+    if(i === REKAPDO_PIVOT_ROW_FIELD) return '<pivotField axis="axisRow" showAll="0"><items count="1"><item t="default"/></items></pivotField>';
+    if(i === REKAPDO_PIVOT_COL_FIELD) return '<pivotField axis="axisCol" showAll="0"><items count="1"><item t="default"/></items></pivotField>';
+    if(REKAPDO_PIVOT_PAGE_FIELDS.includes(i)) return '<pivotField axis="axisPage" showAll="0" multipleItemSelectionAllowed="1"><items count="1"><item t="default"/></items></pivotField>';
+    if(REKAPDO_PIVOT_DATA_FIELDS.some(df => df[0] === i)) return '<pivotField dataField="1" showAll="0"/>';
+    return '<pivotField showAll="0"/>';
+  }).join('');
+  const pageFieldsXml = REKAPDO_PIVOT_PAGE_FIELDS.map(f => `<pageField fld="${f}" hier="-1"/>`).join('');
+  const dataFieldsXml = REKAPDO_PIVOT_DATA_FIELDS.map(([fld, name, agg]) =>
+    `<dataField name="${esc(name)}" fld="${fld}" subtotal="${agg === 'sum' ? 'sum' : 'count'}" baseField="0" baseItem="0"/>`
+  ).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<pivotTableDefinition xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" name="PivotRekapDO" cacheId="1" applyNumberFormats="0" applyBorderFormats="0" applyFontFormats="0" applyPatternFormats="0" applyAlignmentFormats="0" applyWidthHeightFormats="1" dataCaption="Values" updatedVersion="6" minRefreshableVersion="3" useAutoFormatting="1" itemPrintTitles="1" createdVersion="6" indent="0" outline="1" outlineData="1" multipleFieldFilters="0">
+<location ref="A3:F50" firstHeaderRow="1" firstDataRow="2" firstDataCol="1"/>
+<pivotFields count="${nCols}">${pivotFieldsXml}</pivotFields>
+<rowFields count="1"><field x="${REKAPDO_PIVOT_ROW_FIELD}"/></rowFields>
+<rowItems count="1"><i><x/></i></rowItems>
+<colFields count="1"><field x="${REKAPDO_PIVOT_COL_FIELD}"/></colFields>
+<colItems count="1"><i><x/></i></colItems>
+<pageFields count="${REKAPDO_PIVOT_PAGE_FIELDS.length}">${pageFieldsXml}</pageFields>
+<dataFields count="${REKAPDO_PIVOT_DATA_FIELDS.length}">${dataFieldsXml}</dataFields>
+<pivotTableStyleInfo name="PivotStyleMedium9" showRowHeaders="1" showColHeaders="1" showRowStripes="0" showColStripes="0" showLastColumn="1"/>
+</pivotTableDefinition>`;
+}
+function buildRekapDOPivotSheetXml(){
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="A1:F50"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<sheetData/>
+</worksheet>`;
+}
 
 /* ---------- Data Kendaraan -- Export Excel (admin only) (Sesi keseratusempatpuluhtujuh)
    Kolom persis meniru tabel Daftar Kendaraan di layar (renderKendaraan). Pola ZIP-XLSX sama persis
