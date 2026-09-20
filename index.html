@@ -2408,13 +2408,7 @@
                 <input type="date" id="bpSampai">
               </div>
               <button class="btn btn-primary" id="btnBpGenerate">Tampilkan</button>
-              <button class="btn btn-secondary" id="btnBpExportExcel">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
-                Export Excel
-              </button>
-              <span class="hint" id="bpExportStatus" style="align-self:center;"></span>
             </div>
-            <p class="hint" style="margin:8px 0 0;">Export mengikuti periode yang sedang aktif di atas.</p>
             <div id="bpSummaryWrap"></div>
             <h3 style="margin:18px 0 10px; font-size:14px;">Rincian biaya perbaikan</h3>
             <div id="bpPerbaikanWrap"></div>
@@ -3135,6 +3129,7 @@
           <button type="button" class="settings-tab" data-settings-tab="notif-wa">Notifikasi WA</button>
           <button type="button" class="settings-tab" data-settings-tab="setup-wa">Setup WA Otomatis</button>
           <button type="button" class="settings-tab" data-settings-tab="keamanan">Keamanan Sistem</button>
+          <button type="button" class="settings-tab" data-settings-tab="backup-do">Backup Data DO</button>
           <button type="button" class="settings-tab" data-settings-tab="akun">Akun Terdaftar</button>
           <button type="button" class="settings-tab" data-settings-tab="tarif">Database Tarif</button>
         </div>
@@ -3612,7 +3607,7 @@ function syncOdometerFromCartrack(){
           <div class="panel-body">
             <p class="hint" style="margin:-4px 0 14px; line-height:1.7;">Sebelumnya sistem "login diam-diam" ke Firebase (anonymous) + cek password di browser — cukup untuk gerbang tampilan, tapi bukan keamanan data sungguhan. Sekarang password dicek di server Firebase, dan akses baca/tulis database dikunci lewat <b>Security Rules</b> di bawah. Tanpa 2 langkah ini diterapkan, database masih memakai aturan lama (kemungkinan lebih longgar) — jadi jangan dilewati.</p>
             <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--amber-600); background:#fff8ec;">
-              <b>Kalau sudah pernah pasang Rules versi sebelumnya:</b> tempel ulang kode di bawah ini & Publish lagi — satu kode ini sudah mencakup SEMUA perbaikan sampai sesi terbaru sekaligus, jadi cukup tempel yang ini saja, tidak perlu cari versi-versi lama. Ringkasan yang berubah sejak versi pertama: (1) field <span class="mono">role</span>, <span class="mono">approved</span>, <span class="mono">bisaKonfirmasiPO</span> di akun mana pun HANYA bisa diubah oleh akun yang sudah admin (menutup celah promosi-diri-jadi-admin) — konsekuensinya, fitur "daftar ulang pakai email lama langsung aktif otomatis" tidak berlaku lagi, SEMUA pendaftaran baru tetap perlu 1x klik "Setujui" dari admin; (2) node <span class="mono">records</span> (data DO/PKB) sekarang punya aturan sendiri yang mendukung fitur "Batasi akses data DO/PKB" per-akun di panel Akun terdaftar di bawah — akun yang dicentang tidak akan bisa membaca/menulis data DO sama sekali, ditegakkan di server (bukan cuma disembunyikan di tampilan); (3) field <span class="mono">bisaEditRekapDO</span> (izin edit/hapus/isi tonase/ubah status di halaman Rekap Data DO untuk akun non-admin) ikut dilindungi dengan pola yang sama seperti <span class="mono">bisaKonfirmasiPO</span> — kalau baru saja pasang Rules versi lama sebelum fitur ini ada, WAJIB tempel ulang kode di bawah supaya toggle "Bisa edit data Rekap Data DO" di panel Akun terdaftar tidak bisa dinaikkan sendiri oleh akun non-admin lewat luar aplikasi; (4) field <span class="mono">bisaEditNoReimburse</span> (izin edit No Seri Bukti Reimbursement untuk akun non-admin) ikut ditambahkan dengan pola perlindungan yang sama — kalau baru saja pasang Rules versi lama sebelum fitur ini ada, WAJIB tempel ulang kode di bawah supaya toggle "Bisa edit No Seri Bukti Reimbursement" di panel Akun terdaftar tidak bisa dinaikkan sendiri oleh akun non-admin lewat luar aplikasi.
+              <b>Kalau sudah pernah pasang Rules versi sebelumnya:</b> tempel ulang kode di bawah ini & Publish lagi — satu kode ini sudah mencakup SEMUA perbaikan sampai sesi terbaru sekaligus, jadi cukup tempel yang ini saja, tidak perlu cari versi-versi lama. Ringkasan yang berubah sejak versi pertama: (1) field <span class="mono">role</span>, <span class="mono">approved</span>, <span class="mono">bisaKonfirmasiPO</span> di akun mana pun HANYA bisa diubah oleh akun yang sudah admin (menutup celah promosi-diri-jadi-admin) — konsekuensinya, fitur "daftar ulang pakai email lama langsung aktif otomatis" tidak berlaku lagi, SEMUA pendaftaran baru tetap perlu 1x klik "Setujui" dari admin; (2) node <span class="mono">records</span> (data DO/PKB) sekarang punya aturan sendiri yang mendukung fitur "Batasi akses data DO/PKB" per-akun di panel Akun terdaftar di bawah — akun yang dicentang tidak akan bisa membaca/menulis data DO sama sekali, ditegakkan di server (bukan cuma disembunyikan di tampilan); (3) field <span class="mono">bisaEditRekapDO</span> (izin edit/hapus/isi tonase/ubah status di halaman Rekap Data DO untuk akun non-admin) ikut dilindungi dengan pola yang sama seperti <span class="mono">bisaKonfirmasiPO</span> — kalau baru saja pasang Rules versi lama sebelum fitur ini ada, WAJIB tempel ulang kode di bawah supaya toggle "Bisa edit data Rekap Data DO" di panel Akun terdaftar tidak bisa dinaikkan sendiri oleh akun non-admin lewat luar aplikasi; (4) field <span class="mono">bisaEditNoReimburse</span> (izin edit No Seri Bukti Reimbursement untuk akun non-admin) ikut ditambahkan dengan pola perlindungan yang sama — kalau baru saja pasang Rules versi lama sebelum fitur ini ada, WAJIB tempel ulang kode di bawah supaya toggle "Bisa edit No Seri Bukti Reimbursement" di panel Akun terdaftar tidak bisa dinaikkan sendiri oleh akun non-admin lewat luar aplikasi; (5) <b>(Sesi keseratuslimapuluhempat)</b> node baru <span class="mono">records_backup</span> (dipakai fitur "Backup Data DO" di tab sebelah) ikut ditambahkan dengan aturan akses yang SAMA PERSIS seperti <span class="mono">records</span> — WAJIB tempel ulang kode di bawah supaya backup otomatis bisa berjalan (tanpa ini, backup akan gagal diam-diam karena Firebase menolak node yang belum dikenal Rules-nya).
             </p>
             <div style="border-top:1px solid var(--border); padding-top:14px;">
               <label style="margin-bottom:8px; display:block;">Langkah 1 — aktifkan login Email/Password</label>
@@ -3639,6 +3634,10 @@ function syncOdometerFromCartrack(){
       ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))",
       ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))"
     },
+    "records_backup": {
+      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))",
+      ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))"
+    },
     "$other": {
       ".read": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true",
       ".write": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true"
@@ -3646,9 +3645,26 @@ function syncOdometerFromCartrack(){
   }
 }</textarea>
               <button type="button" class="btn btn-secondary" id="btnCopyFbRules" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin aturan</button>
-              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan nama & akses dari akun lama untuk bahan pertimbangan admin. Node <span class="mono">records</span> punya aturan sendiri (terpisah dari <span class="mono">$other</span>) supaya bisa menambahkan syarat <span class="mono">dataInputRestricted</span> khusus untuk data ini — node lain (kendaraan, driver, PO, dll) TIDAK ikut terpengaruh fitur pembatasan ini, tetap memakai aturan <span class="mono">$other</span> seperti biasa.</p>
+              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan nama & akses dari akun lama untuk bahan pertimbangan admin. Node <span class="mono">records</span> (dan <span class="mono">records_backup</span> — lihat tab "Backup Data DO") punya aturan sendiri (terpisah dari <span class="mono">$other</span>) supaya bisa menambahkan syarat <span class="mono">dataInputRestricted</span> khusus untuk data ini — node lain (kendaraan, driver, PO, dll) TIDAK ikut terpengaruh fitur pembatasan ini, tetap memakai aturan <span class="mono">$other</span> seperti biasa.</p>
               <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Pemulihan darurat:</b> kalau suatu saat node <span class="mono">accountsV2</span> sampai kosong sama sekali tanpa satu pun akun admin (misalnya karena database ter-reset), Rules di atas TIDAK mengizinkan siapa pun mem-promosikan diri sendiri jadi admin lagi lewat aplikasi (itu memang sengaja, itulah yang diperbaiki di sini) — satu-satunya jalan adalah admin project Firebase menambahkan field <span class="mono">role: "admin"</span> dan <span class="mono">approved: true</span> secara manual lewat tab <b>Data</b> di Realtime Database (akses lewat Firebase Console selalu diizinkan, tidak terikat Rules ini).</p>
             </div>
+          </div>
+        </div>
+
+        <div class="panel" data-settings-panel="backup-do">
+          <div class="panel-head">
+            <div>
+              <h2>Backup otomatis Data DO/PKB</h2>
+              <p>Salinan harian data Rekap Data DO (records), tersimpan terpisah supaya tetap aman walau data aktif suatu saat tertimpa/terhapus tidak sengaja</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <p class="hint" style="line-height:1.7; margin-bottom:8px;">Sistem otomatis menyimpan 1 salinan lengkap data DO/PKB setiap hari (begitu ada yang membuka aplikasi ini hari itu) ke tempat TERPISAH di database — jalur ini tidak pernah ikut ditimpa oleh proses simpan/edit/hapus data DO sehari-hari, jadi tetap aman walau ada masalah di data aktif. Salinan disimpan selama 60 hari terakhir, lalu yang paling lama otomatis dibuang supaya tidak membengkak.</p>
+            <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--amber-600); background:#fff8ec;"><b>Supaya fitur ini aktif:</b> buka tab "Keamanan Sistem" di atas, salin ulang kode aturannya, lalu Publish lagi di Firebase Console (sekali saja) — backup ini punya aturan akses sendiri (sama seperti Rekap Data DO, ikut dibatasi kalau ada akun yang aksesnya dibatasi admin), jadi Rules versi lama perlu diperbarui dulu.</p>
+            <div class="btn-row" style="margin-bottom:14px;">
+              <button type="button" class="btn btn-secondary" id="btnBackupDONow">Backup sekarang</button>
+            </div>
+            <div id="backupDOListWrap"><p class="hint">Memuat daftar backup...</p></div>
           </div>
         </div>
 
@@ -4044,6 +4060,213 @@ function fbMarkDeleted(path, id){
   if(!fbDeletedTombstones[path]) fbDeletedTombstones[path] = new Map();
   fbDeletedTombstones[path].set(String(id), Date.now() + FB_TOMBSTONE_TTL_MS);
 }
+/* Sesi keseratuslimapuluhtiga: PERBAIKAN CELAH RACE MULTI-PERANGKAT untuk data DO/PKB (records) --
+   dilaporkan user: data tanggal 1-19 September hilang total dari Rekap Data DO.
+   PENYEBAB PALING MUNGKIN: save() (dipanggil setiap ubah status/edit/isi tonase/tambah PKB baru, dst)
+   sebelumnya cuma fbPush('records', records) -- itu MENIMPA TOTAL seluruh node 'records' di Firebase
+   dengan array records versi LOKAL milik perangkat yang menyimpan. Kalau ada 2+ perangkat/staf yang
+   sama-sama buka aplikasi, dan salah satu perangkat sempat KETINGGALAN snapshot terbaru (mis. tab
+   dibiarkan terbuka lama/semalaman, sempat offline lalu online lagi, dsb) -- begitu perangkat itu
+   melakukan PENYIMPANAN APA PUN (walau cuma ubah status 1 baris), seluruh array lokalnya yang sudah
+   KETINGGALAN itu ikut menimpa balik data di server, MENGHAPUS DIAM-DIAM data DO baru yang sempat
+   ditambahkan perangkat lain di rentang waktu itu -- persis gejala yang dilaporkan user.
+   Diperbaiki dengan fbDb.ref('records').transaction(...): alih-alih menimpa total, transaksi ini
+   MEMBACA nilai TERBARU langsung dari server saat itu juga (bukan snapshot lokal yang mungkin usang),
+   lalu MENGGABUNGKAN (merge by id) data lokal ke atasnya -- record yang ada di lokal menimpa/menambah
+   by id (perubahan perangkat ini tetap masuk), TAPI record yang ADA DI SERVER TAPI TIDAK ADA DI LOKAL
+   (baru ditambahkan/diubah perangkat lain, belum sempat sinkron ke perangkat ini) TETAP DIPERTAHANKAN,
+   tidak lagi ikut terhapus. Firebase otomatis mengulang transaksi ini kalau ada perubahan lain yang
+   masuk persis di tengah jalan, jadi hasil akhirnya selalu konsisten dengan server. Tombstone (id yang
+   baru saja dihapus dari perangkat ini lewat fbRemoveFromList) tetap dihormati supaya delete tidak
+   "muncul lagi" gara-gara merge ini. */
+function fbMergeArraySave(path, localList, tombstonesKey){
+  if(!fbDb) return Promise.resolve();
+  const localSnapshot = (localList || []).map(r => Object.assign({}, r));
+  fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
+  const prevInQueue = fbWriteQueue[path] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+    return Promise.resolve(fbDb.ref(path).transaction(serverVal => {
+      const serverArr = fbToArray(serverVal) || [];
+      const byId = new Map();
+      serverArr.forEach(r => { if(r && r.id != null) byId.set(String(r.id), r); });
+      localSnapshot.forEach(r => { if(r && r.id != null) byId.set(String(r.id), r); });
+      const tomb = fbDeletedTombstones[tombstonesKey || path];
+      if(tomb && tomb.size){
+        const now = Date.now();
+        tomb.forEach((exp, id) => { if(exp >= now) byId.delete(String(id)); });
+      }
+      return Array.from(byId.values());
+    })).catch(err => {
+      console.warn(`Gagal sinkron (merge) ke Firebase (path: ${path}), data tetap aman di localStorage perangkat ini:`, err);
+    });
+  }).catch(() => {}).finally(() => {
+    fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
+  });
+  fbWriteQueue[path] = thisWrite;
+  return thisWrite;
+}
+/* Sesi keseratuslimapuluhempat: BACKUP OTOMATIS harian untuk data DO/PKB (records) -- lapisan
+   pengaman TAMBAHAN di luar perbaikan celah race Sesi keseratuslimapuluhtiga di atas, buat
+   jaga-jaga kalau suatu saat ada celah lain yang belum ketahuan (atau ada yang tidak sengaja
+   menghapus banyak data sekaligus dari aplikasi). SETIAP HARI, begitu ada snapshot 'records' yang
+   valid dari server, seluruh isinya disalin ke node TERPISAH records_backup/<tanggal> -- node ini
+   TIDAK PERNAH disentuh oleh save()/fbMergeArraySave/fbRemoveFromList (jalur yang berbeda total),
+   jadi tetap aman walau node 'records' aktif bermasalah lagi suatu saat.
+   Dipakai fbDb.ref(path).transaction(cur => cur ? undefined : snapshotCopy): return undefined artinya
+   "batalkan, jangan ubah apa-apa" -- jadi HANYA MENULIS SEKALI per tanggal (backup yang sudah ada
+   untuk tanggal itu tidak akan pernah ditimpa), dan aman dipanggil dari 2+ perangkat/staf sekaligus
+   di hari yang sama tanpa saling tabrakan (Firebase transaction yang menjamin ini, bukan kita). */
+const RECORDS_BACKUP_RETENTION_DAYS = 60;
+function todayDateKeyLocal(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+let _lastAutoBackupDateKeyAttempted = null;
+function maybeAutoBackupRecordsToday(){
+  if(!fbDb || !Array.isArray(records) || records.length === 0) return;
+  const dateKey = todayDateKeyLocal();
+  if(_lastAutoBackupDateKeyAttempted === dateKey) return; // sudah dicoba hari ini dari tab/sesi ini, tidak perlu ulang terus tiap snapshot
+  _lastAutoBackupDateKeyAttempted = dateKey;
+  const snapshotCopy = records.map(r => Object.assign({}, r));
+  fbDb.ref('records_backup/' + dateKey).transaction(cur => {
+    if(cur) return; // sudah ada backup utk tanggal ini -> batalkan, jangan ditimpa
+    return snapshotCopy;
+  }).then(result => {
+    if(result && result.committed) pruneOldRecordsBackups();
+  }).catch(err => {
+    // Paling sering: Rules Firebase belum diperbarui (belum kenal node records_backup) -- lihat
+    // tab "Backup Data DO" & "Keamanan Sistem" di Pengaturan. Gagal diam-diam, tidak mengganggu
+    // pemakaian aplikasi sehari-hari.
+    console.warn('Gagal membuat backup otomatis harian (records_backup) -- kemungkinan Security Rules belum diperbarui:', err && err.message);
+  });
+}
+function pruneOldRecordsBackups(){
+  if(!fbDb) return;
+  fbDb.ref('records_backup').once('value').then(snap => {
+    const val = snap.val();
+    if(!val) return;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - RECORDS_BACKUP_RETENTION_DAYS);
+    const pad = n => String(n).padStart(2, '0');
+    const cutoffKey = `${cutoff.getFullYear()}-${pad(cutoff.getMonth() + 1)}-${pad(cutoff.getDate())}`;
+    Object.keys(val).forEach(dateKey => {
+      if(dateKey < cutoffKey) fbDb.ref('records_backup/' + dateKey).remove().catch(() => {});
+    });
+  }).catch(() => {});
+}
+/* Tombol "Backup sekarang" (manual) -- dipakai kalau user ingin salinan yang lebih segar HARI INI
+   juga (mis. baru saja input banyak data penting), TIDAK menunggu giliran otomatis. Beda dari
+   maybeAutoBackupRecordsToday(): ini SELALU menulis/menimpa entri tanggal hari ini dengan data
+   PALING BARU (bukan "sekali per hari lalu berhenti"), supaya tombolnya terasa benar-benar
+   melakukan sesuatu tiap kali diklik. */
+function forceBackupRecordsNow(){
+  if(!fbDb) return Promise.reject(new Error('Firebase belum tersambung'));
+  if(!Array.isArray(records) || records.length === 0) return Promise.reject(new Error('Tidak ada data DO untuk dibackup'));
+  const dateKey = todayDateKeyLocal();
+  const snapshotCopy = records.map(r => Object.assign({}, r));
+  return fbDb.ref('records_backup/' + dateKey).set(snapshotCopy).then(() => {
+    pruneOldRecordsBackups();
+    return {dateKey, count: snapshotCopy.length};
+  });
+}
+/* Pulihkan 1 tanggal backup ke data AKTIF -- MENGGABUNGKAN (merge by id), BUKAN menimpa: record yang
+   ada di backup tapi TIDAK ADA di data aktif sekarang ditambahkan kembali; record yang sudah ada di
+   data aktif (id sama) TIDAK disentuh/ditimpa sama sekali. Dipakai fbDb.ref('records').transaction(...)
+   supaya selalu digabung ke atas data TERBARU di server (bukan salinan lokal yang mungkin usang),
+   dan supaya aman diulang berkali-kali (idempotent -- record yang sudah pernah dipulihkan tidak akan
+   digandakan). fbPendingWrites/fbWriteQueue['records'] dipakai supaya listener 'value' node 'records'
+   tidak sempat memproses snapshot yang belum final di tengah transaksi ini (pola yang sama seperti
+   fbRemoveFromList di atas). */
+function restoreRecordsBackup(dateKey){
+  if(!fbDb) return Promise.reject(new Error('Firebase belum tersambung'));
+  return fbDb.ref('records_backup/' + dateKey).once('value').then(snap => {
+    const backupArr = fbToArray(snap.val()) || [];
+    if(backupArr.length === 0) throw new Error('Backup tanggal ini kosong');
+    let added = 0;
+    fbPendingWrites['records'] = (fbPendingWrites['records'] || 0) + 1;
+    const prevInQueue = fbWriteQueue['records'] || Promise.resolve();
+    const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+      return fbDb.ref('records').transaction(serverVal => {
+        added = 0; // Firebase bisa mengulang transaksi ini otomatis kalau ada perubahan lain di tengah jalan -> hitungan direset tiap percobaan
+        const serverArr = fbToArray(serverVal) || [];
+        const byId = new Map();
+        serverArr.forEach(r => { if(r && r.id != null) byId.set(String(r.id), r); });
+        backupArr.forEach(r => {
+          if(r && r.id != null && !byId.has(String(r.id))){ byId.set(String(r.id), r); added++; }
+        });
+        return Array.from(byId.values());
+      });
+    }).finally(() => {
+      fbPendingWrites['records'] = Math.max(0, (fbPendingWrites['records'] || 0) - 1);
+    });
+    fbWriteQueue['records'] = thisWrite;
+    return thisWrite.then(result => ({result, added}));
+  });
+}
+/* Render daftar backup harian (Pengaturan -> Backup Data DO) + tombol "Pulihkan" per tanggal. */
+function renderBackupDOPanel(){
+  const wrap = document.getElementById('backupDOListWrap');
+  if(!wrap) return;
+  if(!fbDb){ wrap.innerHTML = '<p class="hint">Firebase belum tersambung.</p>'; return; }
+  wrap.innerHTML = '<p class="hint">Memuat daftar backup...</p>';
+  fbDb.ref('records_backup').once('value').then(snap => {
+    const val = snap.val();
+    const dateKeys = val ? Object.keys(val).sort().reverse() : [];
+    if(dateKeys.length === 0){
+      wrap.innerHTML = emptyState('Belum ada backup tersimpan. Backup pertama otomatis dibuat begitu ada yang membuka aplikasi ini hari ini, atau klik "Backup sekarang" di atas.');
+      return;
+    }
+    wrap.innerHTML = dateKeys.map(dateKey => {
+      const arr = fbToArray(val[dateKey]) || [];
+      return `<div class="account-row">
+        <div class="info">
+          <div class="em">${esc(fmtDate(dateKey))}</div>
+          <div class="nm">${arr.length} data DO tersimpan</div>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button type="button" class="btn btn-secondary btn-restore-backup-do" data-date="${esc(dateKey)}" style="padding:6px 12px; font-size:11.5px;">Pulihkan (gabung ke data aktif)</button>
+        </div>
+      </div>`;
+    }).join('');
+    wrap.querySelectorAll('.btn-restore-backup-do').forEach(btn => {
+      btn.addEventListener('click', function(){
+        const dateKey = this.dataset.date;
+        if(!confirm(`Pulihkan backup tanggal ${fmtDate(dateKey)}?\n\nData yang ADA di backup tapi TIDAK ADA di data aktif sekarang akan ditambahkan kembali (dicocokkan lewat ID). Data yang sudah ada di data aktif TIDAK akan diubah/ditimpa.`)) return;
+        this.disabled = true;
+        this.textContent = 'Memulihkan...';
+        restoreRecordsBackup(dateKey).then(({result, added}) => {
+          if(result && result.committed){
+            showToast(added > 0 ? `Pemulihan berhasil: ${added} data DO ditambahkan kembali dari backup ${fmtDate(dateKey)}.` : 'Tidak ada data baru untuk dipulihkan (semua data di backup ini sudah ada di data aktif).', 'success');
+          }else{
+            showToast('Pemulihan dibatalkan (tidak ada perubahan).', 'danger');
+          }
+        }).catch(err => {
+          showToast('Gagal memulihkan backup: ' + (err && err.message || 'error tidak diketahui'), 'danger');
+        }).finally(() => {
+          this.disabled = false;
+          this.textContent = 'Pulihkan (gabung ke data aktif)';
+        });
+      });
+    });
+  }).catch(err => {
+    wrap.innerHTML = `<p class="hint" style="color:var(--red-600, #c0392b);">Gagal memuat daftar backup: ${esc(err && err.message || 'error tidak diketahui')} ${err && /permission/i.test(err.message || '') ? '-- kemungkinan Security Rules belum diperbarui, lihat tab "Keamanan Sistem".' : ''}</p>`;
+  });
+}
+document.getElementById('btnBackupDONow') && document.getElementById('btnBackupDONow').addEventListener('click', function(){
+  this.disabled = true;
+  const originalText = this.textContent;
+  this.textContent = 'Membackup...';
+  forceBackupRecordsNow().then(({dateKey, count}) => {
+    showToast(`Backup berhasil dibuat: ${count} data DO tersimpan untuk tanggal ${fmtDate(dateKey)}.`, 'success');
+    renderBackupDOPanel();
+  }).catch(err => {
+    showToast('Gagal membuat backup: ' + (err && err.message || 'error tidak diketahui'), 'danger');
+  }).finally(() => {
+    this.disabled = false;
+    this.textContent = originalText;
+  });
+});
 function fbFilterTombstoned(path, list, keyFn){
   const tomb = fbDeletedTombstones[path];
   if(!tomb || tomb.size === 0 || !Array.isArray(list)) return list;
@@ -4320,6 +4543,7 @@ function attachFirebaseListenersInner(){
       records = fbFilterTombstoned('records', arr);
       if(ensureIds(records, 'do')) fbPush('records', records); // tambal id yang kosong (mis. data diinput manual lewat Firebase Console), supaya tombol Hapus bisa mencocokkannya
       localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+      maybeAutoBackupRecordsToday(); // Sesi keseratuslimapuluhempat: backup harian otomatis, dipicu dari snapshot server yang paling segar/otoritatif
       const v = currentViewName();
       if(v === 'rekap') renderTable();
       if(v === 'dashboard') renderDashboard();
@@ -4698,7 +4922,7 @@ function ensureIds(list, prefix){
   return changed;
 }
 function load(){ try{ const l = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; ensureIds(l, 'do'); return l; }catch(e){ return []; } }
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); fbPush('records', records); }
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(records)); fbMergeArraySave('records', records); }
 function loadKendaraan(){ try{ const l = JSON.parse(localStorage.getItem(KENDARAAN_KEY)) || []; ensureIds(l, 'kd'); return l; }catch(e){ return []; } }
 function saveKendaraan(){ localStorage.setItem(KENDARAAN_KEY, JSON.stringify(kendaraanList)); fbPush('kendaraan', kendaraanList); }
 function loadDriver(){ try{ const l = JSON.parse(localStorage.getItem(DRIVER_KEY)) || []; ensureIds(l, 'dr'); return l; }catch(e){ return []; } }
@@ -5415,6 +5639,7 @@ function setSettingsTab(tab){
   document.querySelectorAll('.panel[data-settings-panel]').forEach(panel => {
     panel.classList.toggle('settings-panel-active', panel.dataset.settingsPanel === tab);
   });
+  if(tab === 'backup-do') renderBackupDOPanel();
 }
 document.querySelectorAll('.settings-tab').forEach(btn => {
   btn.addEventListener('click', () => setSettingsTab(btn.dataset.settingsTab));
@@ -12565,179 +12790,6 @@ function initBiayaPengeluaranView(){
   generateBiayaPengeluaran();
 }
 document.getElementById('btnBpGenerate').addEventListener('click', generateBiayaPengeluaran);
-
-/* ---------- BIAYA PENGELUARAN EKSPEDISI (ORGANIK) — Export Excel ----------
-   Meniru persis apa yang tampil di layar (generateBiayaPengeluaran): kartu ringkasan periode,
-   lalu tabel "Rincian biaya perbaikan" dan tabel "Rincian uang jalan driver & biaya lain-lain per DO".
-   Pola ZIP-XLSX & style (XS, makeZip, LAPORAN_XLSX_STYLES_XML) sama persis dengan export lain di
-   aplikasi ini (Rekap Data DO / Monitoring Organik), supaya hasil download selalu rapi & konsisten. */
-function buildBiayaPengeluaranSheetXml(period, biayaBulan, doWithUangJalan, totals){
-  const nCols = 6;
-  let rowsXml = '';
-  let r = 1;
-
-  rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.TITLE}"><is><t>${esc('BIAYA PENGELUARAN ORGANIK')}</t></is></c></row>`; r++;
-  rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.SUB}"><is><t>${esc('Periode: ' + period.label)}</t></is></c></row>`; r++;
-  r++; // baris kosong
-
-  // --- Ringkasan ---
-  const summaryHead = ['Biaya Perbaikan (Rp)','Uang Jalan Driver (Rp)','Biaya Lain-lain (Rp)','Total Pengeluaran (Rp)'];
-  let sumHeadCells = '';
-  summaryHead.forEach((h,i) => { sumHeadCells += `<c r="${xlsxColLetter(i+1)}${r}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
-  rowsXml += `<row r="${r}">${sumHeadCells}</row>`; r++;
-  let sumValCells = '';
-  [totals.biayaPerbaikan, totals.uangJalan, totals.biayaLain, totals.keseluruhan].forEach((v,i) => {
-    sumValCells += `<c r="${xlsxColLetter(i+1)}${r}" s="${XS.CUR}"><v>${v}</v></c>`;
-  });
-  rowsXml += `<row r="${r}">${sumValCells}</row>`; r++;
-  r++; // baris kosong
-
-  // --- Rincian biaya perbaikan ---
-  rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.SUB}"><is><t>${esc('RINCIAN BIAYA PERBAIKAN')}</t></is></c></row>`; r++;
-  const perbaikanHead = ['Tanggal','Nopol','Jenis Perbaikan','Biaya (Rp)','Catatan'];
-  let pHeadCells = '';
-  perbaikanHead.forEach((h,i) => { pHeadCells += `<c r="${xlsxColLetter(i+1)}${r}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
-  rowsXml += `<row r="${r}">${pHeadCells}</row>`; r++;
-  const perbaikanFirstRow = r;
-  biayaBulan.forEach((m, i) => {
-    const alt = i % 2 === 1;
-    const sText = alt ? XS.CELL_ALT : XS.CELL;
-    const sCur = alt ? XS.CUR_ALT : XS.CUR;
-    let cells = '';
-    cells += `<c r="A${r}" t="inlineStr" s="${sText}"><is><t>${esc(fmtDate(m.tanggal))}</t></is></c>`;
-    cells += `<c r="B${r}" t="inlineStr" s="${sText}"><is><t>${esc(m.nopol || '-')}</t></is></c>`;
-    cells += `<c r="C${r}" t="inlineStr" s="${sText}"><is><t>${esc(m.jenis || '-')}</t></is></c>`;
-    cells += `<c r="D${r}" s="${sCur}"><v>${Number(m.biaya)||0}</v></c>`;
-    cells += `<c r="E${r}" t="inlineStr" s="${sText}"><is><t>${esc(m.catatan || '-')}</t></is></c>`;
-    rowsXml += `<row r="${r}">${cells}</row>`; r++;
-  });
-  const perbaikanLastRow = r - 1;
-  if(biayaBulan.length === 0){
-    rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.CELL}"><is><t>${esc('Tidak ada catatan biaya perbaikan pada periode ini.')}</t></is></c></row>`; r++;
-  }else{
-    let totCells = `<c r="A${r}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>${esc('TOTAL')}</t></is></c>`;
-    totCells += `<c r="B${r}" s="${XS.TOTAL_LABEL}"/><c r="C${r}" s="${XS.TOTAL_LABEL}"/>`;
-    totCells += `<c r="D${r}" s="${XS.TOTAL_CUR}"><f>SUM(D${perbaikanFirstRow}:D${perbaikanLastRow})</f><v>${totals.biayaPerbaikan}</v></c>`;
-    totCells += `<c r="E${r}" s="${XS.TOTAL_LABEL}"/>`;
-    rowsXml += `<row r="${r}">${totCells}</row>`; r++;
-  }
-  r++; // baris kosong
-
-  // --- Rincian uang jalan driver & biaya lain-lain per DO ---
-  rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.SUB}"><is><t>${esc('RINCIAN UANG JALAN DRIVER & BIAYA LAIN-LAIN PER DO (ORGANIK)')}</t></is></c></row>`; r++;
-  const uangJalanHead = ['Tanggal','Nopol','Driver','Rute','Uang Jalan (Rp)','Biaya Lain-lain (Rp)'];
-  let uHeadCells = '';
-  uangJalanHead.forEach((h,i) => { uHeadCells += `<c r="${xlsxColLetter(i+1)}${r}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
-  rowsXml += `<row r="${r}">${uHeadCells}</row>`; r++;
-  const uangJalanFirstRow = r;
-  doWithUangJalan.forEach((rec, i) => {
-    const alt = i % 2 === 1;
-    const sText = alt ? XS.CELL_ALT : XS.CELL;
-    const sCur = alt ? XS.CUR_ALT : XS.CUR;
-    let cells = '';
-    cells += `<c r="A${r}" t="inlineStr" s="${sText}"><is><t>${esc(fmtDate(rec.tanggal))}</t></is></c>`;
-    cells += `<c r="B${r}" t="inlineStr" s="${sText}"><is><t>${esc(rec.nopol || '-')}</t></is></c>`;
-    cells += `<c r="C${r}" t="inlineStr" s="${sText}"><is><t>${esc(rec.sopir || '-')}</t></is></c>`;
-    cells += `<c r="D${r}" t="inlineStr" s="${sText}"><is><t>${esc(tujuanListText(rec))}</t></is></c>`;
-    cells += `<c r="E${r}" s="${sCur}"><v>${Number(rec.uangJalan)||0}</v></c>`;
-    cells += `<c r="F${r}" s="${sCur}"><v>${Number(rec.biayaLain)||0}</v></c>`;
-    rowsXml += `<row r="${r}">${cells}</row>`; r++;
-  });
-  const uangJalanLastRow = r - 1;
-  if(doWithUangJalan.length === 0){
-    rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.CELL}"><is><t>${esc('Tidak ada data uang jalan driver / biaya lain-lain pada periode ini.')}</t></is></c></row>`; r++;
-  }else{
-    let totCells2 = `<c r="A${r}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>${esc('TOTAL')}</t></is></c>`;
-    totCells2 += `<c r="B${r}" s="${XS.TOTAL_LABEL}"/><c r="C${r}" s="${XS.TOTAL_LABEL}"/><c r="D${r}" s="${XS.TOTAL_LABEL}"/>`;
-    totCells2 += `<c r="E${r}" s="${XS.TOTAL_CUR}"><f>SUM(E${uangJalanFirstRow}:E${uangJalanLastRow})</f><v>${totals.uangJalan}</v></c>`;
-    totCells2 += `<c r="F${r}" s="${XS.TOTAL_CUR}"><f>SUM(F${uangJalanFirstRow}:F${uangJalanLastRow})</f><v>${totals.biayaLain}</v></c>`;
-    rowsXml += `<row r="${r}">${totCells2}</row>`; r++;
-  }
-
-  const lastRow = r - 1;
-  const bpXlsxWidths = [14,14,24,17,30,17];
-  const colsXml = bpXlsxWidths.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
-  const dimensionRef = `A1:${xlsxColLetter(nCols)}${lastRow}`;
-  const lastCol = xlsxColLetter(nCols);
-
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<dimension ref="${dimensionRef}"/>
-<sheetViews><sheetView workbookViewId="0"/></sheetViews>
-<sheetFormatPr defaultRowHeight="18"/>
-<cols>${colsXml}</cols>
-<sheetData>${rowsXml}</sheetData>
-<mergeCells count="4"><mergeCell ref="A1:${lastCol}1"/><mergeCell ref="A2:${lastCol}2"/></mergeCells>
-</worksheet>`;
-}
-function exportBiayaPengeluaranExcel(){
-  const period = getRangePeriod('bpDari', 'bpSampai');
-  if(!period){ alert('Pilih periode terlebih dahulu.'); return; }
-  const biayaBulan = maintenanceList.filter(m => m.tanggal && m.tanggal >= period.startDate && m.tanggal <= period.endDate).slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
-  const doBulan = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate && (r.jenisAngkutan || 'organik') === 'organik');
-  const doWithUangJalan = doBulan.filter(r => Number(r.uangJalan) > 0 || Number(r.biayaLain) > 0).slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
-
-  const totals = {
-    biayaPerbaikan: biayaBulan.reduce((s,m) => s + (Number(m.biaya)||0), 0),
-    uangJalan: doBulan.reduce((s,r) => s + (Number(r.uangJalan)||0), 0),
-    biayaLain: doBulan.reduce((s,r) => s + (Number(r.biayaLain)||0), 0),
-  };
-  totals.keseluruhan = totals.biayaPerbaikan + totals.uangJalan + totals.biayaLain;
-
-  if(biayaBulan.length === 0 && doWithUangJalan.length === 0){
-    alert('Tidak ada data biaya pengeluaran organik untuk diexport pada periode ini.');
-    return;
-  }
-
-  const statusEl = document.getElementById('bpExportStatus');
-  if(statusEl) statusEl.textContent = 'Menyiapkan file Excel...';
-  try{
-    const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
-<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
-<Default Extension="xml" ContentType="application/xml"/>
-<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
-<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
-<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
-</Types>`;
-    const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
-</Relationships>`;
-    const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
-<sheets><sheet name="Biaya Pengeluaran Organik" sheetId="1" r:id="rId1"/></sheets>
-</workbook>`;
-    const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
-<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>`;
-    const sheetXml = buildBiayaPengeluaranSheetXml(period, biayaBulan, doWithUangJalan, totals);
-
-    const zipBytes = makeZip([
-      { name: '[Content_Types].xml', data: contentTypesXml },
-      { name: '_rels/.rels', data: rootRelsXml },
-      { name: 'xl/workbook.xml', data: workbookXml },
-      { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
-      { name: 'xl/styles.xml', data: LAPORAN_XLSX_STYLES_XML },
-      { name: 'xl/worksheets/sheet1.xml', data: sheetXml },
-    ]);
-
-    const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const todayIso = new Date().toISOString().slice(0,10);
-    a.href = url; a.download = `biaya_pengeluaran_organik_${todayIso}.xlsx`; a.click();
-    URL.revokeObjectURL(url);
-    showToast('Biaya Pengeluaran Organik (Excel) berhasil diunduh', 'success');
-  }catch(err){
-    alert('Gagal membuat file Excel: ' + err.message);
-  }finally{
-    if(statusEl) statusEl.textContent = '';
-  }
-}
-document.getElementById('btnBpExportExcel').addEventListener('click', exportBiayaPengeluaranExcel);
 
 /* ---------- BIAYA PENGELUARAN VENDOR LUAR — Laporan ---------- */
 function generateBiayaPengeluaranVendor(){
