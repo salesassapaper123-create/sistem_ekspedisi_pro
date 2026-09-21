@@ -3665,6 +3665,15 @@ function syncOdometerFromCartrack(){
               <button type="button" class="btn btn-secondary" id="btnBackupDONow">Backup sekarang</button>
             </div>
             <div id="backupDOListWrap"><p class="hint">Memuat daftar backup...</p></div>
+
+            <hr style="margin:22px 0; border:none; border-top:1px solid var(--border);">
+            <h3 style="margin:0 0 6px;">Pemulihan data yang ditemukan (Sept 2026)</h3>
+            <p class="hint" style="line-height:1.7; margin-bottom:8px;">File Excel hasil Export Excel (Rekap Data DO) yang sebelumnya sempat hilang (01–19 September 2026) berhasil ditemukan lagi oleh user, lalu diunggah untuk diproses. File ini berisi <b>47 data DO tanggal 01–13 September 2026</b>, tapi HANYA yang berstatus <b>Selesai</b> & angkutan <b>Organik</b> (file exportnya sendiri sudah difilter begitu saat dibuat) — data tanggal 14–19 September, data yang masih berstatus belum selesai, dan data Vendor Luar (kalau ada) TIDAK ikut ada di file ini & TIDAK ikut dipulihkan lewat tombol ini, kemungkinan besar tetap perlu diinput ulang manual kalau memang ada.</p>
+            <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--green-600, #1f8a4c); background:#f2faf5;">Aman diklik kapan saja & aman diulang: proses ini HANYA MENAMBAHKAN data yang belum ada. Setiap data di file ini dicocokkan ke data yang sudah ada sekarang lewat kombinasi Tanggal + Nopol + No PKB/No DO (atau Tanggal + Nopol + Sopir + Uang Jalan + Keterangan kalau No PKB/No DO-nya kosong) — kalau cocok (misalnya sudah sempat diinput ulang manual), data itu OTOMATIS DILEWATI, tidak ikut ditambahkan lagi/dobel.</p>
+            <div class="btn-row" style="margin-bottom:10px;">
+              <button type="button" class="btn btn-secondary" id="btnPulihkanRecoverySep2026">Pulihkan 47 data yang ditemukan</button>
+            </div>
+            <div id="pulihkanRecoverySep2026Status"></div>
           </div>
         </div>
 
@@ -4178,32 +4187,161 @@ function forceBackupRecordsNow(){
    digandakan). fbPendingWrites/fbWriteQueue['records'] dipakai supaya listener 'value' node 'records'
    tidak sempat memproses snapshot yang belum final di tengah transaksi ini (pola yang sama seperti
    fbRemoveFromList di atas). */
+/* Inti "tambahkan tanpa menimpa" dipakai bersama oleh restoreRecordsBackup() (sumbernya node
+   records_backup/<tanggal>) DAN importRecoveredRecordsSep2026() di bawah (sumbernya file Excel yang
+   ditemukan lagi, Sesi keseratuslimapuluhdelapan) -- supaya keduanya benar-benar pakai transaksi &
+   pola aman yang SAMA PERSIS (fbPendingWrites/fbWriteQueue supaya listener 'value' node 'records'
+   tidak sempat memproses snapshot yang belum final di tengah transaksi), bukan 2 salinan kode terpisah
+   yang bisa diam-diam beda perilaku. matchFn(serverRecord, sourceRecord) menentukan apakah 2 baris
+   dianggap "data yang sama" (dipisah per pemanggil karena beda sumber data = beda cara paling akurat
+   mencocokkannya -- backup harian mencocokkan lewat id [sumbernya salinan persis node records sendiri],
+   sedangkan impor dari Excel mencocokkan lewat ISI datanya [sumbernya file luar, id-nya dibuat baru
+   & tidak berhubungan sama sekali dengan id yang mungkin sudah ada]). */
+function mergeSourceIntoLiveRecords(sourceArr, matchFn){
+  let added = 0;
+  fbPendingWrites['records'] = (fbPendingWrites['records'] || 0) + 1;
+  const prevInQueue = fbWriteQueue['records'] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+    return fbDb.ref('records').transaction(serverVal => {
+      added = 0; // Firebase bisa mengulang transaksi ini otomatis kalau ada perubahan lain di tengah jalan -> hitungan direset tiap percobaan
+      const serverArr = fbToArray(serverVal) || [];
+      const result = serverArr.slice();
+      sourceArr.forEach(r => {
+        if(!r) return;
+        const alreadyExists = result.some(existing => matchFn(existing, r));
+        if(!alreadyExists){ result.push(r); added++; }
+      });
+      return result;
+    });
+  }).finally(() => {
+    fbPendingWrites['records'] = Math.max(0, (fbPendingWrites['records'] || 0) - 1);
+  });
+  fbWriteQueue['records'] = thisWrite;
+  return thisWrite.then(result => ({result, added}));
+}
+/* Pulihkan 1 tanggal backup ke data AKTIF -- MENGGABUNGKAN (merge by id), BUKAN menimpa: record yang
+   ada di backup tapi TIDAK ADA di data aktif sekarang ditambahkan kembali; record yang sudah ada di
+   data aktif (id sama) TIDAK disentuh/ditimpa sama sekali. Dipakai fbDb.ref('records').transaction(...)
+   supaya selalu digabung ke atas data TERBARU di server (bukan salinan lokal yang mungkin usang),
+   dan supaya aman diulang berkali-kali (idempotent -- record yang sudah pernah dipulihkan tidak akan
+   digandakan). */
 function restoreRecordsBackup(dateKey){
   if(!fbDb) return Promise.reject(new Error('Firebase belum tersambung'));
   return fbDb.ref('records_backup/' + dateKey).once('value').then(snap => {
     const backupArr = fbToArray(snap.val()) || [];
     if(backupArr.length === 0) throw new Error('Backup tanggal ini kosong');
-    let added = 0;
-    fbPendingWrites['records'] = (fbPendingWrites['records'] || 0) + 1;
-    const prevInQueue = fbWriteQueue['records'] || Promise.resolve();
-    const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
-      return fbDb.ref('records').transaction(serverVal => {
-        added = 0; // Firebase bisa mengulang transaksi ini otomatis kalau ada perubahan lain di tengah jalan -> hitungan direset tiap percobaan
-        const serverArr = fbToArray(serverVal) || [];
-        const byId = new Map();
-        serverArr.forEach(r => { if(r && r.id != null) byId.set(String(r.id), r); });
-        backupArr.forEach(r => {
-          if(r && r.id != null && !byId.has(String(r.id))){ byId.set(String(r.id), r); added++; }
-        });
-        return Array.from(byId.values());
-      });
-    }).finally(() => {
-      fbPendingWrites['records'] = Math.max(0, (fbPendingWrites['records'] || 0) - 1);
-    });
-    fbWriteQueue['records'] = thisWrite;
-    return thisWrite.then(result => ({result, added}));
+    return mergeSourceIntoLiveRecords(backupArr, (existing, r) => existing && r && existing.id != null && String(existing.id) === String(r.id));
   });
 }
+/* ---------- PEMULIHAN DATA YANG DITEMUKAN (Sept 2026) ----------
+   Sesi keseratuslimapuluhdelapan: user melaporkan sudah menemukan lagi file Excel hasil Export Excel
+   Rekap Data DO (rekap_data_do_2026-09-14.xlsx) yang berisi sebagian data yang sempat hilang (lihat
+   Sesi keseratuslimapuluhtiga/keseratuslimapuluhempat), lalu minta datanya "diupload" kembali ke Rekap
+   Data DO. File itu sudah diparse & diverifikasi di luar sistem ini (total Uang Jalan/Tonase BK/Roll/
+   OCC hasil parse ulang dicocokkan PERSIS dengan baris TOTAL di file Excel-nya sendiri -- 47 DO,
+   Rp54.900.000 uang jalan, 169.977 kg BK, 790.114 kg Roll Assa, 107.371 kg OCC, semua cocok), hasilnya
+   ditanam langsung sebagai data di bawah ini (RECOVERED_RECORDS_SEP2026) supaya proses pemulihannya
+   cukup 1x klik tombol di Pengaturan > Backup Data DO, TIDAK perlu upload file manual lewat sistem ini.
+
+   PENTING (keterbatasan file sumbernya sendiri, BUKAN keterbatasan proses ini): file Excel-nya SUDAH
+   difilter saat dibuat (lihat baris "Filter: ..." di file aslinya) jadi HANYA berisi tanggal 01-13
+   September 2026, status Selesai, & angkutan Organik saja -- data tanggal 14-19 September, data yang
+   masih berstatus belum Selesai, dan data Vendor Luar (kalau ada) TIDAK ada di file ini sama sekali,
+   jadi TIDAK ikut dipulihkan lewat tombol ini walaupun tombolnya berhasil diklik.
+
+   Dicocokkan (supaya aman diulang & tidak dobel kalau sebagian sudah sempat diinput ulang manual oleh
+   user) lewat ISI datanya sendiri (recoveryDedupKey), BUKAN lewat id -- beda dari restoreRecordsBackup
+   di atas -- karena id di bawah ini id BARU yang dibuat saat proses parsing, tidak berhubungan sama
+   sekali dengan id data yang mungkin sudah diinput ulang manual oleh user dengan id yang berbeda. */
+const RECOVERED_RECORDS_SEP2026 = [
+{id:"recovsep2026-00",tanggal:"2026-09-01",noPKB:"1407",noDO:"06",kotaTujuan:"BANDUNG",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:19910,tonase3:null,keterangan:"KOSONGAN",status:"selesai"},
+{id:"recovsep2026-01",tanggal:"2026-09-01",noPKB:"1409",noDO:"08",kotaTujuan:"BANDUNG",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"engkel",jenisAngkutan:"organik",uangJalan:2200000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"CIREBON",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:11252,tonase2:8032,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-02",tanggal:"2026-09-01",noPKB:"1411",noDO:"26090010",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"TETEN",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:20157,tonase3:8048,keterangan:"",status:"selesai"},
+{id:"recovsep2026-03",tanggal:"2026-09-02",noPKB:"1412",noDO:"11",kotaTujuan:"",nopol:"D8519UB",sopir:"RUDI",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:0,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"SLAWI",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:1,tonase2:19312,tonase3:null,keterangan:"KOSONGAN",status:"selesai"},
+{id:"recovsep2026-04",tanggal:"2026-09-02",noPKB:"1415",noDO:"14",kotaTujuan:"",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"engkel",jenisAngkutan:"organik",uangJalan:2200000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"CIREBON",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:11903,tonase2:10376,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-05",tanggal:"2026-09-02",noPKB:"1417",noDO:"16",kotaTujuan:"",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:19409,tonase3:null,keterangan:"KOSONGAN",status:"selesai"},
+{id:"recovsep2026-06",tanggal:"2026-09-02",noPKB:"1418",noDO:"17",kotaTujuan:"",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:13179,tonase3:7147,keterangan:"",status:"selesai"},
+{id:"recovsep2026-07",tanggal:"2026-09-02",noPKB:"1419",noDO:"18",kotaTujuan:"",nopol:"D9631UD",sopir:"TETEN",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1200000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"DUTA INDAH ( SJ : THJIN GUAN )",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:21156,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-08",tanggal:"2026-09-02",noPKB:"1420",noDO:"19",kotaTujuan:"",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:0,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"SETIABUDI",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:2782,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-09",tanggal:"2026-09-03",noPKB:"1422",noDO:"21",kotaTujuan:"BANDUNG",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:20115,tonase3:null,keterangan:"KOSONGAN",status:"selesai"},
+{id:"recovsep2026-10",tanggal:"2026-09-03",noPKB:"1423",noDO:"22",kotaTujuan:"",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"engkel",jenisAngkutan:"organik",uangJalan:2200000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"CIREBON",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:13308,tonase2:9670,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-11",tanggal:"2026-09-03",noPKB:"1424",noDO:"23",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"TETEN",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:22772,tonase3:6935,keterangan:"IJO 2/9 DO.3",status:"selesai"},
+{id:"recovsep2026-12",tanggal:"2026-09-04",noPKB:"1427",noDO:"27",kotaTujuan:"",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:19141,tonase3:null,keterangan:"KOSONGAN",status:"selesai"},
+{id:"recovsep2026-13",tanggal:"2026-09-04",noPKB:"1428",noDO:"28",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"TETEN",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:18414,tonase3:8630,keterangan:"",status:"selesai"},
+{id:"recovsep2026-14",tanggal:"2026-09-04",noPKB:"1429",noDO:"30",kotaTujuan:"BANDUNG",nopol:"D8519UB",sopir:"RUDI",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:3050000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"SLAWI",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:20114,tonase2:20138,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-15",tanggal:"2026-09-05",noPKB:"1430",noDO:"31",kotaTujuan:"BANDUNG",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:20189,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-16",tanggal:"2026-09-05",noPKB:"1431",noDO:"32",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"TETEN",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:22535,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-17",tanggal:"2026-09-05",noPKB:"1434",noDO:"35",kotaTujuan:"BANDUNG",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"LKJ 2",tujuanBongkar3:"ASSA",tonase1:null,tonase2:19217,tonase3:3987,keterangan:"",status:"selesai"},
+{id:"recovsep2026-18",tanggal:"2026-09-05",noPKB:"1435",noDO:"36",kotaTujuan:"CIREBON",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:2200000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"CIREBON",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:11806,tonase2:7845,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-19",tanggal:"2026-09-06",noPKB:"1436",noDO:"37",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"HERI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:23728,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-20",tanggal:"2026-09-06",noPKB:"1437",noDO:"38",kotaTujuan:"BANDUNG",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:20039,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-21",tanggal:"2026-09-07",noPKB:"1438",noDO:"39",kotaTujuan:"BANDUNG",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:19932,tonase3:null,keterangan:"KOSONG",status:"selesai"},
+{id:"recovsep2026-22",tanggal:"2026-09-07",noPKB:"1439",noDO:"40",kotaTujuan:"BANDUNG",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:2200000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"CIREBON",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:12473,tonase2:8010,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-23",tanggal:"2026-09-07",noPKB:"1440",noDO:"41",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"HERI",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1675000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"ANATA",tujuanBongkar3:"ASSA",tonase1:null,tonase2:22869,tonase3:4724,keterangan:"CONES",status:"selesai"},
+{id:"recovsep2026-24",tanggal:"2026-09-07",noPKB:"1441",noDO:"42",kotaTujuan:"BANDUNG",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:20502,tonase3:8038,keterangan:"TK",status:"selesai"},
+{id:"recovsep2026-25",tanggal:"2026-09-08",noPKB:"1446",noDO:"47",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"HERI",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:23265,tonase3:8540,keterangan:"TOKO",status:"selesai"},
+{id:"recovsep2026-26",tanggal:"2026-09-08",noPKB:"1447",noDO:"48",kotaTujuan:"",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:150000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:19971,tonase3:5210,keterangan:"NGEPOK BK 150 KE IJO",status:"selesai"},
+{id:"recovsep2026-27",tanggal:"2026-09-09",noPKB:"1448",noDO:"49",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"HERI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:22849,tonase3:null,keterangan:"KOSONG",status:"selesai"},
+{id:"recovsep2026-28",tanggal:"2026-09-09",noPKB:"1449",noDO:"50",kotaTujuan:"",nopol:"D8519UB",sopir:"RUDI",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:0,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"SLAWI",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:18554,tonase2:19521,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-29",tanggal:"2026-09-09",noPKB:"1451",noDO:"52",kotaTujuan:"BANDUNG",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:15782,tonase3:null,keterangan:"KOSONG",status:"selesai"},
+{id:"recovsep2026-30",tanggal:"2026-09-09",noPKB:"1452",noDO:"53",kotaTujuan:"BANDUNG",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"engkel",jenisAngkutan:"organik",uangJalan:2200000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"CIREBON",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:11662,tonase2:10780,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-31",tanggal:"2026-09-10",noPKB:"1458",noDO:"59",kotaTujuan:"BANDUNG",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:19407,tonase3:9194,keterangan:"TOKO",status:"selesai"},
+{id:"recovsep2026-32",tanggal:"2026-09-10",noPKB:"1459",noDO:"60",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"HERI",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:0,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"SLAWI",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:11582,tonase2:21692,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-33",tanggal:"2026-09-10",noPKB:"1460",noDO:"61",kotaTujuan:"BANDUNG",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:18998,tonase3:null,keterangan:"KOSONGAN 9/9",status:"selesai"},
+{id:"recovsep2026-34",tanggal:"2026-09-11",noPKB:"1462",noDO:"63",kotaTujuan:"BANDUNG",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:19119,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-35",tanggal:"2026-09-11",noPKB:"1463",noDO:"64",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"HERI",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"BK 1",tujuanBongkar3:"ASSA",tonase1:null,tonase2:21978,tonase3:6553,keterangan:"MURNI",status:"selesai"},
+{id:"recovsep2026-36",tanggal:"2026-09-11",noPKB:"1464",noDO:"65",kotaTujuan:"BANDUNG",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:19158,tonase3:8109,keterangan:"TOKO",status:"selesai"},
+{id:"recovsep2026-37",tanggal:"2026-09-11",noPKB:"1465",noDO:"66",kotaTujuan:"BANDUNG",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:0,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"SLAWI",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:11582,tonase2:11077,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-38",tanggal:"2026-09-12",noPKB:"1466",noDO:"67",kotaTujuan:"BANDUNG",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:20168,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-39",tanggal:"2026-09-12",noPKB:"1467",noDO:"68",kotaTujuan:"BANDUNG",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:true,kirimOCC:false,kirimKosongan:false,jenisArmada:"engkel",jenisAngkutan:"organik",uangJalan:2200000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"CIREBON",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:12480,tonase2:11137,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-40",tanggal:"2026-09-12",noPKB:"1468",noDO:"69",kotaTujuan:"BANDUNG",nopol:"T8088AJ",sopir:"IWAN S",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"BK2",tujuanBongkar3:"ASSA",tonase1:null,tonase2:19936,tonase3:5843,keterangan:"LAMINATING",status:"selesai"},
+{id:"recovsep2026-41",tanggal:"2026-09-12",noPKB:"1469",noDO:"70",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"HERI",kirimBK:false,kirimRoll:true,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:1300000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK 1",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:22742,tonase3:8257,keterangan:"TOKO",status:"selesai"},
+{id:"recovsep2026-42",tanggal:"2026-09-13",noPKB:"1470",noDO:"72",kotaTujuan:"BANDUNG",nopol:"D9631UD",sopir:"HERI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:23051,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-43",tanggal:"2026-09-13",noPKB:"1471",noDO:"73",kotaTujuan:"BANDUNG",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:true,kirimOCC:false,kirimKosongan:true,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"ASSA",tujuanBongkar2:"BK1",tujuanMuat3:"",tujuanBongkar3:"",tonase1:null,tonase2:20054,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-44",tanggal:"2026-09-03",noPKB:"",noDO:"",kotaTujuan:"",nopol:"D8519UB",sopir:"RUDI",kirimBK:false,kirimRoll:false,kirimOCC:true,kirimKosongan:false,jenisArmada:"tronton",jenisAngkutan:"organik",uangJalan:975000,biayaLain:0,tujuanMuat:"",tujuanBongkar:"",tujuanMuat2:"",tujuanBongkar2:"",tujuanMuat3:"KJ",tujuanBongkar3:"ASSA",tonase1:null,tonase2:null,tonase3:8156,keterangan:"tidak muat roll assa urgent dipakai ke slawi",status:"selesai"},
+{id:"recovsep2026-45",tanggal:"2026-09-04",noPKB:"",noDO:"",kotaTujuan:"",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:false,kirimOCC:false,kirimKosongan:false,jenisArmada:"engkel",jenisAngkutan:"organik",uangJalan:1250000,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"TASIKMALAYA",tujuanMuat2:"",tujuanBongkar2:"",tujuanMuat3:"",tujuanBongkar3:"",tonase1:12714,tonase2:null,tonase3:null,keterangan:"",status:"selesai"},
+{id:"recovsep2026-46",tanggal:"2026-09-10",noPKB:"",noDO:"",kotaTujuan:"SLAWI",nopol:"D8265UH",sopir:"TATANG",kirimBK:true,kirimRoll:false,kirimOCC:false,kirimKosongan:false,jenisArmada:"engkel",jenisAngkutan:"organik",uangJalan:0,biayaLain:0,tujuanMuat:"BK 1",tujuanBongkar:"SLAWI",tujuanMuat2:"",tujuanBongkar2:"",tujuanMuat3:"",tujuanBongkar3:"",tonase1:10546,tonase2:null,tonase3:null,keterangan:"",status:"selesai"}
+];
+/* Kunci pencocokan "data yang sama" untuk RECOVERED_RECORDS_SEP2026 -- lihat penjelasan di atas.
+   Pakai No PKB & No DO kalau salah satu diisi (identitas administratif paling spesifik); kalau
+   keduanya kosong (ada 3 baris begini di file sumbernya), jatuh ke kombinasi tanggal+nopol+sopir+
+   uangJalan+keterangan supaya tetap cukup spesifik untuk membedakan baris yang mirip. */
+function recoveryDedupKey(r){
+  const noPKB = (r.noPKB || '').trim();
+  const noDO = (r.noDO || '').trim();
+  if(noPKB || noDO) return ['pkb', r.tanggal, r.nopol, noPKB, noDO].join('|');
+  return ['nopkb', r.tanggal, r.nopol, r.sopir, r.uangJalan, (r.keterangan || '').trim()].join('|');
+}
+function importRecoveredRecordsSep2026(){
+  if(!fbDb) return Promise.reject(new Error('Firebase belum tersambung'));
+  return mergeSourceIntoLiveRecords(RECOVERED_RECORDS_SEP2026, (existing, r) => recoveryDedupKey(existing) === recoveryDedupKey(r));
+}
+document.getElementById('btnPulihkanRecoverySep2026') && document.getElementById('btnPulihkanRecoverySep2026').addEventListener('click', function(){
+  if(!confirm(`Pulihkan ${RECOVERED_RECORDS_SEP2026.length} data DO yang ditemukan (01-13 September 2026, status Selesai, angkutan Organik)?\n\nData yang isinya sudah sama dengan yang ada sekarang akan otomatis dilewati (tidak dobel).`)) return;
+  this.disabled = true;
+  const originalText = this.textContent;
+  this.textContent = 'Memulihkan...';
+  const statusEl = document.getElementById('pulihkanRecoverySep2026Status');
+  importRecoveredRecordsSep2026().then(({result, added}) => {
+    if(result && result.committed){
+      const skipped = RECOVERED_RECORDS_SEP2026.length - added;
+      const msg = added > 0
+        ? `Pemulihan berhasil: ${added} data DO ditambahkan ke Rekap Data DO.${skipped > 0 ? ' ' + skipped + ' data lainnya dilewati karena sudah ada (isi datanya sama).' : ''}`
+        : 'Tidak ada data baru untuk dipulihkan (semua data di file ini isinya sudah sama dengan yang ada sekarang).';
+      showToast(msg, 'success');
+      if(statusEl) statusEl.innerHTML = `<p class="hint" style="color:var(--green-600, #1f8a4c);">${esc(msg)}</p>`;
+    }else{
+      showToast('Pemulihan dibatalkan (tidak ada perubahan).', 'danger');
+    }
+  }).catch(err => {
+    const msg = 'Gagal memulihkan: ' + (err && err.message || 'error tidak diketahui');
+    showToast(msg, 'danger');
+    if(statusEl) statusEl.innerHTML = `<p class="hint" style="color:var(--red-600, #c0392b);">${esc(msg)}</p>`;
+  }).finally(() => {
+    this.disabled = false;
+    this.textContent = originalText;
+  });
+});
 /* Render daftar backup harian (Pengaturan -> Backup Data DO) + tombol "Pulihkan" per tanggal. */
 function renderBackupDOPanel(){
   const wrap = document.getElementById('backupDOListWrap');
