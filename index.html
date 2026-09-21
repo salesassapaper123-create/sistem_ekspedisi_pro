@@ -7515,6 +7515,18 @@ function ensureReimburseLeg(r, key){
   if(!r.reimburseLegs[key]) r.reimburseLegs[key] = {};
   return r.reimburseLegs[key];
 }
+/* Sesi keseratuslimapuluhenam: "No PA" yang diminta user -- setelah ditanya, maksudnya adalah "No
+   Bukti Reimburse" (No Seri Bukti Reimbursement, format YYMM-NNN, tersimpan di r.reimburseLegs --
+   lihat reimburseLegDefs()/resyncReimburseNoSeri() di atas). Ditampilkan sebagai kolom TERPISAH per
+   jenis muatan (Roll Assa & OCC) di Rekap Data DO, mengikuti pola yang sama seperti kolom Tonase --
+   karena 1 DO bisa punya nomor Reimburse berbeda untuk tiap jenis muatan.
+   PENTING: nomor ini baru "ada" untuk DO yang Bukti Reimbursement-nya SUDAH PERNAH dibuka staf minimal
+   sekali (nomornya baru digenerate saat itu oleh resyncReimburseNoSeri()) -- untuk DO yang belum pernah
+   dibuka Bukti Reimbursement-nya, kolom ini menampilkan "-" (belum ada nomor, BUKAN berarti datanya
+   hilang/salah). */
+function rekapDOReimburseLabel(r, key){
+  return (r.reimburseLegs && r.reimburseLegs[key] && r.reimburseLegs[key].noReimburse) || '-';
+}
 /* Hitung ULANG No Seri SEMUA Bukti Reimbursement yang sudah pernah dibuka (ada isinya di
    r.reimburseLegs) supaya urut RAPI berdasarkan TANGGAL DO -- per bulan mulai dari 001 di tanggal
    paling awal, bukan berdasarkan urutan staf membuka/mengetik halamannya (itu penyebab nomornya
@@ -11991,7 +12003,7 @@ function renderTable(){
      situ, bukan tergantung elemen luar. */
   wrap.innerHTML = `<div class="do-table-scroll"><table class="do-table"><thead><tr>
     <th class="do-th-tanggal">Tanggal</th><th class="do-th-nopol">Nopol</th><th class="do-th-armada">Armada</th><th class="do-th-angkutan">Angkutan</th>${isOwnerView ? '' : '<th class="do-th-pkb">No PKB</th><th class="do-th-do">No DO</th>'}<th class="do-th-sopir">Sopir</th><th class="do-th-uang">Uang jalan</th>${isOwnerView ? '' : '<th class="do-th-biayalain">Biaya lain-lain</th>'}<th class="do-th-jenis">Jenis</th>
-    <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th><th class="do-th-occ">Tonase OCC</th><th class="do-th-kotatujuan">Kota Tujuan</th>${isOwnerView ? '' : '<th class="do-th-keterangan">Keterangan</th>'}<th class="do-th-status">Status</th><th class="do-th-aksi"></th>
+    <th class="do-th-rute">Rute muat &rarr; bongkar</th><th class="do-th-bk">Tonase BK</th><th class="do-th-roll">Tonase Roll Assa</th>${isOwnerView ? '' : '<th class="do-th-reimburse-roll">No Reimburse Roll</th>'}<th class="do-th-occ">Tonase OCC</th>${isOwnerView ? '' : '<th class="do-th-reimburse-occ">No Reimburse OCC</th>'}<th class="do-th-kotatujuan">Kota Tujuan</th>${isOwnerView ? '' : '<th class="do-th-keterangan">Keterangan</th>'}<th class="do-th-status">Status</th><th class="do-th-aksi"></th>
   </tr></thead><tbody>${list.map(r => `
     <tr>
       <td class="do-td-tanggal">${fmtDate(r.tanggal)}</td>
@@ -12027,6 +12039,7 @@ function renderTable(){
             : (r.tonase2 ? `<span class="mono">${esc(r.tonase2)} kg</span>` : `<span style="color:var(--text-faint);">Belum diisi</span>`))
           : `<span style="color:var(--text-faint);">-</span>`}
       </td>
+      ${isOwnerView ? '' : `<td class="do-td-reimburse-roll mono">${recKirimRoll(r) ? esc(rekapDOReimburseLabel(r, 'roll')) : '-'}</td>`}
       <td class="do-td-occ">
         ${recKirimOCC(r)
           ? (canEdit
@@ -12038,6 +12051,7 @@ function renderTable(){
             : (r.tonase3 ? `<span class="mono">${esc(r.tonase3)} kg</span>` : `<span style="color:var(--text-faint);">Belum diisi</span>`))
           : `<span style="color:var(--text-faint);">-</span>`}
       </td>
+      ${isOwnerView ? '' : `<td class="do-td-reimburse-occ mono">${recKirimOCC(r) ? esc(rekapDOReimburseLabel(r, 'occ')) : '-'}</td>`}
       <td class="do-td-kotatujuan">${esc(r.kotaTujuan || '-')}</td>
       ${isOwnerView ? '' : `<td class="do-td-keterangan">${canEdit
           ? `<input type="text" class="keterangan-inline-input keterangan-edit" data-id="${r.id}" value="${esc(r.keterangan || '')}" placeholder="+ Isi keterangan">`
@@ -12166,8 +12180,11 @@ document.getElementById('btnClearFilter').addEventListener('click', function(){
    bawah -- menyisipkan di tengah berisiko salah satu referensi kolom lupa digeser. Kolom ini dipakai
    sebagai field "Bulan" siap pakai di PivotTable baru (lihat buildRekapDOPivotSheetXml dkk di bawah),
    supaya tidak perlu grouping tanggal otomatis Excel (rumit & rapuh kalau dibuat manual lewat XML). */
-const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','No DO','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Kota Tujuan','Keterangan','Status','Bulan'];
-const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,18,16,15,17,12,36,14,17,14,18,26,16,16];
+/* Sesi keseratuslimapuluhenam: 'No Reimburse Roll'/'No Reimburse OCC' ditambahkan di UJUNG (setelah
+   'Bulan') dengan alasan yang sama seperti 'Bulan' di Sesi keseratuslimapuluhlima -- supaya tidak
+   menggeser huruf kolom A..R yang sudah dipakai di banyak tempat. */
+const REKAPDO_XLSX_HEADERS = ['Tanggal','Nopol','Armada','Angkutan','No PKB','No DO','Sopir','Uang Jalan (Rp)','Biaya Lain-lain (Rp)','Jenis','Rute Muat -> Bongkar','Tonase BK (Kg)','Tonase Roll Assa (Kg)','Tonase OCC (Kg)','Kota Tujuan','Keterangan','Status','Bulan','No Reimburse Roll','No Reimburse OCC'];
+const REKAPDO_XLSX_WIDTHS = [13,14,10,12,20,18,16,15,17,12,36,14,17,14,18,26,16,16,18,18];
 function rekapDOBulanLabel(r){
   const bulanKey = (r.tanggal || '').slice(0,7); // "YYYY-MM-DD" -> "YYYY-MM"
   return bulanKey ? bulanLabel(bulanKey) : '-';
@@ -12221,6 +12238,8 @@ function buildRekapDOSheetXml(filterLabel, list){
     cells += `<c r="P${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(r.keterangan || '-')}</t></is></c>`;
     cells += `<c r="Q${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc((STATUS_META[normalizeStatus(r.status)] || {}).label || '-')}</t></is></c>`;
     cells += `<c r="R${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(rekapDOBulanLabel(r))}</t></is></c>`;
+    cells += `<c r="S${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(recKirimRoll(r) ? rekapDOReimburseLabel(r, 'roll') : '-')}</t></is></c>`;
+    cells += `<c r="T${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(recKirimOCC(r) ? rekapDOReimburseLabel(r, 'occ') : '-')}</t></is></c>`;
     rowsXml += `<row r="${rowIdx}">${cells}</row>`;
   });
 
@@ -12242,6 +12261,8 @@ function buildRekapDOSheetXml(filterLabel, list){
   totalCells += `<c r="P${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   totalCells += `<c r="Q${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   totalCells += `<c r="R${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="S${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="T${totalRowIdx}" s="${XS.TOTAL_LABEL}"/>`;
   rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
 
   const colsXml = REKAPDO_XLSX_WIDTHS.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
@@ -12388,6 +12409,8 @@ function rekapDOPivotRecordValues(r){
     r.keterangan || '-',
     (STATUS_META[normalizeStatus(r.status)] || {}).label || '-',
     rekapDOBulanLabel(r),
+    recKirimRoll(r) ? rekapDOReimburseLabel(r, 'roll') : '-',
+    recKirimOCC(r) ? rekapDOReimburseLabel(r, 'occ') : '-',
   ];
 }
 function buildRekapDOPivotCacheDefinitionXml(headerRowIdx, lastDataRow, recordCount){
