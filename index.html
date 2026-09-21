@@ -3669,9 +3669,11 @@ function syncOdometerFromCartrack(){
             <hr style="margin:22px 0; border:none; border-top:1px solid var(--border);">
             <h3 style="margin:0 0 6px;">Pemulihan data yang ditemukan (Sept 2026)</h3>
             <p class="hint" style="line-height:1.7; margin-bottom:8px;">File Excel hasil Export Excel (Rekap Data DO) yang sebelumnya sempat hilang (01–19 September 2026) berhasil ditemukan lagi oleh user, lalu diunggah untuk diproses. File ini berisi <b>47 data DO tanggal 01–13 September 2026</b>, tapi HANYA yang berstatus <b>Selesai</b> & angkutan <b>Organik</b> (file exportnya sendiri sudah difilter begitu saat dibuat) — data tanggal 14–19 September, data yang masih berstatus belum selesai, dan data Vendor Luar (kalau ada) TIDAK ikut ada di file ini & TIDAK ikut dipulihkan lewat tombol ini, kemungkinan besar tetap perlu diinput ulang manual kalau memang ada.</p>
-            <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--green-600, #1f8a4c); background:#f2faf5;">Aman diklik kapan saja & aman diulang: proses ini HANYA MENAMBAHKAN data yang belum ada. Setiap data di file ini dicocokkan ke data yang sudah ada sekarang lewat kombinasi Tanggal + Nopol + No PKB/No DO (atau Tanggal + Nopol + Sopir + Uang Jalan + Keterangan kalau No PKB/No DO-nya kosong) — kalau cocok (misalnya sudah sempat diinput ulang manual), data itu OTOMATIS DILEWATI, tidak ikut ditambahkan lagi/dobel.</p>
+            <p class="hint" style="line-height:1.7; margin-bottom:8px; padding:10px; border-left:3px solid var(--green-600, #1f8a4c); background:#f2faf5;"><b>Tombol "Pulihkan" (aman, default):</b> HANYA MENAMBAHKAN data yang belum ada. Setiap data di file ini dicocokkan ke data yang sudah ada sekarang lewat kombinasi Tanggal + Nopol + No PKB/No DO (atau Tanggal + Nopol + Sopir + Uang Jalan + Keterangan kalau No PKB/No DO-nya kosong) — kalau cocok (misalnya sudah sempat diinput ulang manual), data itu OTOMATIS DILEWATI, TIDAK ditimpa, tidak ikut ditambahkan lagi/dobel.</p>
+            <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--amber-600, #b9740a); background:#fff8ec;"><b>Tombol "Timpa" (hati-hati):</b> untuk data yang cocok (sudah ada), ISINYA DIGANTI dengan versi dari file ini (Uang Jalan, Tonase, Rute, dll dari data yang sekarang tersimpan akan HILANG diganti versi file) — dipakai kalau data yang sekarang tersimpan (misalnya hasil input ulang manual) ternyata kurang tepat & file yang ditemukan ini lebih dipercaya. Data yang belum ada tetap ditambahkan seperti biasa.</p>
             <div class="btn-row" style="margin-bottom:10px;">
-              <button type="button" class="btn btn-secondary" id="btnPulihkanRecoverySep2026">Pulihkan 47 data yang ditemukan</button>
+              <button type="button" class="btn btn-secondary" id="btnPulihkanRecoverySep2026">Pulihkan (tambah yang belum ada saja)</button>
+              <button type="button" class="btn btn-secondary" id="btnTimpaRecoverySep2026" style="border-color:var(--amber-600, #b9740a); color:var(--amber-600, #b9740a);">Timpa data yang sudah ada</button>
             </div>
             <div id="pulihkanRecoverySep2026Status"></div>
           </div>
@@ -4197,19 +4199,33 @@ function forceBackupRecordsNow(){
    mencocokkannya -- backup harian mencocokkan lewat id [sumbernya salinan persis node records sendiri],
    sedangkan impor dari Excel mencocokkan lewat ISI datanya [sumbernya file luar, id-nya dibuat baru
    & tidak berhubungan sama sekali dengan id yang mungkin sudah ada]). */
-function mergeSourceIntoLiveRecords(sourceArr, matchFn){
-  let added = 0;
+/* opts.overwrite (Sesi keseratuslimapuluhsembilan): default-nya (false/tidak diisi) SELALU "tambah
+   yang belum ada saja, lewati yang sudah ada" seperti sebelumnya -- dipakai restoreRecordsBackup &
+   mode default importRecoveredRecordsSep2026. Kalau opts.overwrite true: baris yang COCOK (lewat
+   matchFn) TIDAK dilewati lagi, tapi ISINYA DIGANTI dengan versi dari sourceArr -- id LAMA (yang
+   sudah ada) tetap dipertahankan (bukan id baru dari sourceArr) supaya kalau ada yang sudah terlanjur
+   terhubung ke id itu (misalnya No Seri Bukti Reimbursement) tidak ikut putus. */
+function mergeSourceIntoLiveRecords(sourceArr, matchFn, opts){
+  const overwrite = !!(opts && opts.overwrite);
+  let added = 0, overwritten = 0;
   fbPendingWrites['records'] = (fbPendingWrites['records'] || 0) + 1;
   const prevInQueue = fbWriteQueue['records'] || Promise.resolve();
   const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
     return fbDb.ref('records').transaction(serverVal => {
-      added = 0; // Firebase bisa mengulang transaksi ini otomatis kalau ada perubahan lain di tengah jalan -> hitungan direset tiap percobaan
+      added = 0; overwritten = 0; // Firebase bisa mengulang transaksi ini otomatis kalau ada perubahan lain di tengah jalan -> hitungan direset tiap percobaan
       const serverArr = fbToArray(serverVal) || [];
       const result = serverArr.slice();
       sourceArr.forEach(r => {
         if(!r) return;
-        const alreadyExists = result.some(existing => matchFn(existing, r));
-        if(!alreadyExists){ result.push(r); added++; }
+        const idx = result.findIndex(existing => matchFn(existing, r));
+        if(idx === -1){
+          result.push(r);
+          added++;
+        }else if(overwrite){
+          result[idx] = Object.assign({}, r, { id: result[idx].id });
+          overwritten++;
+        }
+        // idx !== -1 && !overwrite -> sengaja dilewati (tidak disentuh sama sekali), perilaku lama
       });
       return result;
     });
@@ -4217,7 +4233,7 @@ function mergeSourceIntoLiveRecords(sourceArr, matchFn){
     fbPendingWrites['records'] = Math.max(0, (fbPendingWrites['records'] || 0) - 1);
   });
   fbWriteQueue['records'] = thisWrite;
-  return thisWrite.then(result => ({result, added}));
+  return thisWrite.then(result => ({result, added, overwritten}));
 }
 /* Pulihkan 1 tanggal backup ke data AKTIF -- MENGGABUNGKAN (merge by id), BUKAN menimpa: record yang
    ada di backup tapi TIDAK ADA di data aktif sekarang ditambahkan kembali; record yang sudah ada di
@@ -4312,35 +4328,49 @@ function recoveryDedupKey(r){
   if(noPKB || noDO) return ['pkb', r.tanggal, r.nopol, noPKB, noDO].join('|');
   return ['nopkb', r.tanggal, r.nopol, r.sopir, r.uangJalan, (r.keterangan || '').trim()].join('|');
 }
-function importRecoveredRecordsSep2026(){
+function importRecoveredRecordsSep2026(overwrite){
   if(!fbDb) return Promise.reject(new Error('Firebase belum tersambung'));
-  return mergeSourceIntoLiveRecords(RECOVERED_RECORDS_SEP2026, (existing, r) => recoveryDedupKey(existing) === recoveryDedupKey(r));
+  return mergeSourceIntoLiveRecords(RECOVERED_RECORDS_SEP2026, (existing, r) => recoveryDedupKey(existing) === recoveryDedupKey(r), { overwrite: !!overwrite });
 }
-document.getElementById('btnPulihkanRecoverySep2026') && document.getElementById('btnPulihkanRecoverySep2026').addEventListener('click', function(){
-  if(!confirm(`Pulihkan ${RECOVERED_RECORDS_SEP2026.length} data DO yang ditemukan (01-13 September 2026, status Selesai, angkutan Organik)?\n\nData yang isinya sudah sama dengan yang ada sekarang akan otomatis dilewati (tidak dobel).`)) return;
-  this.disabled = true;
-  const originalText = this.textContent;
-  this.textContent = 'Memulihkan...';
+function runPulihkanRecoverySep2026(btn, overwrite){
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = overwrite ? 'Menimpa...' : 'Memulihkan...';
   const statusEl = document.getElementById('pulihkanRecoverySep2026Status');
-  importRecoveredRecordsSep2026().then(({result, added}) => {
+  importRecoveredRecordsSep2026(overwrite).then(({result, added, overwritten}) => {
     if(result && result.committed){
-      const skipped = RECOVERED_RECORDS_SEP2026.length - added;
-      const msg = added > 0
-        ? `Pemulihan berhasil: ${added} data DO ditambahkan ke Rekap Data DO.${skipped > 0 ? ' ' + skipped + ' data lainnya dilewati karena sudah ada (isi datanya sama).' : ''}`
-        : 'Tidak ada data baru untuk dipulihkan (semua data di file ini isinya sudah sama dengan yang ada sekarang).';
+      const untouched = RECOVERED_RECORDS_SEP2026.length - added - overwritten;
+      let msg;
+      if(overwrite){
+        msg = (added > 0 || overwritten > 0)
+          ? `Berhasil: ${overwritten} data yang sudah ada DITIMPA dengan data dari file ini, ${added} data baru ditambahkan.`
+          : 'Tidak ada yang ditimpa/ditambahkan (tidak seharusnya terjadi kalau file berisi data).';
+      }else{
+        msg = added > 0
+          ? `Pemulihan berhasil: ${added} data DO ditambahkan ke Rekap Data DO.${untouched > 0 ? ' ' + untouched + ' data lainnya dilewati karena sudah ada (isi datanya sama, TIDAK ditimpa).' : ''}`
+          : 'Tidak ada data baru untuk dipulihkan (semua data di file ini isinya sudah sama dengan yang ada sekarang -- kalau datanya sudah ada tapi kurang tepat/mau dipastikan sama persis dengan file ini, pakai tombol "Timpa" di sebelahnya).';
+      }
       showToast(msg, 'success');
       if(statusEl) statusEl.innerHTML = `<p class="hint" style="color:var(--green-600, #1f8a4c);">${esc(msg)}</p>`;
     }else{
-      showToast('Pemulihan dibatalkan (tidak ada perubahan).', 'danger');
+      showToast('Dibatalkan (tidak ada perubahan).', 'danger');
     }
   }).catch(err => {
-    const msg = 'Gagal memulihkan: ' + (err && err.message || 'error tidak diketahui');
+    const msg = 'Gagal: ' + (err && err.message || 'error tidak diketahui');
     showToast(msg, 'danger');
     if(statusEl) statusEl.innerHTML = `<p class="hint" style="color:var(--red-600, #c0392b);">${esc(msg)}</p>`;
   }).finally(() => {
-    this.disabled = false;
-    this.textContent = originalText;
+    btn.disabled = false;
+    btn.textContent = originalText;
   });
+}
+document.getElementById('btnPulihkanRecoverySep2026') && document.getElementById('btnPulihkanRecoverySep2026').addEventListener('click', function(){
+  if(!confirm(`Pulihkan ${RECOVERED_RECORDS_SEP2026.length} data DO yang ditemukan (01-13 September 2026, status Selesai, angkutan Organik)?\n\nData yang isinya sudah sama dengan yang ada sekarang akan otomatis dilewati, TIDAK ditimpa (aman, tidak dobel).`)) return;
+  runPulihkanRecoverySep2026(this, false);
+});
+document.getElementById('btnTimpaRecoverySep2026') && document.getElementById('btnTimpaRecoverySep2026').addEventListener('click', function(){
+  if(!confirm(`TIMPA data yang sudah ada dengan data dari file ini?\n\nUntuk ke-${RECOVERED_RECORDS_SEP2026.length} DO di file ini (01-13 September 2026, status Selesai, angkutan Organik): kalau datanya SUDAH ADA (Tanggal+Nopol+No PKB/No DO sama), ISINYA (Uang Jalan, Tonase, Rute, dll) akan DIGANTI dengan versi dari file ini -- data yang sekarang tersimpan untuk DO itu akan HILANG, berganti dengan versi dari file. ID datanya tetap sama (link ke Bukti Reimbursement dll tidak putus). Data yang belum ada akan ditambahkan seperti biasa.\n\nYakin lanjutkan?`)) return;
+  runPulihkanRecoverySep2026(this, true);
 });
 /* Render daftar backup harian (Pengaturan -> Backup Data DO) + tombol "Pulihkan" per tanggal. */
 function renderBackupDOPanel(){
