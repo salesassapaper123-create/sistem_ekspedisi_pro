@@ -10364,19 +10364,7 @@ function renderPO(){
       }
     }));
     wrap.querySelectorAll('.po-reopen').forEach(btn => btn.addEventListener('click', function(){
-      const targetId = this.dataset.id;
-      const item = poList.find(x => String(x.id) === String(targetId));
-      if(!item) return;
-      if(confirm(`Buka kembali PO ${item.noPO || item.noCO || ''}? PO ini akan muncul lagi di Monitoring Sisa PO kalau sisanya masih ada.`)){
-        item.closed = false;
-        item.closedAt = '';
-        item.ditutupOleh = '';
-        savePO();
-        renderPO();
-        renderPOMonitoring();
-        updatePeringatanBadge();
-        showToast('PO berhasil dibuka kembali', 'success');
-      }
+      reopenPOItem(this.dataset.id);
     }));
   }
   if(admin){
@@ -10400,14 +10388,40 @@ function renderPO(){
   renderPORekapDitutup();
 }
 
+/* Sesi keseratuslimapuluhtujuh: logika "buka kembali PO" DIPISAH jadi fungsi tersendiri (sebelumnya
+   nempel langsung di dalam handler klik .po-reopen di tabel utama) supaya bisa dipakai bareng dari 2
+   tempat: tombol .po-reopen di tabel utama (Konfirmasi PO, syaratnya bisaKonfirmasi -- TIDAK berubah)
+   DAN tombol baru "Buka Kembali" di tabel "Rekap PO Ditutup" di bawah (KHUSUS admin -- permintaan user
+   "TOLONG BERI AKSES UNTUK ADMIN ONLY SUPAYA BISA MENGEMBALIKAN PO YANG SUDAH DI TUTUP", karena tabel
+   itu sebelumnya sama sekali tidak punya aksi apapun). */
+function reopenPOItem(targetId){
+  const item = poList.find(x => String(x.id) === String(targetId));
+  if(!item) return;
+  if(confirm(`Buka kembali PO ${item.noPO || item.noCO || ''}? PO ini akan muncul lagi di Monitoring Sisa PO kalau sisanya masih ada.`)){
+    item.closed = false;
+    item.closedAt = '';
+    item.ditutupOleh = '';
+    savePO();
+    renderPO();
+    renderPOMonitoring();
+    updatePeringatanBadge();
+    showToast('PO berhasil dibuka kembali', 'success');
+  }
+}
+
 /* ---------- REKAP PO YANG DITUTUP (sisa tidak terkirim) ----------
    Ringkasan khusus PO yang sudah ditandai "Ditutup" lewat tombol Tutup PO di atas -- supaya kelihatan
    total tonase customer yang PO-nya ditutup tapi ternyata belum terkirim semua (potensi kerugian/piutang
    barang). Sisa dihitung LIVE lewat computePOSisa (sama seperti kolom "Sisa Tidak Terkirim" di tabel
-   utama) supaya selalu akurat kalau ada penyesuaian data DO setelahnya. */
+   utama) supaya selalu akurat kalau ada penyesuaian data DO setelahnya.
+   Sesi keseratuslimapuluhtujuh: kolom "Aksi" (tombol "Buka Kembali") ditambahkan, KHUSUS admin --
+   sebelumnya tabel ini murni tampilan, tidak ada cara mengembalikan PO yang sudah ditutup dari sini
+   sama sekali (satu-satunya jalan adalah lewat tombol reopen di tabel utama, yang aksesnya ikut
+   bisaKonfirmasi, bukan admin-only -- itu TIDAK diubah, tetap seperti semula). */
 function renderPORekapDitutup(){
   const wrap = document.getElementById('poRekapDitutupWrap');
   if(!wrap) return;
+  const admin = isAdminUser();
   const closedList = poList.filter(p => p.closed).slice().sort((a,b) => (a.closedAt < b.closedAt ? 1 : -1));
   if(closedList.length === 0){
     wrap.innerHTML = '';
@@ -10425,7 +10439,7 @@ function renderPORekapDitutup(){
       </div>
       <div class="panel-body">
         <div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
-          <th>No. CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa Tidak Terkirim</th><th>Tgl Ditutup</th><th>Ditutup Oleh</th>
+          <th>No. CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa Tidak Terkirim</th><th>Tgl Ditutup</th><th>Ditutup Oleh</th>${admin ? '<th>Aksi</th>' : ''}
         </tr></thead><tbody>${closedList.map(p => {
           const terkirim = computePOTerpakai(p);
           const sisa = computePOSisa(p);
@@ -10439,14 +10453,20 @@ function renderPORekapDitutup(){
             <td class="sv-num" style="${sisa > 0 ? 'color:#c0392b; font-weight:700;' : ''}">${sisa > 0 ? Number(sisa).toLocaleString('id-ID') + ' kg' : '0 kg'}</td>
             <td>${p.closedAt ? fmtDate(p.closedAt.slice(0,10)) : '-'}</td>
             <td class="sv-left">${esc(p.ditutupOleh || '-')}</td>
+            ${admin ? `<td><button type="button" class="btn btn-secondary po-rekap-reopen" data-id="${esc(p.id)}" title="Buka kembali PO ini (admin only)" style="padding:6px 12px; font-size:12.5px; white-space:nowrap;">Buka Kembali</button></td>` : ''}
           </tr>`;
         }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
           <td colspan="6" class="sv-left">TOTAL SISA TIDAK TERKIRIM (PO DITUTUP)</td>
           <td class="sv-num" style="color:#c0392b;">${totalSisa.toLocaleString('id-ID')} kg</td>
-          <td colspan="2"></td>
+          <td colspan="${admin ? 3 : 2}"></td>
         </tr></tfoot></table></div>
       </div>
     </div>`;
+  if(admin){
+    wrap.querySelectorAll('.po-rekap-reopen').forEach(btn => btn.addEventListener('click', function(){
+      reopenPOItem(this.dataset.id);
+    }));
+  }
 }
 
 /* Monitoring Sisa PO — hanya untuk memantau tonase PO yang sudah terkirim (dihitung dari DO yang
