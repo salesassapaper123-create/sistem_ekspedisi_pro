@@ -7620,7 +7620,10 @@ document.getElementById('stModalShareWa').addEventListener('click', async functi
       const file = new File([blob], fileName, { type: 'image/png' });
       if(navigator.canShare && navigator.canShare({ files: [file] })){
         try{
-          await navigator.share({ files: [file], title: 'PKB', text: 'PKB - LINTAS Ekspedisi Jaya' });
+          /* Sesi keseratusenampuluh: title/text SENGAJA dihapus -- WhatsApp menampilkan text: sebagai
+             judul/caption terpisah di atas foto ("PKB - LINTAS Ekspedisi Jaya"), user minta itu
+             dihilangkan supaya yang terkirim cuma fotonya saja, tanpa judul apapun. */
+          await navigator.share({ files: [file] });
         }catch(shareErr){
           if(shareErr && shareErr.name !== 'AbortError') showToast('Gagal membagikan foto PKB.', 'error');
         }
