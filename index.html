@@ -14424,8 +14424,11 @@ function initApp(){
 /* Sesi keseratusenampuluhdua: durasi minimum #appLoadingScreen ditampilkan sebelum crossfade ke
    appRoot -- initApp() di bawah ini SINKRON dan biasanya sangat cepat (data sudah di cache lokal
    dari listener Firebase yang jalan di background), jadi tanpa jeda minimum ini loading screen-nya
-   cuma kedip sekejap alih-alih terlihat sebagai transisi yang smooth seperti diminta user. */
-const APP_LOADING_MIN_MS = 700;
+   cuma kedip sekejap alih-alih terlihat sebagai transisi yang smooth seperti diminta user.
+   Sesi keseratusenampuluhtiga: dinaikkan dari 700ms -> 3000ms atas permintaan user ("beri waktu 3
+   detik saja agar terlihat ter sytem jangan telalu cepat... jangan terlalu cepat dan juga tidak
+   terlalu lama") -- 700ms dirasa masih terlalu cepat untuk sempat terlihat animasinya dengan jelas. */
+const APP_LOADING_MIN_MS = 3000;
 function showApp(){
   document.getElementById('loginScreen').style.display = 'none';
   const loadingEl = document.getElementById('appLoadingScreen');
