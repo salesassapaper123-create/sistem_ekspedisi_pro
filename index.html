@@ -12266,6 +12266,11 @@ function renderTable(){
         </button>` : ''}
       </td>
     </tr>`).join('')}
+    <!-- Sesi keseratusenampuluhsatu: baris TOTAL ini sempat lupa diberi 2 sel placeholder kosong untuk
+         kolom "No Reimburse Roll"/"No Reimburse OCC" waktu kolom itu ditambahkan di Sesi
+         keseratuslimapuluhenam -- akibatnya sel TOTAL Tonase OCC (dan semua sel sesudahnya) ikut
+         bergeser 1 kolom ke kiri, muncul di bawah header "No Reimburse Roll" alih-alih "Tonase OCC".
+         Sel data per-DO (bukan baris TOTAL) TIDAK ikut kena, sudah benar dari awal. -->
     <tr class="do-total-row">
       <td class="do-td-tanggal" colspan="${isOwnerView ? 5 : 7}" style="text-align:right;">TOTAL (${list.length} DO)</td>
       <td class="do-td-uang mono">${rupiah(list.reduce((s,r) => s + (Number(r.uangJalan)||0), 0))}</td>
@@ -12274,7 +12279,9 @@ function renderTable(){
       <td class="do-td-rute"></td>
       <td class="do-td-bk mono">${list.reduce((s,r) => s + (Number(r.tonase1)||0), 0).toLocaleString('id-ID')} kg</td>
       <td class="do-td-roll mono">${list.reduce((s,r) => s + (Number(r.tonase2)||0), 0).toLocaleString('id-ID')} kg</td>
+      ${isOwnerView ? '' : '<td class="do-td-reimburse-roll"></td>'}
       <td class="do-td-occ mono">${list.reduce((s,r) => s + (Number(r.tonase3)||0), 0).toLocaleString('id-ID')} kg</td>
+      ${isOwnerView ? '' : '<td class="do-td-reimburse-occ"></td>'}
       <td class="do-td-kotatujuan"></td>
       ${isOwnerView ? '' : '<td class="do-td-keterangan"></td>'}
       <td class="do-td-status"></td>
