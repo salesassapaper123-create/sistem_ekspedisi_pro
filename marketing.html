@@ -1112,27 +1112,89 @@
       <!-- INPUT PKB -->
       <div class="view active" data-view="input">
         <div class="panel">
-          <div class="panel-head"><h2>Input PKB</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Input PKB</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Input PKB</h2>
+              <p>Ongkos &amp; No. DO SENGAJA tidak ada di sini -- dilengkapi belakangan oleh LINTAS di menu Rekap Data DO. Nopol &amp; Sopir diambil dari data armada yang dikelola LINTAS.</p>
             </div>
+          </div>
+          <div class="panel-body">
+            <form id="formPKB">
+              <div class="grid2">
+                <div class="field">
+                  <label for="pkbTanggal">Tanggal</label>
+                  <input type="date" id="pkbTanggal" required>
+                </div>
+                <div class="field">
+                  <label for="pkbNoPKB">No. PKB</label>
+                  <input type="text" id="pkbNoPKB" placeholder="cth. 1421">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="pkbNoCO">PO terkait (No CO) <span class="hint">(opsional -- kalau dipilih, nama customer otomatis dipakai di Rekap Data Pengiriman)</span></label>
+                  <select id="pkbNoCO">
+                    <option value="">- Tidak terkait PO -</option>
+                  </select>
+                  <div class="hint" id="pkbNoCOHint" style="margin-top:4px;"></div>
+                </div>
+                <div class="field">
+                  <label for="pkbKotaTujuan">Kota tujuan</label>
+                  <input type="text" id="pkbKotaTujuan" placeholder="cth. Bandung">
+                </div>
+                <div class="field">
+                  <label for="pkbNopol">Nopol</label>
+                  <select id="pkbNopol" required>
+                    <option value="">-- Pilih nopol --</option>
+                  </select>
+                  <p class="hint" style="margin:6px 0 0;">Kalau nopol belum ada di daftar, minta ditambahkan lewat LINTAS &gt; Input Data Kendaraan.</p>
+                </div>
+                <div class="field">
+                  <label for="pkbSopir">Nama sopir</label>
+                  <select id="pkbSopir">
+                    <option value="">-- Pilih sopir --</option>
+                  </select>
+                </div>
+                <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
+                  <label>Jenis barang, jumlah roll &amp; tonase <span class="hint">(bisa lebih dari satu jenis dalam 1 PKB)</span></label>
+                  <div id="pkbJenisBarangRows"></div>
+                  <button type="button" class="btn btn-secondary" id="btnAddPkbJenisBarang" style="margin-top:4px;">+ Tambah jenis barang</button>
+                  <div id="pkbTotalTonase" style="margin-top:8px; font-weight:700; font-size:13px;">Total tonase: 0 kg</div>
+                </div>
+              </div>
+              <div class="login-error" id="pkbFormError" style="text-align:left; margin-top:10px;"></div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">Simpan PKB</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
 
       <!-- REKAP DATA PENGIRIMAN -->
       <div class="view" data-view="rekap-pengiriman">
+        <div class="panel" style="margin-bottom:20px;">
+          <div class="panel-head"><h2>Ringkasan pengiriman</h2></div>
+          <div class="panel-body" id="mktPengirimanSummaryWrap"></div>
+        </div>
         <div class="panel">
-          <div class="panel-head"><h2>Rekap Data Pengiriman</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Rekap Data Pengiriman</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Rekap data pengiriman</h2>
+              <p>Seluruh PKB yang sudah diinput -- tanpa nominal ongkos (ongkos dikelola di LINTAS)</p>
             </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="margin-bottom:16px;">
+              <div class="field">
+                <label>Filter tanggal</label>
+                <input type="date" id="rekapPengirimanFilterTanggal">
+              </div>
+              <div class="field">
+                <label>Filter bulan</label>
+                <input type="month" id="rekapPengirimanFilterBulan">
+              </div>
+              <button class="btn btn-secondary" id="btnRekapPengirimanClearFilter">Reset filter</button>
+            </div>
+            <div id="rekapPengirimanTableWrap"></div>
           </div>
         </div>
       </div>
@@ -1140,13 +1202,48 @@
       <!-- INPUT CUSTOMER -->
       <div class="view" data-view="customer-input">
         <div class="panel">
-          <div class="panel-head"><h2>Input Customer</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Input Customer</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Input customer</h2>
+              <p>Data yang disimpan di sini otomatis jadi saran dropdown di Input PKB &amp; Input SO/PO, supaya tidak salah ketik.</p>
             </div>
+          </div>
+          <div class="panel-body">
+            <form id="formCustomerInput">
+              <div class="grid2">
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="ciNama">Nama customer</label>
+                  <input type="text" id="ciNama" placeholder="cth. PT Contoh Kertas" required>
+                </div>
+                <div class="field">
+                  <label for="ciTujuan">Tujuan / kota <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciTujuan" placeholder="cth. Bandung">
+                </div>
+                <div class="field">
+                  <label for="ciTop">Termin pembayaran (TOP) <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciTop" placeholder="cth. 14 HARI / CASH / CBD">
+                </div>
+                <div class="field">
+                  <label for="ciUp">Contact person (UP) <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciUp" placeholder="cth. Ibu Melinda">
+                </div>
+                <div class="field">
+                  <label for="ciTelp">No. Telp <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciTelp" placeholder="cth. 0812-3456-7890">
+                </div>
+                <div class="field">
+                  <label for="ciTelp2">No. Telp 2 <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciTelp2" placeholder="cth. 021-1234567">
+                </div>
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="ciAlamat">Alamat <span class="hint">(opsional)</span></label>
+                  <input type="text" id="ciAlamat" placeholder="cth. Jl. Raya Cikarang No. 10">
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">Simpan customer</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -1154,13 +1251,14 @@
       <!-- DATA CUSTOMER -->
       <div class="view" data-view="customer">
         <div class="panel">
-          <div class="panel-head"><h2>Data Customer</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Data Customer</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Daftar customer</h2>
+              <p>Master data customer -- dipakai sebagai saran dropdown di Input PKB &amp; Input SO/PO</p>
             </div>
+          </div>
+          <div class="panel-body">
+            <div id="customerTableWrap"></div>
           </div>
         </div>
       </div>
@@ -1168,13 +1266,24 @@
       <!-- INPUT BARANG -->
       <div class="view" data-view="barang-input">
         <div class="panel">
-          <div class="panel-head"><h2>Input Barang</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Input Barang</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Input barang</h2>
+              <p>Data yang disimpan di sini otomatis jadi saran dropdown di baris "Jenis barang" (Input PKB), supaya tidak salah ketik.</p>
             </div>
+          </div>
+          <div class="panel-body">
+            <form id="formBarangInput">
+              <div class="grid2">
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label for="biNama">Nama barang</label>
+                  <input type="text" id="biNama" placeholder="cth. Kertas HVS Bekas" required>
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary">Simpan barang</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -1182,27 +1291,86 @@
       <!-- DATA BARANG -->
       <div class="view" data-view="barang">
         <div class="panel">
-          <div class="panel-head"><h2>Data Barang</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Data Barang</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Daftar barang</h2>
+              <p>Master data jenis barang -- dipakai sebagai saran dropdown di baris "Jenis barang" pada Input PKB</p>
             </div>
+          </div>
+          <div class="panel-body">
+            <div id="barangTableWrap"></div>
           </div>
         </div>
       </div>
+      <datalist id="customerDatalist"></datalist>
+      <datalist id="barangDatalist"></datalist>
 
       <!-- INPUT SO & UPLOAD PO -->
       <div class="view" data-view="po-input">
         <div class="panel">
-          <div class="panel-head"><h2>Input SO & Upload PO</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Input SO & Upload PO</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Input SO &amp; upload PO</h2>
+              <p>Isi data Sales Order lalu upload foto/scan dokumen PO -- order akan masuk ke daftar "Konfirmasi PO" untuk di-ACC atau ditolak.</p>
             </div>
+          </div>
+          <div class="panel-body">
+            <form id="formPOInput">
+              <p class="hint" style="margin:0 0 14px;">No. CO belum diisi di sini -- nomornya otomatis dibuatkan sistem (format 3 digit-tahun, cth. 123-26) begitu SO/PO ini di-ACC lewat menu Konfirmasi PO.</p>
+              <div class="grid2">
+                <div class="field">
+                  <label for="poTanggalCO">Tanggal CO</label>
+                  <input type="date" id="poTanggalCO" required>
+                </div>
+                <div class="field">
+                  <label for="poNoPO">No. PO</label>
+                  <input type="text" id="poNoPO" placeholder="cth. PO-2026-0001" required style="text-transform:uppercase;">
+                </div>
+                <div class="field">
+                  <label for="poNamaCustomer">Nama customer</label>
+                  <input type="text" id="poNamaCustomer" list="customerDatalist" placeholder="cth. PT Contoh Kertas" required>
+                </div>
+                <div class="field">
+                  <label for="poSales">Sales</label>
+                  <input type="text" id="poSales" placeholder="cth. Budi" required>
+                </div>
+                <div class="field">
+                  <label for="poGsm">GSM</label>
+                  <input type="text" id="poGsm" placeholder="cth. 150 GSM" required>
+                </div>
+                <div class="field">
+                  <label for="poUkuran">UK <span class="hint">(ukuran)</span></label>
+                  <input type="text" id="poUkuran" placeholder="cth. 65 x 100 cm" required>
+                </div>
+                <div class="field">
+                  <label for="poTonase">Tonase (kg)</label>
+                  <input type="number" id="poTonase" min="0" step="1" placeholder="cth. 8000" required>
+                </div>
+                <div class="field">
+                  <label for="poHarga">Harga (Rp)</label>
+                  <input type="number" id="poHarga" min="0" step="1" placeholder="cth. 12500000" required>
+                </div>
+                <div class="field">
+                  <label for="poStatusKirim">Status PO</label>
+                  <select id="poStatusKirim" required>
+                    <option value="">-- pilih status --</option>
+                    <option value="Franco">Franco</option>
+                    <option value="Loco">Loco</option>
+                  </select>
+                </div>
+                <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
+                  <label for="poFotoInput">Upload foto/scan PO <span class="hint">(opsional, format gambar -- JPG/PNG)</span></label>
+                  <input type="file" id="poFotoInput" accept="image/*">
+                  <div id="poFotoPreviewWrap" style="display:none; margin-top:10px;">
+                    <img id="poFotoPreviewImg" alt="Preview foto PO" style="max-width:220px; max-height:220px; border-radius:8px; border:1px solid var(--border); display:block;">
+                  </div>
+                  <div class="login-error" id="poFotoError" style="margin-top:6px;"></div>
+                </div>
+              </div>
+              <div class="btn-row" style="justify-content:flex-end;">
+                <button type="submit" class="btn btn-primary" id="btnSubmitPO">Simpan SO &amp; PO</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
@@ -1210,13 +1378,25 @@
       <!-- KONFIRMASI PO -->
       <div class="view" data-view="po">
         <div class="panel">
-          <div class="panel-head"><h2>Konfirmasi PO</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Konfirmasi PO</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Konfirmasi PO</h2>
+              <p id="poDescText">Daftar SO/PO yang masuk -- order yang belum dikonfirmasi perlu ditinjau dan di-ACC atau ditolak.</p>
             </div>
+          </div>
+          <div class="panel-body">
+            <div class="toolbar" style="margin-bottom:16px;">
+              <div class="field">
+                <label>Filter tanggal</label>
+                <input type="date" id="poFilterTanggal">
+              </div>
+              <div class="field">
+                <label>Filter bulan</label>
+                <input type="month" id="poFilterBulan">
+              </div>
+              <button class="btn btn-secondary" id="btnPoClearFilter">Reset filter</button>
+            </div>
+            <div id="poTableWrap"></div>
           </div>
         </div>
       </div>
@@ -1224,13 +1404,13 @@
       <!-- MONITORING SISA PO -->
       <div class="view" data-view="po-monitoring">
         <div class="panel">
-          <div class="panel-head"><h2>Monitoring Sisa PO</h2></div>
-          <div class="panel-body">
-            <div class="mkt-placeholder">
-              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/></svg>
-              <h3>Monitoring Sisa PO</h3>
-              <p>Halaman ini sedang dibangun (tahap berikutnya) -- login &amp; navigasi sudah aktif dan tersambung ke database yang sama dengan LINTAS.</p>
+          <div class="panel-head">
+            <div>
+              <h2>Monitoring Sisa PO</h2>
             </div>
+          </div>
+          <div class="panel-body">
+            <div id="poMonitoringTableWrap"></div>
           </div>
         </div>
       </div>
@@ -1318,6 +1498,39 @@ function ensureIds(list, prefix){
     }
   });
   return changed;
+}
+
+const FB_TOMBSTONE_TTL_MS = 20000;
+function fbMarkDeleted(path, id){
+  if(id === undefined || id === null || id === '') return;
+  if(!fbDeletedTombstones[path]) fbDeletedTombstones[path] = new Map();
+  fbDeletedTombstones[path].set(String(id), Date.now() + FB_TOMBSTONE_TTL_MS);
+}
+function fbRemoveFromList(path, matchesItemToRemove, id){
+  fbMarkDeleted(path, id);
+  if(!fbDb) return Promise.resolve(false);
+  fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
+  const prevInQueue = fbWriteQueue[path] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+    return fbDb.ref(path).transaction(currentData => {
+      const arr = fbToArray(currentData);
+      if(arr === null) return currentData;
+      return arr.filter(item => !matchesItemToRemove(item));
+    }).then(result => {
+      if(result && result.committed === false){
+        console.warn(`Transaksi hapus di Firebase tidak ter-commit (path: ${path}).`);
+        showToast('Terhapus di perangkat ini, tapi belum tersinkron ke server. Coba refresh untuk memastikan.', 'info');
+      }
+      return result;
+    }).catch(err => {
+      console.warn(`Gagal transaksi hapus di Firebase (path: ${path}):`, err);
+      showToast('Terhapus di perangkat ini, tapi gagal sinkron ke server -- cek koneksi internet.', 'info');
+    });
+  }).catch(() => {}).finally(() => {
+    fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
+  });
+  fbWriteQueue[path] = thisWrite;
+  return thisWrite;
 }
 
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -1432,6 +1645,16 @@ function currentAccount(){
 }
 
 function accountRole(a){ return (a && a.role) ? a.role : 'admin'; }
+function isAdminUser(){
+  try{
+    const acc = currentAccount();
+    return !acc || accountRole(acc) === 'admin';
+  }catch(e){ return false; }
+}
+function currentViewName(){
+  const el = document.querySelector('.view.active');
+  return el ? el.dataset.view : '';
+}
 
 /* ---------- SESI LOGIN 8 JAM -- KEY localStorage SENGAJA SAMA dengan LINTAS (SESSION_LOGIN_TS_KEY)
    supaya kalau dua app ini di-hosting di domain yang sama, 1x login dianggap 1 sesi yang sama juga
@@ -1494,6 +1717,7 @@ async function handleAuthStateChange(user){
     return;
   }
   startSessionTimeoutWatcher();
+  attachDataListeners();
   showApp();
 }
 
@@ -1598,11 +1822,856 @@ const subtitles = {
   'po': 'Daftar PO masuk & status konfirmasinya',
   'po-monitoring': 'Pantau sisa tonase PO yang sudah dikonfirmasi',
 };
+/* ---------- MASTER DATA CUSTOMER (node Firebase "customer" -- SAMA dengan LINTAS, dibaca &amp; ditulis bersama) ---------- */
+let customerList = [];
+function saveCustomer(){ fbPush('customer', customerList); }
+function getCustomerNameList(){
+  const set = new Set();
+  (customerList || []).forEach(c => { if(c.nama) set.add(c.nama); });
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+function updateCustomerDatalist(){
+  const el = document.getElementById('customerDatalist');
+  if(el) el.innerHTML = getCustomerNameList().map(n => `<option value="${esc(n)}"></option>`).join('');
+}
+function renderCustomer(){
+  const wrap = document.getElementById('customerTableWrap');
+  if(!wrap) return;
+  const admin = isAdminUser();
+  if(customerList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada customer terdaftar. Tambahkan lewat menu Input Customer.');
+  }else{
+    const sorted = [...customerList].sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nama Customer</th><th>Tujuan</th><th>TOP</th><th>Contact (UP)</th><th>No. Telp</th><th>Alamat</th><th></th></tr></thead><tbody>${sorted.map(c => `
+      <tr>
+        <td class="sv-left">${esc(c.nama)}</td>
+        <td>${esc(c.tujuan || '-')}</td>
+        <td>${esc(c.top || '-')}</td>
+        <td class="sv-left">${esc(c.up || '-')}</td>
+        <td class="mono">${esc(c.telp || '-')}${c.telp2 ? ' / ' + esc(c.telp2) : ''}</td>
+        <td class="sv-left">${esc(c.alamat || '-')}</td>
+        <td>
+          ${admin ? `<button class="icon-btn del" data-id="${c.id}" title="Hapus customer ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
+            Hapus
+          </button>` : ''}
+        </td>
+      </tr>`).join('')}</tbody></table>`;
+    if(admin){
+      wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+        if(confirm('Hapus customer ini?')){
+          const before = customerList.length;
+          const targetId = this.dataset.id;
+          customerList = customerList.filter(x => String(x.id) !== String(targetId));
+          if(customerList.length === before){
+            showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+            return;
+          }
+          fbRemoveFromList('customer', item => String(item.id) === String(targetId), targetId);
+          renderCustomer();
+          showToast('Data customer berhasil dihapus', 'danger');
+        }
+      }));
+    }
+  }
+  updateCustomerDatalist();
+}
+document.getElementById('formCustomerInput').addEventListener('submit', function(e){
+  e.preventDefault();
+  customerList.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    nama: document.getElementById('ciNama').value.trim(),
+    tujuan: document.getElementById('ciTujuan').value.trim(),
+    top: document.getElementById('ciTop').value.trim(),
+    up: document.getElementById('ciUp').value.trim(),
+    telp: document.getElementById('ciTelp').value.trim(),
+    telp2: document.getElementById('ciTelp2').value.trim(),
+    alamat: document.getElementById('ciAlamat').value.trim(),
+  });
+  saveCustomer();
+  renderCustomer();
+  this.reset();
+  showToast('Data customer berhasil disimpan, cek menu Data Customer', 'success');
+});
+
+/* ---------- MASTER DATA BARANG (node Firebase "barang" -- SAMA dengan LINTAS) ---------- */
+let barangList = [];
+function saveBarang(){ fbPush('barang', barangList); }
+function getBarangNameList(){
+  const set = new Set();
+  (barangList || []).forEach(b => { if(b.nama) set.add(b.nama); });
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+function updateBarangDatalist(){
+  const el = document.getElementById('barangDatalist');
+  if(el) el.innerHTML = getBarangNameList().map(n => `<option value="${esc(n)}"></option>`).join('');
+}
+function renderBarang(){
+  const wrap = document.getElementById('barangTableWrap');
+  if(!wrap) return;
+  const admin = isAdminUser();
+  if(barangList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada barang terdaftar. Tambahkan lewat menu Input Barang.');
+  }else{
+    const sorted = [...barangList].sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+    wrap.innerHTML = `<table class="sv-table"><thead><tr><th>Nama Barang</th><th></th></tr></thead><tbody>${sorted.map(b => `
+      <tr>
+        <td class="sv-left">${esc(b.nama)}</td>
+        <td>
+          ${admin ? `<button class="icon-btn del" data-id="${b.id}" title="Hapus barang ini" style="display:inline-flex; align-items:center; gap:4px; width:auto; padding:6px 10px; margin:0 auto;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px; height:14px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16z"/></svg>
+            Hapus
+          </button>` : ''}
+        </td>
+      </tr>`).join('')}</tbody></table>`;
+    if(admin){
+      wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+        if(confirm('Hapus barang ini?')){
+          const before = barangList.length;
+          const targetId = this.dataset.id;
+          barangList = barangList.filter(x => String(x.id) !== String(targetId));
+          if(barangList.length === before){
+            showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+            return;
+          }
+          fbRemoveFromList('barang', item => String(item.id) === String(targetId), targetId);
+          renderBarang();
+          showToast('Data barang berhasil dihapus', 'danger');
+        }
+      }));
+    }
+  }
+  updateBarangDatalist();
+}
+document.getElementById('formBarangInput').addEventListener('submit', function(e){
+  e.preventDefault();
+  barangList.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    nama: document.getElementById('biNama').value.trim(),
+  });
+  saveBarang();
+  renderBarang();
+  this.reset();
+  showToast('Data barang berhasil disimpan, cek menu Data Barang', 'success');
+});
+
+/* ---------- INPUT SO & KONFIRMASI PO (node Firebase "po" -- SAMA dengan LINTAS) ----------
+   "records" (node "records", data PKB/DO) dibaca di sini HANYA untuk menghitung Sisa PO (computePOSisa)
+   -- form Input PKB Marketing sendiri belum ada di tahap ini, jadi records[] di sini murni bacaan live,
+   belum ada yang menulis ke situ dari Marketing. */
+let poList = [];
+let records = [];
+function savePO(){ fbPush('po', poList); }
+const PO_STATUS_META = {
+  menunggu:     { label: 'Menunggu Konfirmasi', cls: 'badge-legal-warn' },
+  dikonfirmasi: { label: 'Dikonfirmasi (ACC)',   cls: 'badge-done' },
+  ditolak:      { label: 'Tidak Dikonfirmasi',   cls: 'badge-legal-danger' },
+};
+function poStatusBadge(status){
+  const meta = PO_STATUS_META[status] || PO_STATUS_META.menunggu;
+  return `<span class="badge ${meta.cls}"><span class="badge-dot"></span>${esc(meta.label)}</span>`;
+}
+function recTotalTonase(r){
+  return (Number(r.tonase1)||0) + (Number(r.tonase2)||0) + (Number(r.tonase3)||0);
+}
+function computePOTerpakai(po, excludeRecordId){
+  return records.reduce((sum, r) => {
+    if(excludeRecordId && String(r.id) === String(excludeRecordId)) return sum;
+    if(r.poId && String(r.poId) === String(po.id)) return sum + recTotalTonase(r);
+    return sum;
+  }, 0);
+}
+function computePOSisa(po, excludeRecordId){
+  return (Number(po.tonase)||0) - computePOTerpakai(po, excludeRecordId);
+}
+function generateNextNoCO(){
+  const yy = String(new Date().getFullYear()).slice(-2);
+  const existingNums = poList
+    .map(p => p.noCO || '')
+    .filter(noCO => noCO.endsWith('-' + yy))
+    .map(noCO => parseInt(noCO.split('-')[0], 10))
+    .filter(n => !isNaN(n));
+  const next = existingNums.length ? Math.max(...existingNums) + 1 : 1;
+  return String(next).padStart(3, '0') + '-' + yy;
+}
+function canConfirmPO(){
+  try{
+    const acc = currentAccount();
+    return !acc || accountRole(acc) === 'admin' || !!acc.bisaKonfirmasiPO;
+  }catch(e){ return false; }
+}
+function compressImageFile(file, maxDim, quality){
+  return new Promise((resolve, reject) => {
+    if(!file){ resolve(null); return; }
+    if(!file.type || !file.type.startsWith('image/')){ reject(new Error('File yang dipilih bukan gambar.')); return; }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Gagal membaca file.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('File bukan gambar yang valid.'));
+      img.onload = () => {
+        let width = img.naturalWidth, height = img.naturalHeight;
+        const scale = Math.min(1, (maxDim || 1000) / Math.max(width, height));
+        width = Math.max(1, Math.round(width * scale));
+        height = Math.max(1, Math.round(height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        try{ resolve(canvas.toDataURL('image/jpeg', quality || 0.6)); }catch(err){ reject(err); }
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function updatePoBadge(){
+  const badge = document.getElementById('poBadge');
+  if(!badge) return;
+  if(!canConfirmPO()){ badge.style.display = 'none'; badge.textContent = ''; return; }
+  const count = poList.filter(p => (p.status || 'menunggu') === 'menunggu').length;
+  if(count > 0){
+    badge.textContent = count > 99 ? '99+' : String(count);
+    badge.style.display = 'flex';
+  }else{
+    badge.textContent = '';
+    badge.style.display = 'none';
+  }
+}
+function fmtTon(kg){
+  const ton = Number(kg) / 1000;
+  const rounded2 = Math.round(ton * 100) / 100;
+  const isWhole = Number.isInteger(rounded2);
+  const opts = isWhole ? {minimumFractionDigits:0, maximumFractionDigits:0} : {minimumFractionDigits:2, maximumFractionDigits:2};
+  return rounded2.toLocaleString('id-ID', opts) + ' ton';
+}
+function renderPO(){
+  const wrap = document.getElementById('poTableWrap');
+  if(!wrap) return;
+  const admin = isAdminUser();
+  const bisaKonfirmasi = canConfirmPO();
+  const poDescText = document.getElementById('poDescText');
+  if(poDescText) poDescText.style.display = admin ? '' : 'none';
+  updatePoBadge();
+  if(poList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Input SO &amp; Upload PO.');
+    return;
+  }
+  const poFTgl = document.getElementById('poFilterTanggal') ? document.getElementById('poFilterTanggal').value : '';
+  const poFBln = document.getElementById('poFilterBulan') ? document.getElementById('poFilterBulan').value : '';
+  let sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
+  if(poFTgl) sorted = sorted.filter(p => p.tanggalCO === poFTgl);
+  else if(poFBln) sorted = sorted.filter(p => p.tanggalCO && p.tanggalCO.startsWith(poFBln));
+  if(sorted.length === 0){
+    wrap.innerHTML = emptyState('Tidak ada SO/PO pada periode yang dipilih.');
+    return;
+  }
+  const totalTonaseMasuk = sorted.reduce((sum,p) => sum + (Number(p.tonase)||0), 0);
+  let totalPengirimanSum = 0, totalSisaSum = 0;
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
+      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase</th>${admin ? '<th>Total Pengiriman</th><th>Sisa PO</th>' : ''}<th>Harga</th><th>Status PO</th><th>Foto PO</th><th>Status</th><th></th>
+    </tr></thead><tbody>${sorted.map(p => {
+      const sisaPO = computePOSisa(p);
+      const terpakai = computePOTerpakai(p);
+      totalPengirimanSum += terpakai;
+      totalSisaSum += sisaPO;
+      const poHabis = p.status === 'dikonfirmasi' && p.tonase && sisaPO <= 0;
+      return `
+      <tr>
+        <td class="mono">${esc(p.noCO || '-')}</td>
+        <td>${fmtDate(p.tanggalCO)}</td>
+        <td class="mono">${esc(p.noPO || '-')}</td>
+        <td class="sv-left">${esc(p.namaCustomer || '-')}</td>
+        <td class="sv-left">${esc(p.sales || '-')}</td>
+        <td>${esc(p.gsm || '-')}</td>
+        <td>${esc(p.ukuran || '-')}</td>
+        <td class="sv-num">${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        ${admin ? `<td class="sv-num">${terpakai ? Number(terpakai).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-num" style="${sisaPO < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? Number(sisaPO).toLocaleString('id-ID') + ' kg' : '-'}</td>` : ''}
+        <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
+        <td>${p.statusKirim ? esc(p.statusKirim) : '-'}</td>
+        <td>${p.fotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
+        <td>${poStatusBadge(p.status || 'menunggu')}${poHabis ? `<div style="margin-top:4px;"><span class="badge badge-done"><span class="badge-dot"></span>PO Habis</span></div>` : ''}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
+        <td class="row-actions">
+          ${(bisaKonfirmasi && (p.status || 'menunggu') === 'menunggu') ? `
+            <button type="button" class="icon-btn po-acc" data-id="${p.id}" title="Konfirmasi (ACC)" style="color:var(--green-600);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            </button>
+            <button type="button" class="icon-btn po-tolak" data-id="${p.id}" title="Tolak order" style="color:#c0392b;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>` : ''}
+          ${admin ? `<button type="button" class="icon-btn del" data-id="${p.id}" title="Hapus">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>` : ''}
+        </td>
+      </tr>`;
+    }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
+      <td colspan="7" class="sv-left">TOTAL TONASE MASUK</td>
+      <td class="sv-num">${totalTonaseMasuk.toLocaleString('id-ID')} kg</td>
+      ${admin ? `<td class="sv-num">${totalPengirimanSum.toLocaleString('id-ID')} kg</td><td class="sv-num">${totalSisaSum.toLocaleString('id-ID')} kg</td>` : ''}
+      <td colspan="5"></td>
+    </tr></tfoot></table></div>`;
+
+  wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', function(){
+    const item = poList.find(x => String(x.id) === String(this.dataset.id));
+    if(item && item.fotoPO) window.open(item.fotoPO, '_blank');
+  }));
+  if(bisaKonfirmasi){
+    wrap.querySelectorAll('.po-acc').forEach(btn => btn.addEventListener('click', function(){
+      const targetId = this.dataset.id;
+      const item = poList.find(x => String(x.id) === String(targetId));
+      if(!item) return;
+      if(confirm(`Konfirmasi (ACC) order PO ${item.noPO || item.noCO || ''}?`)){
+        item.status = 'dikonfirmasi';
+        item.catatanTolak = '';
+        if(!item.noCO) item.noCO = generateNextNoCO();
+        const acc = currentAccount();
+        item.dikonfirmasiOleh = acc ? acc.email : '';
+        item.tanggalKonfirmasi = new Date().toISOString();
+        savePO();
+        renderPO();
+        showToast('Order berhasil dikonfirmasi (ACC)', 'success');
+      }
+    }));
+    wrap.querySelectorAll('.po-tolak').forEach(btn => btn.addEventListener('click', function(){
+      const targetId = this.dataset.id;
+      const item = poList.find(x => String(x.id) === String(targetId));
+      if(!item) return;
+      const alasan = prompt(`Alasan menolak order PO ${item.noPO || item.noCO || ''} (opsional):`, '');
+      if(alasan === null) return; // batal
+      item.status = 'ditolak';
+      item.catatanTolak = alasan.trim();
+      const acc = currentAccount();
+      item.dikonfirmasiOleh = acc ? acc.email : '';
+      item.tanggalKonfirmasi = new Date().toISOString();
+      savePO();
+      renderPO();
+      showToast('Order ditandai tidak dikonfirmasi', 'danger');
+    }));
+  }
+  if(admin){
+    wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
+      if(confirm('Hapus data SO/PO ini?')){
+        const before = poList.length;
+        const targetId = this.dataset.id;
+        poList = poList.filter(x => String(x.id) !== String(targetId));
+        if(poList.length === before){
+          showToast('Gagal menghapus: data tidak ditemukan (id tidak valid). Coba muat ulang halaman.', 'danger');
+          return;
+        }
+        fbRemoveFromList('po', item => String(item.id) === String(targetId), targetId);
+        renderPO();
+        showToast('Data SO/PO berhasil dihapus', 'danger');
+      }
+    }));
+  }
+}
+function buildSisaPoTableHtml(sorted){
+  const isBK1 = p => String(p.namaCustomer || '').trim().toUpperCase().startsWith('BK 1');
+  const utama = sorted.filter(p => !isBK1(p));
+  const bk1 = sorted.filter(p => isBK1(p));
+  const poRowHtml = p => {
+    const terkirim = computePOTerpakai(p);
+    const sisa = computePOSisa(p);
+    return `
+      <tr>
+        <td class="mono">${esc(p.noCO || '-')}</td>
+        <td>${fmtDate(p.tanggalCO)}</td>
+        <td class="mono">${esc(p.noPO || '-')}</td>
+        <td class="sv-left">${esc(p.namaCustomer || '-')}</td>
+        <td class="sv-left">${esc(p.sales || '-')}</td>
+        <td>${esc(p.gsm || '-')}</td>
+        <td>${esc(p.ukuran || '-')}</td>
+        <td class="sv-num">${p.tonase ? fmtTon(p.tonase) : '-'}</td>
+        <td class="sv-num">${terkirim > 0 ? fmtTon(terkirim) : '-'}</td>
+        <td class="sv-num" style="${sisa < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? fmtTon(sisa) : '-'}</td>
+        <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
+        <td>${p.statusKirim ? esc(p.statusKirim) : '-'}</td>
+      </tr>`;
+  };
+  const sumGroup = list => list.reduce((acc, p) => {
+    acc.tonase += Number(p.tonase) || 0;
+    acc.terkirim += computePOTerpakai(p);
+    acc.sisa += computePOSisa(p);
+    return acc;
+  }, { tonase: 0, terkirim: 0, sisa: 0 });
+  const totalRow = (label, sum, bg, onlySisa) => onlySisa ? `
+    <tr style="font-weight:700; background:${bg};">
+      <td colspan="9" style="text-align:center;">${label}</td>
+      <td class="sv-num">${fmtTon(sum.sisa)}</td>
+      <td></td><td></td>
+    </tr>` : `
+    <tr style="font-weight:700; background:${bg};">
+      <td colspan="7" class="sv-left">${label}</td>
+      <td class="sv-num">${fmtTon(sum.tonase)}</td>
+      <td class="sv-num">${fmtTon(sum.terkirim)}</td>
+      <td class="sv-num">${fmtTon(sum.sisa)}</td>
+      <td></td><td></td>
+    </tr>`;
+  const utamaRows = utama.map(poRowHtml).join('');
+  const utamaSum = sumGroup(utama);
+  let bodyHtml, footHtml;
+  if(bk1.length === 0){
+    bodyHtml = utamaRows;
+    footHtml = totalRow('TOTAL SISA PO', utamaSum, 'var(--bg)', false);
+  }else{
+    const bk1Rows = bk1.map(poRowHtml).join('');
+    const bk1Sum = sumGroup(bk1);
+    const semuaSum = { tonase: utamaSum.tonase + bk1Sum.tonase, terkirim: utamaSum.terkirim + bk1Sum.terkirim, sisa: utamaSum.sisa + bk1Sum.sisa };
+    bodyHtml = utamaRows
+      + totalRow('TOTAL', utamaSum, '#fff3cd', true)
+      + bk1Rows
+      + totalRow('SISA PENGIRIMAN CO URP', bk1Sum, '#fff3cd', true);
+    footHtml = totalRow('TOTAL KELUAR+URP', semuaSum, 'var(--bg)', true);
+  }
+  return `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
+      <th>No. CO</th><th>Tgl CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>GSM</th><th>UK</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa PO</th><th>Harga</th><th>Status PO</th>
+    </tr></thead><tbody>${bodyHtml}</tbody><tfoot>${footHtml}</tfoot></table></div>`;
+}
+function renderPOMonitoring(){
+  const wrap = document.getElementById('poMonitoringTableWrap');
+  if(!wrap) return;
+  if(poList.length === 0){
+    wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Input SO &amp; Upload PO.');
+    return;
+  }
+  const sorted = poList
+    .filter(p => p.status === 'dikonfirmasi' && !p.closed && computePOSisa(p) > 0)
+    .slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
+  if(sorted.length === 0){
+    wrap.innerHTML = emptyState('Belum ada PO yang dikonfirmasi dengan sisa tersedia -- PO yang belum di-ACC atau sudah habis tidak ditampilkan di sini.');
+    return;
+  }
+  wrap.innerHTML = buildSisaPoTableHtml(sorted);
+}
+document.getElementById('poFotoInput').addEventListener('change', function(e){
+  const file = e.target.files[0];
+  const wrap = document.getElementById('poFotoPreviewWrap');
+  const img = document.getElementById('poFotoPreviewImg');
+  if(!file){ wrap.style.display = 'none'; return; }
+  const reader = new FileReader();
+  reader.onload = ev => { img.src = ev.target.result; wrap.style.display = ''; };
+  reader.readAsDataURL(file);
+});
+document.getElementById('formPOInput').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const errEl = document.getElementById('poFotoError');
+  errEl.textContent = '';
+  const btn = document.getElementById('btnSubmitPO');
+  const fileInput = document.getElementById('poFotoInput');
+  const file = fileInput.files[0];
+  btn.disabled = true;
+  let fotoPO = null;
+  try{
+    if(file) fotoPO = await compressImageFile(file, 1000, 0.65);
+  }catch(err){
+    errEl.textContent = 'Gagal memproses foto PO: ' + (err.message || err);
+    btn.disabled = false;
+    return;
+  }
+  const acc = currentAccount();
+  poList.push({
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    noCO: '',
+    tanggalCO: document.getElementById('poTanggalCO').value,
+    noPO: document.getElementById('poNoPO').value.trim().toUpperCase(),
+    namaCustomer: document.getElementById('poNamaCustomer').value.trim(),
+    sales: document.getElementById('poSales').value.trim(),
+    gsm: document.getElementById('poGsm').value.trim(),
+    ukuran: document.getElementById('poUkuran').value.trim(),
+    tonase: Number(document.getElementById('poTonase').value) || 0,
+    harga: Number(document.getElementById('poHarga').value) || 0,
+    statusKirim: document.getElementById('poStatusKirim').value,
+    fotoPO: fotoPO,
+    status: 'menunggu',
+    catatanTolak: '',
+    dikonfirmasiOleh: '',
+    tanggalKonfirmasi: '',
+    dibuatOleh: acc ? acc.email : '',
+    createdAt: new Date().toISOString(),
+    notifWaSent: false,
+  });
+  savePO();
+  this.reset();
+  document.getElementById('poFotoPreviewWrap').style.display = 'none';
+  btn.disabled = false;
+  updatePoBadge();
+  showToast('SO & PO berhasil disimpan, menunggu konfirmasi', 'success');
+  goTo('po');
+});
+document.getElementById('btnPoClearFilter').addEventListener('click', function(){
+  document.getElementById('poFilterTanggal').value = '';
+  document.getElementById('poFilterBulan').value = '';
+  renderPO();
+});
+document.getElementById('poFilterTanggal').addEventListener('change', renderPO);
+document.getElementById('poFilterBulan').addEventListener('change', renderPO);
+
+/* ---------- INPUT PKB (node Firebase "records" -- SAMA dengan LINTAS) ----------
+   Ongkos (uangJalan), Biaya lain & No DO SENGAJA dikosongkan/0 -- dilengkapi belakangan oleh LINTAS
+   lewat Rekap Data DO. Nopol/Sopir HANYA bisa dipilih dari dropdown (data armada dikelola LINTAS,
+   dibaca read-only di sini). "records" ditulis lewat fbMergeArraySave (BUKAN fbPush) -- transaksi
+   merge-by-id, supaya PKB baru dari LINTAS yang belum sempat sinkron ke perangkat ini TIDAK ikut
+   tertimpa/hilang saat Marketing menyimpan PKB baru (celah data hilang yang sama pernah terjadi di
+   LINTAS sendiri, Sesi keseratuslimapuluhtiga -- lihat catatan fbMergeArraySave di bawah). */
+let kendaraanList = [];
+let driverList = [];
+let appSettings = { nextNoPKB: 1421 };
+function saveAppSettings(){ fbPush('appSettings', appSettings); }
+function fbMergeArraySave(path, localList, tombstonesKey){
+  if(!fbDb) return Promise.resolve();
+  const localSnapshot = (localList || []).map(r => Object.assign({}, r));
+  fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
+  const prevInQueue = fbWriteQueue[path] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+    return Promise.resolve(fbDb.ref(path).transaction(serverVal => {
+      const serverArr = fbToArray(serverVal) || [];
+      const byId = new Map();
+      serverArr.forEach(r => { if(r && r.id != null) byId.set(String(r.id), r); });
+      localSnapshot.forEach(r => { if(r && r.id != null) byId.set(String(r.id), r); });
+      const tomb = fbDeletedTombstones[tombstonesKey || path];
+      if(tomb && tomb.size){
+        const now = Date.now();
+        tomb.forEach((exp, id) => { if(exp >= now) byId.delete(String(id)); });
+      }
+      return Array.from(byId.values());
+    })).catch(err => {
+      console.warn(`Gagal sinkron (merge) ke Firebase (path: ${path}):`, err);
+    });
+  }).catch(() => {}).finally(() => {
+    fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
+  });
+  fbWriteQueue[path] = thisWrite;
+  return thisWrite;
+}
+function saveRecords(){ fbMergeArraySave('records', records); }
+function bumpNextNoPKB(savedNoPKB){
+  const digits = String(savedNoPKB || '').replace(/[^\d]/g, '');
+  if(!digits) return;
+  const num = parseInt(digits, 10);
+  if(!isNaN(num) && (num + 1) > (Number(appSettings.nextNoPKB) || 0)){
+    appSettings.nextNoPKB = num + 1;
+    saveAppSettings();
+  }
+}
+function prefillNoPKB(){
+  const el = document.getElementById('pkbNoPKB');
+  if(el && !el.value) el.value = String(appSettings.nextNoPKB || 1421);
+}
+function normNopol(v){ return String(v || '').toUpperCase().replace(/\s+/g, ''); }
+function populatePkbNopolSopirDropdowns(){
+  const selNopol = document.getElementById('pkbNopol');
+  const selSopir = document.getElementById('pkbSopir');
+  if(selNopol){
+    const cur = selNopol.value;
+    const opts = kendaraanList.slice().sort((a,b) => (a.nopol||'').localeCompare(b.nopol||''))
+      .map(k => `<option value="${esc(k.nopol)}">${esc(k.nopol)}</option>`).join('');
+    selNopol.innerHTML = '<option value="">-- Pilih nopol --</option>' + opts;
+    if(cur && [...selNopol.options].some(o => o.value === cur)) selNopol.value = cur;
+  }
+  if(selSopir){
+    const cur = selSopir.value;
+    const opts = driverList.slice().sort((a,b) => (a.nama||'').localeCompare(b.nama||''))
+      .map(d => `<option value="${esc(d.nama)}">${esc(d.nama)}</option>`).join('');
+    selSopir.innerHTML = '<option value="">-- Pilih sopir --</option>' + opts;
+    if(cur && [...selSopir.options].some(o => o.value === cur)) selSopir.value = cur;
+  }
+}
+function populatePkbNoCODropdown(){
+  const sel = document.getElementById('pkbNoCO');
+  if(!sel) return;
+  const want = sel.value;
+  const confirmed = poList.filter(p => p.status === 'dikonfirmasi' && !p.closed);
+  sel.innerHTML = '<option value="">- Tidak terkait PO -</option>' + confirmed.map(p => {
+    const sisa = computePOSisa(p);
+    const sisaLabel = sisa < 0 ? `minus ${Math.abs(sisa).toLocaleString('id-ID')} kg` : `sisa ${sisa.toLocaleString('id-ID')} kg`;
+    return `<option value="${esc(p.id)}">${esc(p.noCO || '-')} -- ${esc(p.namaCustomer || '-')} (${sisaLabel})</option>`;
+  }).join('');
+  sel.value = confirmed.some(p => String(p.id) === String(want)) ? want : '';
+  updatePkbNoCOHint();
+}
+function updatePkbNoCOHint(){
+  const sel = document.getElementById('pkbNoCO');
+  const hint = document.getElementById('pkbNoCOHint');
+  if(!sel || !hint) return;
+  const poId = sel.value;
+  if(!poId){ hint.textContent = ''; return; }
+  const po = poList.find(p => String(p.id) === String(poId));
+  if(!po){ hint.textContent = ''; return; }
+  const sisa = computePOSisa(po);
+  hint.innerHTML = sisa < 0
+    ? `<span style="color:#c0392b; font-weight:600;">Sisa PO ini sudah minus ${Math.abs(sisa).toLocaleString('id-ID')} kg.</span>`
+    : `Sisa tonase PO ini saat ini: ${sisa.toLocaleString('id-ID')} kg dari total ${(Number(po.tonase)||0).toLocaleString('id-ID')} kg.`;
+}
+document.getElementById('pkbNoCO').addEventListener('change', updatePkbNoCOHint);
+
+function addPkbJenisBarangRow(nama, jumlahRoll, tonase){
+  const container = document.getElementById('pkbJenisBarangRows');
+  const row = document.createElement('div');
+  row.className = 'jb-row';
+  row.style.cssText = 'display:flex; gap:8px; margin-bottom:8px;';
+  const tonaseStr = (tonase === null || tonase === undefined || tonase === '') ? '' : esc(String(tonase));
+  const jumlahRollStr = (jumlahRoll === null || jumlahRoll === undefined || jumlahRoll === '') ? '' : esc(String(jumlahRoll));
+  row.innerHTML = `<input type="text" class="jb-row-input" list="barangDatalist" placeholder="cth. ML-68" style="flex:2;" value="${esc(nama || '')}">
+    <input type="number" class="jb-row-jumlahroll" step="1" min="0" placeholder="Jumlah roll" style="flex:1; max-width:120px;" value="${jumlahRollStr}">
+    <input type="number" class="jb-row-tonase" step="1" min="0" placeholder="Tonase (kg)" style="flex:1; max-width:150px;" value="${tonaseStr}">
+    <button type="button" class="btn btn-secondary jb-row-remove" style="padding:6px 12px;" title="Hapus baris ini">&times;</button>`;
+  container.appendChild(row);
+  row.querySelector('.jb-row-remove').addEventListener('click', function(){ row.remove(); updatePkbTotalTonase(); });
+  row.querySelector('.jb-row-tonase').addEventListener('input', updatePkbTotalTonase);
+}
+function resetPkbJenisBarangRows(){
+  document.getElementById('pkbJenisBarangRows').innerHTML = '';
+  addPkbJenisBarangRow('', '', '');
+  updatePkbTotalTonase();
+}
+function collectPkbJenisBarangDetail(){
+  return [...document.querySelectorAll('#pkbJenisBarangRows .jb-row')].map(row => {
+    const nama = row.querySelector('.jb-row-input').value.trim();
+    const jumlahRollRaw = row.querySelector('.jb-row-jumlahroll').value;
+    const jumlahRoll = jumlahRollRaw === '' ? null : parseFloat(jumlahRollRaw);
+    const tonaseRaw = row.querySelector('.jb-row-tonase').value;
+    const tonase = tonaseRaw === '' ? null : parseFloat(tonaseRaw);
+    return { nama: nama, jumlahRoll: jumlahRoll, tonase: tonase, jenis: 'bk' };
+  }).filter(it => it.nama);
+}
+function updatePkbTotalTonase(){
+  const total = collectPkbJenisBarangDetail().reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+  document.getElementById('pkbTotalTonase').textContent = `Total tonase: ${total.toLocaleString('id-ID')} kg`;
+}
+document.getElementById('btnAddPkbJenisBarang').addEventListener('click', function(){ addPkbJenisBarangRow('', '', ''); });
+resetPkbJenisBarangRows();
+document.getElementById('pkbTanggal').valueAsDate = new Date();
+
+document.getElementById('formPKB').addEventListener('submit', function(e){
+  e.preventDefault();
+  const errEl = document.getElementById('pkbFormError');
+  errEl.textContent = '';
+  const nopol = document.getElementById('pkbNopol').value.trim();
+  if(!nopol){ errEl.textContent = 'Pilih nopol terlebih dahulu.'; return; }
+  const detail = collectPkbJenisBarangDetail();
+  if(detail.length === 0){ errEl.textContent = 'Isi minimal satu jenis barang & tonase.'; return; }
+  const totalTonase = detail.reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+  const poIdVal = document.getElementById('pkbNoCO').value || null;
+  const poTerkait = poIdVal ? poList.find(p => String(p.id) === String(poIdVal)) : null;
+  const kotaTujuanVal = document.getElementById('pkbKotaTujuan').value.trim();
+  const noPKBVal = document.getElementById('pkbNoPKB').value.trim();
+  const acc = currentAccount();
+  const newId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  records.push({
+    id: newId,
+    tanggal: document.getElementById('pkbTanggal').value,
+    noPKB: noPKBVal,
+    noDO: '', // dilengkapi belakangan oleh LINTAS
+    kotaTujuan: kotaTujuanVal,
+    nopol: nopol,
+    sopir: document.getElementById('pkbSopir').value.trim(),
+    kirimBK: true, kirimRoll: false, kirimOCC: false, kirimKosongan: false,
+    jenisArmada: 'tronton',
+    jenisAngkutan: 'organik',
+    vendorNama: '', vendorRute: '', vendorKet: '', vendorJenisTarif: '', vendorTarifPerKg: null,
+    kota: '',
+    jenisBarangDetail: detail,
+    jenisBarangList: detail.map(it => it.nama),
+    jenisBarang: detail.map(it => it.nama).join(', '),
+    poId: poIdVal,
+    noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
+    pendapatan: 0,
+    uangJalan: 0, // dilengkapi belakangan oleh LINTAS
+    biayaLain: 0,
+    tujuanMuat: '', tujuanBongkar: kotaTujuanVal,
+    tujuanMuat2: '', tujuanBongkar2: '',
+    tujuanMuat3: '', tujuanBongkar3: '',
+    tonase1: totalTonase, tonase2: null, tonase3: null,
+    status: 'dijadwalkan',
+    dibuatOleh: acc ? acc.email : '',
+    createdAt: new Date().toISOString(),
+  });
+  if(noPKBVal) bumpNextNoPKB(noPKBVal);
+  saveRecords();
+  this.reset();
+  resetPkbJenisBarangRows();
+  document.getElementById('pkbTanggal').valueAsDate = new Date();
+  prefillNoPKB();
+  populatePkbNopolSopirDropdowns();
+  populatePkbNoCODropdown();
+  showToast('PKB berhasil disimpan -- ongkos & No. DO akan dilengkapi LINTAS', 'success');
+});
+
+/* ---------- REKAP DATA PENGIRIMAN (baca "records" yang sama -- kolom SENGAJA tidak ada nominal
+   ongkos, sesuai permintaan: Tanggal, No PKB, No DO, Nopol, Nama Customer, Tonase, Kota Tujuan.
+   Nama Customer diambil lewat poId -> po.namaCustomer (sama seperti "Rekap Pengiriman ke Customer"
+   di LINTAS) -- kosong kalau PKB itu tidak dikaitkan ke PO manapun. ---------- */
+function isBK1Customer(p){
+  return String((p && p.namaCustomer) || '').trim().toUpperCase().startsWith('BK 1');
+}
+function renderPengirimanSummaryCardMkt(){
+  const wrap = document.getElementById('mktPengirimanSummaryWrap');
+  if(!wrap) return;
+  const custLuarPO = poList.filter(p => !isBK1Customer(p) && computePOTerpakai(p) > 0);
+  const bk1PO = poList.filter(p => isBK1Customer(p) && computePOTerpakai(p) > 0);
+  if(custLuarPO.length === 0 && bk1PO.length === 0){
+    wrap.innerHTML = emptyState('Belum ada DO yang terkirim & terkait PO saat ini.');
+    return;
+  }
+  const custLuarTon = custLuarPO.reduce((s, p) => s + computePOTerpakai(p), 0) / 1000;
+  const bk1Ton = bk1PO.reduce((s, p) => s + computePOTerpakai(p), 0) / 1000;
+  wrap.innerHTML = `
+    <div class="dash-mini-num">${custLuarTon.toLocaleString('id-ID', { maximumFractionDigits: 1 })}<span class="dash-mini-unit">Ton</span></div>
+    <div class="dash-mini-sub">Hasil Pengiriman -- Cust Luar (${custLuarPO.length} PO, bukan BK 1)</div>
+    <div class="dash-mini-rows">
+      <div class="dash-mini-row" style="justify-content:space-between;"><span class="dash-mini-row-lbl">Hasil Pengiriman -- BK 1 (${bk1PO.length} PO)</span></div>
+      <div class="dash-mini-num" style="font-size:19px;">${bk1Ton.toLocaleString('id-ID', { maximumFractionDigits: 1 })} Ton</div>
+    </div>`;
+}
+function renderRekapPengiriman(){
+  renderPengirimanSummaryCardMkt();
+  const wrap = document.getElementById('rekapPengirimanTableWrap');
+  if(!wrap) return;
+  if(records.length === 0){
+    wrap.innerHTML = emptyState('Belum ada PKB yang diinput. Tambahkan lewat menu Input PKB.');
+    return;
+  }
+  const fTgl = document.getElementById('rekapPengirimanFilterTanggal') ? document.getElementById('rekapPengirimanFilterTanggal').value : '';
+  const fBln = document.getElementById('rekapPengirimanFilterBulan') ? document.getElementById('rekapPengirimanFilterBulan').value : '';
+  let sorted = records.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+  if(fTgl) sorted = sorted.filter(r => r.tanggal === fTgl);
+  else if(fBln) sorted = sorted.filter(r => r.tanggal && r.tanggal.startsWith(fBln));
+  if(sorted.length === 0){
+    wrap.innerHTML = emptyState('Tidak ada data pengiriman pada periode yang dipilih.');
+    return;
+  }
+  const totalTonase = sorted.reduce((s, r) => s + recTotalTonase(r), 0);
+  wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
+      <th>Tanggal</th><th>No. PKB</th><th>No. DO</th><th>Nopol</th><th>Nama Customer</th><th>Tonase</th><th>Kota Tujuan</th>
+    </tr></thead><tbody>${sorted.map(r => {
+      const po = r.poId ? poList.find(p => String(p.id) === String(r.poId)) : null;
+      const tonase = recTotalTonase(r);
+      return `
+      <tr>
+        <td>${fmtDate(r.tanggal)}</td>
+        <td class="mono">${esc(r.noPKB || '-')}</td>
+        <td class="mono">${esc(r.noDO || '-')}</td>
+        <td class="mono">${esc(r.nopol || '-')}</td>
+        <td class="sv-left">${esc(po ? (po.namaCustomer || '-') : '-')}</td>
+        <td class="sv-num">${tonase ? Number(tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-left">${esc(r.kotaTujuan || '-')}</td>
+      </tr>`;
+    }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
+      <td colspan="5" class="sv-left">TOTAL TONASE</td>
+      <td class="sv-num">${totalTonase.toLocaleString('id-ID')} kg</td>
+      <td></td>
+    </tr></tfoot></table></div>`;
+}
+document.getElementById('btnRekapPengirimanClearFilter').addEventListener('click', function(){
+  document.getElementById('rekapPengirimanFilterTanggal').value = '';
+  document.getElementById('rekapPengirimanFilterBulan').value = '';
+  renderRekapPengiriman();
+});
+document.getElementById('rekapPengirimanFilterTanggal').addEventListener('change', renderRekapPengiriman);
+document.getElementById('rekapPengirimanFilterBulan').addEventListener('change', renderRekapPengiriman);
+
+/* ---------- Listener data Firebase (dipasang sekali setelah login) -- node yang sama dengan LINTAS,
+   jadi data yang ditambah di LINTAS otomatis muncul di sini juga (real-time), tanpa perlu sinkron manual. ---------- */
+let dataListenersAttached = false;
+function attachDataListeners(){
+  if(dataListenersAttached || !fbDb) return;
+  dataListenersAttached = true;
+
+  fbDb.ref('customer').on('value', snap => {
+    if(fbPendingWrites['customer']) return;
+    const arr = fbToArray(snap.val());
+    if(arr){
+      customerList = fbFilterTombstoned('customer', arr);
+      if(currentViewName() === 'customer') renderCustomer();
+      updateCustomerDatalist();
+    }else{
+      customerList = [];
+      if(currentViewName() === 'customer') renderCustomer();
+      updateCustomerDatalist();
+    }
+  });
+
+  fbDb.ref('barang').on('value', snap => {
+    if(fbPendingWrites['barang']) return;
+    const arr = fbToArray(snap.val());
+    if(arr){
+      barangList = fbFilterTombstoned('barang', arr);
+      if(currentViewName() === 'barang') renderBarang();
+      updateBarangDatalist();
+    }else{
+      barangList = [];
+      if(currentViewName() === 'barang') renderBarang();
+      updateBarangDatalist();
+    }
+  });
+
+  fbDb.ref('po').on('value', snap => {
+    if(fbPendingWrites['po']) return;
+    const arr = fbToArray(snap.val());
+    poList = arr ? fbFilterTombstoned('po', arr) : [];
+    const v = currentViewName();
+    if(v === 'po') renderPO();
+    if(v === 'po-monitoring') renderPOMonitoring();
+    if(v === 'input') populatePkbNoCODropdown();
+    if(v === 'rekap-pengiriman') renderRekapPengiriman();
+    updatePoBadge();
+  });
+
+  /* Node "records" (data PKB/DO) -- Marketing MENULIS ke sini (Input PKB, lewat fbMergeArraySave, lihat
+     saveRecords()) DAN membacanya live supaya Sisa PO (Monitoring & Konfirmasi PO) selalu akurat
+     mengikuti DO yang diinput/diedit dari LINTAS maupun dari sini. */
+  fbDb.ref('records').on('value', snap => {
+    if(fbPendingWrites['records']) return;
+    const arr = fbToArray(snap.val());
+    records = arr ? fbFilterTombstoned('records', arr) : [];
+    const v = currentViewName();
+    if(v === 'po') renderPO();
+    if(v === 'po-monitoring') renderPOMonitoring();
+    if(v === 'rekap-pengiriman') renderRekapPengiriman();
+  });
+
+  /* Data armada (kendaraan/driver) -- dikelola LINTAS, dibaca READ-ONLY di sini untuk dropdown
+     Nopol/Sopir Input PKB. */
+  fbDb.ref('kendaraan').on('value', snap => {
+    const arr = fbToArray(snap.val());
+    kendaraanList = arr ? fbFilterTombstoned('kendaraan', arr) : [];
+    if(currentViewName() === 'input') populatePkbNopolSopirDropdowns();
+  });
+  fbDb.ref('driver').on('value', snap => {
+    const arr = fbToArray(snap.val());
+    driverList = arr ? fbFilterTombstoned('driver', arr) : [];
+    if(currentViewName() === 'input') populatePkbNopolSopirDropdowns();
+  });
+
+  /* appSettings -- object tunggal (bukan array), dipakai bersama LINTAS untuk nomor urut No. PKB
+     berikutnya (nextNoPKB), supaya penomoran PKB tidak tabrakan antara Marketing & LINTAS. */
+  fbDb.ref('appSettings').on('value', snap => {
+    if(fbPendingWrites['appSettings']) return;
+    const val = snap.val();
+    if(val && typeof val === 'object'){
+      appSettings = Object.assign({ nextNoPKB: 1421 }, val);
+      if(currentViewName() === 'input') prefillNoPKB();
+    }
+  });
+}
+
 function goTo(view){
   document.querySelectorAll('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.dataset.view === view));
   document.getElementById('pageTitle').textContent = titles[view] || '';
   document.getElementById('pageSubtitle').textContent = subtitles[view] || '';
+  if(view === 'customer') renderCustomer();
+  if(view === 'po') renderPO();
+  if(view === 'po-monitoring') renderPOMonitoring();
+  if(view === 'barang') renderBarang();
+  if(view === 'rekap-pengiriman') renderRekapPengiriman();
+  if(view === 'input'){
+    populatePkbNopolSopirDropdowns();
+    populatePkbNoCODropdown();
+    prefillNoPKB();
+    if(!document.getElementById('pkbTanggal').value) document.getElementById('pkbTanggal').valueAsDate = new Date();
+  }
 }
 document.querySelectorAll('.nav-item[data-view]').forEach(btn => {
   btn.addEventListener('click', () => goTo(btn.dataset.view));
