@@ -1101,15 +1101,12 @@
           <svg class="nav-group-chevron" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </button>
         <div class="nav-group-items">
-          <button class="nav-item nav-sub" data-view="po">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-            Konfirmasi PO
-            <span class="notif-badge" id="poBadge" style="position:static; margin-left:auto; border:none;"></span>
-          </button>
-          <button class="nav-item nav-sub" data-view="po-monitoring">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-            Monitoring Sisa PO
-          </button>
+          <!-- Sesi keseratusenampuluhenam: "Konfirmasi PO" & "Monitoring Sisa PO" dihilangkan dari sidebar
+               LINTAS -- input & konfirmasi PO sekarang dikerjakan lewat LINTAS Marketing (marketing.html),
+               satu database yang sama. Elemen <div class="view" data-view="po"/"po-monitoring"> beserta
+               fungsi render/poBadge dsb SENGAJA TIDAK dihapus dari kode (masih dipakai buat fungsi BACA:
+               poList tetap dimuat & disinkron dari Firebase seperti biasa, dropdown "PO terkait" di Input
+               PKB, No CO di cetak PKB, kartu Sisa PO di Dashboard, tombol "Lihat Detail" ke po-monitoring). -->
           <!-- Sesi kesembilanpuluhdua: menu baru "Rekap Pengiriman ke Cust" -->
           <button class="nav-item nav-sub" data-view="rekap-pengiriman-cust">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
@@ -1187,29 +1184,13 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Driver
           </button>
-          <button class="nav-item nav-sub" data-view="customer-input">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Input Customer
-          </button>
-          <button class="nav-item nav-sub" data-view="customer">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            Data Customer
-          </button>
-          <button class="nav-item nav-sub" data-view="barang-input">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.3 12 12m0 0L3.5 7.3M12 12v9.5M21 16.2V7.8a1.7 1.7 0 0 0-.9-1.5l-7.2-4a1.7 1.7 0 0 0-1.8 0l-7.2 4a1.7 1.7 0 0 0-.9 1.5v8.4a1.7 1.7 0 0 0 .9 1.5l7.2 4a1.7 1.7 0 0 0 1.8 0l7.2-4a1.7 1.7 0 0 0 .9-1.5z"/></svg>
-            Input Barang
-          </button>
-          <button class="nav-item nav-sub" data-view="barang">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 7.3 12 12m0 0L3.5 7.3M12 12v9.5M21 16.2V7.8a1.7 1.7 0 0 0-.9-1.5l-7.2-4a1.7 1.7 0 0 0-1.8 0l-7.2 4a1.7 1.7 0 0 0-.9 1.5v8.4a1.7 1.7 0 0 0 .9 1.5l7.2 4a1.7 1.7 0 0 0 1.8 0l7.2-4a1.7 1.7 0 0 0 .9-1.5z"/></svg>
-            Data Barang
-          </button>
+          <!-- Sesi keseratusenampuluhenam: "Input Customer"/"Data Customer", "Input Barang"/"Data Barang",
+               dan "Input SO & Upload PO" dihilangkan dari sidebar LINTAS -- semuanya sekarang dikerjakan
+               lewat LINTAS Marketing (marketing.html), satu database yang sama (node customer/barang/po
+               tetap dimuat & disinkron seperti biasa di sini, cuma tombol menunya yang dihilangkan). -->
           <button class="nav-item nav-sub" data-view="input">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M9 13h6M9 17h6"/></svg>
             Input PKB
-          </button>
-          <button class="nav-item nav-sub" data-view="po-input">
-            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v5h5M6 3h8l5 5v13H6z"/><path d="M12 11v6M9 14h6"/></svg>
-            Input SO &amp; Upload PO
           </button>
         </div>
       </div>
@@ -3824,8 +3805,6 @@ function syncOdometerFromCartrack(){
                   <label class="acc-menu-chk"><input type="checkbox" data-view="dashboard"> Dashboard</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="bkl"> Rekap BKL</label>
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px; margin-top:14px;">PO</div>
-                  <label class="acc-menu-chk"><input type="checkbox" data-view="po"> Konfirmasi PO</label>
-                  <label class="acc-menu-chk"><input type="checkbox" data-view="po-monitoring"> Monitoring Sisa PO</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="rekap-pengiriman-cust"> Rekap Pengiriman ke Cust</label>
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px; margin-top:14px;">Ekspedisi</div>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="rekap"> Rekap Data DO</label>
@@ -3840,16 +3819,11 @@ function syncOdometerFromCartrack(){
                 <div>
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px;">Master Data</div>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="input"> Input PKB</label>
-                  <label class="acc-menu-chk"><input type="checkbox" data-view="po-input"> Input SO &amp; Upload PO</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="kendaraan-input"> Input Data Kendaraan</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="legalitas-input"> Input Legalitas Kendaraan</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="legalitas"> Legalitas Kendaraan</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="driver-input"> Input Driver</label>
                   <label class="acc-menu-chk"><input type="checkbox" data-view="driver"> Driver</label>
-                  <label class="acc-menu-chk"><input type="checkbox" data-view="customer-input"> Input Customer</label>
-                  <label class="acc-menu-chk"><input type="checkbox" data-view="customer"> Data Customer</label>
-                  <label class="acc-menu-chk"><input type="checkbox" data-view="barang-input"> Input Barang</label>
-                  <label class="acc-menu-chk"><input type="checkbox" data-view="barang"> Data Barang</label>
                 </div>
                 <div>
                   <div class="hint" style="font-weight:700; text-transform:uppercase; font-size:10.5px; letter-spacing:.04em; margin-bottom:8px;">Laporan</div>
@@ -6736,13 +6710,13 @@ function dataInputRestrictedForCurrentUser(){
    Konsekuensinya: akun non-admin yang SUDAH ADA sebelum perubahan ini (dan belum pernah diatur lewat
    "Atur Menu") juga ikut kena default ketat ini -- admin perlu membuka "Atur Menu" sekali untuk
    masing-masing akun tsb dan memberi akses yang sesuai (bisa pakai tombol preset atau "Pilih Semua"). */
-const ALL_MENU_VIEWS = ['dashboard','bkl','rekap','reimburse','po','po-monitoring','rekap-pengiriman-cust','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','po-input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','customer-input','customer','barang-input','barang','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
-const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input', 'po-input', 'customer-input', 'barang-input'];
+const ALL_MENU_VIEWS = ['dashboard','bkl','rekap','reimburse','rekap-pengiriman-cust','borongan','service','maintenance','ritase','kendaraan','monitoring-armada','monitoring-ban','input','kendaraan-input','legalitas-input','legalitas','driver-input','driver','laporan','biayapengeluaran','biayapengeluaran-vendor','laporan-sisapo','laporan-monitoring-organik'];
+const LEGACY_ADMINISTRASI_VIEWS = ['input', 'kendaraan-input', 'driver-input', 'legalitas-input'];
 const DATA_INPUT_RESTRICTED_VIEWS = ['rekap', 'input', 'ritase', 'rekap-pengiriman-cust', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-monitoring-organik'];
 /* Preset siap-pakai untuk tombol di modal "Atur Menu" -- cuma pengisi awal checklist, admin masih
    boleh centang/hapus centang manual sebelum menyimpan. */
 const MENU_PRESET_OWNER = LEGACY_ADMINISTRASI_VIEWS.slice(); // owner: lihat semua laporan/monitoring, tanpa form Input
-const MENU_PRESET_STAFF_INPUT = ['po', 'po-monitoring', 'borongan', 'service', 'maintenance', 'ritase', 'monitoring-armada', 'monitoring-ban', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-sisapo', 'laporan-monitoring-organik']; // staff input: fokus input & data master, tanpa laporan/monitoring keuangan
+const MENU_PRESET_STAFF_INPUT = ['borongan', 'service', 'maintenance', 'ritase', 'monitoring-armada', 'monitoring-ban', 'laporan', 'biayapengeluaran', 'biayapengeluaran-vendor', 'laporan-sisapo', 'laporan-monitoring-organik']; // staff input: fokus input & data master, tanpa laporan/monitoring keuangan
 function effectiveHiddenMenus(acc){
   if(!acc || accountRole(acc) === 'admin') return new Set();
   let hidden;
