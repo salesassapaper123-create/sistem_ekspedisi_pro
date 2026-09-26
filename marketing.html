@@ -1216,8 +1216,12 @@
                   <div class="hint" id="pkbNoCOHint" style="margin-top:4px;"></div>
                 </div>
                 <div class="field">
-                  <label for="pkbKotaTujuan">Kota tujuan</label>
-                  <input type="text" id="pkbKotaTujuan" placeholder="cth. Bandung">
+                  <label for="pkbTempatMuat">Tujuan muat <span class="hint">(opsional)</span></label>
+                  <input type="text" id="pkbTempatMuat" placeholder="cth. Gudang Cikarang">
+                </div>
+                <div class="field">
+                  <label for="pkbKotaTujuan">Tujuan bongkar</label>
+                  <input type="text" id="pkbKotaTujuan" placeholder="cth. Pelabuhan Priok / Bandung">
                 </div>
                 <div class="field">
                   <label for="pkbNopol" id="pkbNopolLabel">Nopol</label>
@@ -2770,6 +2774,7 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
   const poIdVal = document.getElementById('pkbNoCO').value || null;
   const poTerkait = poIdVal ? poList.find(p => String(p.id) === String(poIdVal)) : null;
   const kotaTujuanVal = document.getElementById('pkbKotaTujuan').value.trim();
+  const tempatMuatVal = document.getElementById('pkbTempatMuat').value.trim();
   const noPKBVal = document.getElementById('pkbNoPKB').value.trim();
   const acc = currentAccount();
   const newId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
@@ -2797,7 +2802,7 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
     // tarif yang baru saja dihitung/diisi di atas -- staf Marketing sudah tahu tarifnya di muka.
     uangJalan: isVendorVal ? uangJalanValRaw : 0,
     biayaLain: 0,
-    tujuanMuat: '', tujuanBongkar: kotaTujuanVal,
+    tujuanMuat: tempatMuatVal, tujuanBongkar: kotaTujuanVal,
     tujuanMuat2: '', tujuanBongkar2: '',
     tujuanMuat3: '', tujuanBongkar3: '',
     tonase1: totalTonase, tonase2: null, tonase3: null,
@@ -3006,7 +3011,7 @@ function renderRekapPengiriman(){
   }
   const totalTonase = sorted.reduce((s, r) => s + recTotalTonase(r), 0);
   wrap.innerHTML = `<div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
-      <th>Tanggal</th><th>No. PKB</th><th>No. DO</th><th>Nopol</th><th>Nama Customer</th><th>Tonase</th><th>Kota Tujuan</th>
+      <th>Tanggal</th><th>No. PKB</th><th>No. DO</th><th>Nopol</th><th>Nama Customer</th><th>Tonase</th><th>Muatan</th><th>Kota Tujuan</th>
     </tr></thead><tbody>${sorted.map(r => {
       const po = r.poId ? poList.find(p => String(p.id) === String(r.poId)) : null;
       const tonase = recTotalTonase(r);
@@ -3018,12 +3023,13 @@ function renderRekapPengiriman(){
         <td class="mono">${esc(r.nopol || '-')}</td>
         <td class="sv-left">${esc(po ? (po.namaCustomer || '-') : '-')}</td>
         <td class="sv-num">${tonase ? Number(tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+        <td class="sv-left">${esc(r.tujuanMuat || '-')} &rarr; ${esc(r.kotaTujuan || '-')}</td>
         <td class="sv-left">${esc(r.kotaTujuan || '-')}</td>
       </tr>`;
     }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
       <td colspan="5" class="sv-left">TOTAL TONASE</td>
       <td class="sv-num">${totalTonase.toLocaleString('id-ID')} kg</td>
-      <td></td>
+      <td colspan="2"></td>
     </tr></tfoot></table></div>`;
 }
 document.getElementById('btnRekapPengirimanClearFilter').addEventListener('click', function(){
