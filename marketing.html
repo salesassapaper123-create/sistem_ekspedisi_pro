@@ -23,6 +23,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     /* Sesi keempatpuluhlima: palet disesuaikan mengikuti referensi warna aplikasi Accurate Online
@@ -953,6 +954,61 @@
   .mkt-placeholder svg{width:40px; height:40px; stroke:var(--text-faint); margin-bottom:12px;}
   .mkt-placeholder h3{margin:0 0 6px; color:var(--text); font-size:15px;}
   .mkt-placeholder p{margin:0; font-size:13px;}
+
+  /* ---------- PREVIEW PKB + BAGIKAN KE WA (Sesi keseratusenampuluhsembilan) -- diport PERSIS dari
+     LINTAS Ekspedisi (style .st-modal-overlay/.pkb-doc dkk), supaya begitu Input PKB disimpan di
+     Marketing, langsung muncul preview dokumen PKB yang bisa dicetak / di-download / dibagikan
+     sebagai FOTO ke WA (pakai html2canvas + Web Share API), sama persis pengalamannya dengan yang
+     staf Ekspedisi sudah biasa pakai. ---------- */
+  .st-modal-overlay{
+    position:fixed; inset:0; background:rgba(15,27,48,.55); display:none;
+    align-items:center; justify-content:center; z-index:70; padding:16px;
+  }
+  .st-modal{
+    background:#fff; border-radius:var(--radius-lg); padding:0; width:100%; max-width:640px;
+    max-height:92vh; overflow:auto; box-shadow:0 20px 50px rgba(0,0,0,.35);
+  }
+  .st-modal-head{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding:16px 22px; border-bottom:1px solid var(--border); position:sticky; top:0; background:#fff; z-index:2;
+  }
+  .st-modal-head h3{margin:0; font-size:15px;}
+  .st-modal-head p{margin:2px 0 0; font-size:11.5px; color:var(--text-muted);}
+  .st-close-btn{
+    border:none; background:none; cursor:pointer; color:var(--text-muted); padding:4px; line-height:0; border-radius:6px;
+  }
+  .st-close-btn:hover{background:#f0f1f3; color:var(--text);}
+  .st-close-btn svg{width:18px; height:18px;}
+  #suratTugasPrintArea{
+    padding:30px 34px; font-size:12.5px; color:#111; line-height:1.55;
+    text-transform:none;
+    font-family:'Courier New', Courier, monospace;
+  }
+  #suratTugasPrintArea *{text-transform:none; font-family:'Courier New', Courier, monospace;}
+  .pkb-doc{}
+  .pkb-outer{border:4px double #111; padding:16px 18px 20px;}
+  .pkb-title{text-align:center; font-weight:800; font-size:19px; letter-spacing:.05em; text-decoration:underline; margin:0 0 16px; text-transform:uppercase;}
+  .pkb-table{width:100%; border-collapse:collapse;}
+  .pkb-table td{border:1.4px solid #111; padding:7px 10px; font-size:12.5px; vertical-align:middle; line-height:1.5;}
+  .pkb-table td.pkb-lbl{font-weight:700; font-size:15px; width:130px; color:#111;}
+  .pkb-table td.pkb-colon{width:16px; text-align:center; font-weight:700; font-size:15px;}
+  .pkb-table td.pkb-val{font-weight:400; font-size:13px;}
+  .pkb-table td.pkb-val.pkb-val-strong{font-weight:700;}
+  .pkb-table tr.pkb-untuk td{color:#c0392b;}
+  .pkb-table-gap{margin-top:12px;}
+  .pkb-barang-head{border:1.4px solid #111; border-bottom:none; padding:7px 10px; font-weight:700; font-size:12.5px; margin-top:12px;}
+  .pkb-barang-box{border:1.4px solid #111; min-height:150px; padding:8px 10px; font-size:12.5px; white-space:pre-wrap;}
+  .pkb-footer{width:100%; border-collapse:collapse;}
+  .pkb-footer td{border:1.4px solid #111; padding:14px 10px; text-align:center; font-size:12px; font-weight:700; width:50%;}
+  .pkb-footer .pkb-footer-note{font-style:italic; font-weight:400; font-size:11px;}
+  .pkb-footer .pkb-footer-sign{padding-top:36px;}
+  @media print{
+    body *{visibility:hidden;}
+    #suratTugasPrintArea, #suratTugasPrintArea *{visibility:visible;}
+    #suratTugasPrintArea{position:absolute; top:0; left:0; width:100%; padding:0 16px;}
+    .st-modal-overlay, .st-modal{position:static; background:none; box-shadow:none; max-width:none; max-height:none; overflow:visible;}
+    .no-print{display:none !important;}
+  }
 </style>
 </head>
 <body>
@@ -1426,6 +1482,35 @@
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PREVIEW PKB (Sesi keseratusenampuluhsembilan -- diport dari LINTAS Ekspedisi): begitu Input
+     PKB disimpan, modal ini otomatis terbuka menampilkan dokumen PKB siap cetak/download/dibagikan ke
+     WA sebagai foto (sama persis fitur "Bagikan ke WA" milik LINTAS Ekspedisi). -->
+<div class="st-modal-overlay" id="stModalOverlay">
+  <div class="st-modal">
+    <div class="st-modal-head no-print">
+      <div>
+        <h3>PKB (Perintah Kerja Borongan)</h3>
+        <p>Cetak, download, atau bagikan foto PKB ke WA</p>
+      </div>
+      <button type="button" class="st-close-btn" id="stModalClose" title="Tutup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div id="suratTugasPrintArea"></div>
+    <div class="btn-row no-print" style="padding:0 22px 20px;">
+      <button type="button" class="btn btn-primary" id="stModalPrint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+        Cetak / Download PKB
+      </button>
+      <button type="button" class="btn btn-success" id="stModalShareWa">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l3 3-8.5 8.5-3 1 1-3L17 2zM19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>
+        Bagikan ke WA
+      </button>
+      <button type="button" class="btn btn-secondary" id="stModalCloseBtn">Tutup</button>
     </div>
   </div>
 </div>
@@ -2469,7 +2554,7 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
   const noPKBVal = document.getElementById('pkbNoPKB').value.trim();
   const acc = currentAccount();
   const newId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
-  records.push({
+  const newRecord = {
     id: newId,
     tanggal: document.getElementById('pkbTanggal').value,
     noPKB: noPKBVal,
@@ -2497,7 +2582,8 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
     status: 'dijadwalkan',
     dibuatOleh: acc ? acc.email : '',
     createdAt: new Date().toISOString(),
-  });
+  };
+  records.push(newRecord);
   if(noPKBVal) bumpNextNoPKB(noPKBVal);
   saveRecords();
   this.reset();
@@ -2507,7 +2593,149 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
   populatePkbNopolSopirDropdowns();
   populatePkbNoCODropdown();
   showToast('PKB berhasil disimpan -- ongkos & No. DO akan dilengkapi LINTAS', 'success');
+  // Sesi keseratusenampuluhsembilan: langsung buka preview PKB begitu tersimpan, sama seperti LINTAS
+  // Ekspedisi -- staf marketing bisa langsung cetak/download/bagikan foto PKB ke WA tanpa cari lagi.
+  openSuratTugasModal(newId);
 });
+
+/* ---------- PREVIEW PKB + BAGIKAN KE WA (Sesi keseratusenampuluhsembilan) ----------
+   Diport PERSIS dari LINTAS Ekspedisi (buildPkbHtml/openSuratTugasModal/tombol Bagikan ke WA) supaya
+   staf Marketing dapat pengalaman yang sama: begitu Input PKB disimpan, modal preview PKB otomatis
+   terbuka, siap dicetak/didownload/dibagikan sebagai foto ke WA (html2canvas + Web Share API).
+
+   Satu adaptasi kecil dari versi LINTAS: field "UNTUK" pada dokumen aslinya diambil dari tujuanMuat
+   (lokasi muat BK, mis. "BK 1") -- tapi form Input PKB versi Marketing sengaja disederhanakan, tidak
+   ada field lokasi muat terpisah, cuma "Kota Tujuan". Makanya di sini ditambahkan fallback ke
+   r.kotaTujuan/r.tujuanBongkar kalau tujuanMuat/2/3 kosong, supaya baris UNTUK di PKB tidak tampil
+   "-" kosong untuk record yang dibuat dari Marketing. Untuk record yang dibuat dari LINTAS (yang
+   tujuanMuat-nya memang terisi), perilakunya tidak berubah sama sekali -- fallback ini cuma dipakai
+   kalau tujuanMuat/2/3 benar-benar kosong. */
+function armadaLabel(jenis){
+  const map = {tronton:'Tronton', engkel:'Engkel', cdd:'CDD', lainnya:'Lainnya'};
+  return map[jenis] || 'Lainnya';
+}
+function buildPkbHtml(r){
+  const isVendor = r.jenisAngkutan === 'vendor';
+  const poTerkait = r.poId ? poList.find(p => String(p.id) === String(r.poId)) : (r.noCOTerkait ? poList.find(p => p.noCO === r.noCOTerkait) : null);
+  const vendorKetLabelVal = r.vendorKet === 'loco' ? 'Loco' : (r.vendorKet === 'franco' ? 'Franco' : '');
+  const angkutanVal = isVendor ? `${esc(r.vendorNama || '-')} (Vendor Luar${vendorKetLabelVal ? ' - ' + vendorKetLabelVal : ''})` : esc(armadaLabel(r.jenisArmada));
+  const untukVal = r.tujuanMuat || r.tujuanMuat2 || r.tujuanMuat3 || r.kotaTujuan || r.tujuanBongkar || '-';
+  const barangDetailVal = (r.jenisBarangDetail && r.jenisBarangDetail.length)
+    ? r.jenisBarangDetail
+    : ((r.jenisBarangList && r.jenisBarangList.length) ? r.jenisBarangList.map(nama => ({nama: nama, jumlahRoll: null, tonase: null})) : (r.jenisBarang ? [{nama: r.jenisBarang, jumlahRoll: null, tonase: null}] : []));
+  const totalTonaseBarangVal = barangDetailVal.reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+  const totalJumlahRollVal = barangDetailVal.reduce((s, it) => s + (Number(it.jumlahRoll) || 0), 0);
+  const barangBoxHtml = barangDetailVal.length
+    ? barangDetailVal.map((b, i) => {
+        const rollPart = (b.jumlahRoll !== null && b.jumlahRoll !== undefined && b.jumlahRoll !== '') ? ` &mdash; ${Number(b.jumlahRoll).toLocaleString('id-ID')} roll` : '';
+        const tonPart = (b.tonase !== null && b.tonase !== undefined && b.tonase !== '') ? ` &mdash; ${Number(b.tonase).toLocaleString('id-ID')} kg` : '';
+        return `<div>${i + 1}. ${esc(b.nama)}${rollPart}${tonPart}</div>`;
+      }).join('')
+      + ((totalTonaseBarangVal > 0 || totalJumlahRollVal > 0) ? `<div style="margin-top:8px; font-weight:700; border-top:1px solid #111; padding-top:6px;">${totalJumlahRollVal > 0 ? `TOTAL ROLL: ${totalJumlahRollVal.toLocaleString('id-ID')} roll &nbsp;&nbsp; ` : ''}${totalTonaseBarangVal > 0 ? `TOTAL TONASE: ${totalTonaseBarangVal.toLocaleString('id-ID')} kg` : ''}</div>` : '')
+    : '';
+
+  return `
+    <div class="pkb-doc">
+      <div class="pkb-outer">
+        <div class="pkb-title">PERINTAH KELUAR BARANG</div>
+        <table class="pkb-table">
+          <tbody>
+            <tr><td class="pkb-lbl">TGL</td><td class="pkb-colon">:</td><td class="pkb-val">${fmtDate(r.tanggal)}</td></tr>
+            <tr class="pkb-untuk"><td class="pkb-lbl">UNTUK</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(untukVal)}</td></tr>
+            <tr><td class="pkb-lbl">PKB NO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.noPKB || '-')}</td></tr>
+          </tbody>
+        </table>
+        <table class="pkb-table pkb-table-gap">
+          <tbody>
+            <tr><td class="pkb-lbl">CUSTOMER</td><td class="pkb-colon">:</td><td class="pkb-val pkb-val-strong">${esc(poTerkait ? (poTerkait.namaCustomer || '-') : '-')}</td></tr>
+            <tr><td class="pkb-lbl">NO. CO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noCO) || r.noCOTerkait || '-')}</td></tr>
+            <tr><td class="pkb-lbl">NO. PO</td><td class="pkb-colon">:</td><td class="pkb-val">${esc((poTerkait && poTerkait.noPO) || '-')}</td></tr>
+            <tr><td class="pkb-lbl">ANGKUTAN</td><td class="pkb-colon">:</td><td class="pkb-val">${angkutanVal}</td></tr>
+            <tr><td class="pkb-lbl">NOPOL</td><td class="pkb-colon">:</td><td class="pkb-val">${esc(r.nopol || '-')}</td></tr>
+          </tbody>
+        </table>
+        <div class="pkb-barang-head">JENIS BARANG :</div>
+        <div class="pkb-barang-box">${barangBoxHtml}</div>
+        <table class="pkb-footer pkb-table-gap">
+          <tbody>
+            <tr>
+              <td class="pkb-footer-head">DIBUAT</td>
+              <td class="pkb-footer-head">DISETUJUI<br><span class="pkb-footer-note">K/PO DAN DO</span></td>
+            </tr>
+            <tr>
+              <td class="pkb-footer-sign">MARKETING</td>
+              <td class="pkb-footer-sign">(&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;&hellip;.)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+function openSuratTugasModal(id){
+  const r = records.find(x => x.id === id);
+  if(!r) return;
+  document.getElementById('suratTugasPrintArea').innerHTML = buildPkbHtml(r);
+  document.getElementById('stModalOverlay').style.display = 'flex';
+}
+function closeSuratTugasModal(){
+  document.getElementById('stModalOverlay').style.display = 'none';
+}
+document.getElementById('stModalClose').addEventListener('click', closeSuratTugasModal);
+document.getElementById('stModalCloseBtn').addEventListener('click', closeSuratTugasModal);
+document.getElementById('stModalOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeSuratTugasModal();
+});
+document.getElementById('stModalPrint').addEventListener('click', function(){
+  window.print();
+});
+/* Tombol "Bagikan ke WA": ambil screenshot dokumen PKB (html2canvas) lalu panggil Web Share API
+   (navigator.share dengan file gambar) supaya menu share bawaan HP langsung terbuka dengan foto PKB
+   SUDAH TERLAMPIR -- staf tinggal pilih WhatsApp lalu pilih kontak yang dituju. Kalau HP/browser
+   belum mendukung Web Share API dengan file, otomatis fallback download foto supaya bisa dilampirkan
+   manual ke WA. */
+document.getElementById('stModalShareWa').addEventListener('click', async function(){
+  const btn = this;
+  const printArea = document.getElementById('suratTugasPrintArea');
+  const target = printArea.querySelector('.pkb-doc') || printArea;
+  if(typeof html2canvas === 'undefined'){
+    showToast('Fitur bagikan foto belum siap, coba muat ulang halaman.', 'error');
+    return;
+  }
+  const originalHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = 'Menyiapkan foto...';
+  function restoreBtn(){ btn.disabled = false; btn.innerHTML = originalHtml; }
+  try{
+    const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+    canvas.toBlob(async function(blob){
+      restoreBtn();
+      if(!blob){ showToast('Gagal membuat foto PKB.', 'error'); return; }
+      const fileName = 'PKB-' + Date.now() + '.png';
+      const file = new File([blob], fileName, { type: 'image/png' });
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        try{
+          await navigator.share({ files: [file] });
+        }catch(shareErr){
+          if(shareErr && shareErr.name !== 'AbortError') showToast('Gagal membagikan foto PKB.', 'error');
+        }
+      }else{
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = fileName;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        showToast('Foto PKB tersimpan. HP/browser ini belum mendukung bagikan langsung -- lampirkan foto ke WA secara manual.', 'success');
+      }
+    }, 'image/png');
+  }catch(err){
+    restoreBtn();
+    showToast('Gagal membuat foto PKB.', 'error');
+  }
+});
+const ORIGINAL_DOC_TITLE_MKT = document.title;
+window.addEventListener('beforeprint', function(){ document.title = ' '; });
+window.addEventListener('afterprint', function(){ document.title = ORIGINAL_DOC_TITLE_MKT; });
 
 /* ---------- REKAP DATA PENGIRIMAN (baca "records" yang sama -- kolom SENGAJA tidak ada nominal
    ongkos, sesuai permintaan: Tanggal, No PKB, No DO, Nopol, Nama Customer, Tonase, Kota Tujuan.
