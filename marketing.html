@@ -1188,6 +1188,18 @@
           <div class="panel-body">
             <form id="formPKB">
               <div class="grid2">
+                <div class="field full" style="grid-column:1 / -1;">
+                  <label>Jenis angkutan</label>
+                  <div style="display:flex; gap:18px; align-items:center; height:38px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin:0;">
+                      <input type="radio" name="pkbJenisAngkutan" id="pkbRaOrganik" value="organik" checked style="width:16px; height:16px; cursor:pointer;"> Angkutan Organik
+                    </label>
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:500; cursor:pointer; margin:0;">
+                      <input type="radio" name="pkbJenisAngkutan" id="pkbRaVendor" value="vendor" style="width:16px; height:16px; cursor:pointer;"> Vendor Luar
+                    </label>
+                  </div>
+                  <p class="hint" style="margin:6px 0 0;">Vendor luar = angkutan di luar armada organik sendiri, tarifnya dari Ongkos Borongan (bukan armada milik Ekspedisi Jaya).</p>
+                </div>
                 <div class="field">
                   <label for="pkbTanggal">Tanggal</label>
                   <input type="date" id="pkbTanggal" required>
@@ -1208,17 +1220,52 @@
                   <input type="text" id="pkbKotaTujuan" placeholder="cth. Bandung">
                 </div>
                 <div class="field">
-                  <label for="pkbNopol">Nopol</label>
+                  <label for="pkbNopol" id="pkbNopolLabel">Nopol</label>
                   <select id="pkbNopol" required>
                     <option value="">-- Pilih nopol --</option>
                   </select>
-                  <p class="hint" style="margin:6px 0 0;">Kalau nopol belum ada di daftar, minta ditambahkan lewat LINTAS &gt; Input Data Kendaraan.</p>
+                  <!-- Vendor Luar: armada bukan milik sendiri, jadi TIDAK ada di Data Armada -- ketik bebas. -->
+                  <input type="text" id="pkbNopolVendor" placeholder="cth. B 1234 XYZ" style="display:none; text-transform:uppercase;">
+                  <p class="hint" id="pkbNopolOrganikHint" style="margin:6px 0 0;">Kalau nopol belum ada di daftar, minta ditambahkan lewat LINTAS &gt; Input Data Kendaraan.</p>
                 </div>
                 <div class="field">
-                  <label for="pkbSopir">Nama sopir</label>
+                  <label for="pkbSopir" id="pkbSopirLabel">Nama sopir</label>
                   <select id="pkbSopir">
                     <option value="">-- Pilih sopir --</option>
                   </select>
+                  <input type="text" id="pkbSopirVendor" placeholder="cth. Budi Santoso" style="display:none;">
+                </div>
+                <div class="field full" id="pkbVendorRuteBlock" style="grid-column:1 / -1; display:none;">
+                  <label for="pkbVendorRute">Rute / tujuan vendor</label>
+                  <input type="text" id="pkbVendorRute" list="pkbVendorRuteList" placeholder="Ketik rute/tujuan, atau pilih saran dari Ongkos Borongan / data customer...">
+                  <datalist id="pkbVendorRuteList"></datalist>
+                  <p class="hint" style="margin:6px 0 0;">Vendor: <b id="pkbVendorNamaShow">-</b> &mdash; pilih saran rute dari Ongkos Borongan untuk isi otomatis nama vendor &amp; tarif ongkos (bisa diubah manual). Boleh juga ketik bebas nama tujuan/customer kalau tidak ada di daftar.</p>
+                </div>
+                <div class="field" id="pkbVendorKetBlock" style="display:none;">
+                  <label for="pkbVendorKet">Keterangan</label>
+                  <select id="pkbVendorKet">
+                    <option value="">— pilih —</option>
+                    <option value="franco">Franco</option>
+                    <option value="loco">Loco</option>
+                  </select>
+                  <p class="hint" style="margin:6px 0 0;">Franco = ongkos angkutan ditanggung/dibayar ke vendor (wajib isi tarif). Loco = ongkos angkutan tidak ditanggung (tarif tidak perlu diisi).</p>
+                </div>
+                <div class="field" id="pkbVendorJenisTarifBlock" style="display:none;">
+                  <label for="pkbVendorJenisTarif">Jenis tarif vendor</label>
+                  <select id="pkbVendorJenisTarif">
+                    <option value="plat">Tarif plat (borongan)</option>
+                    <option value="perkg">Per KG</option>
+                  </select>
+                </div>
+                <div class="field" id="pkbVendorTarifPerKgBlock" style="display:none;">
+                  <label for="pkbVendorTarifPerKg">Tarif per KG (Rp/kg)</label>
+                  <input type="number" id="pkbVendorTarifPerKg" min="0" step="1" placeholder="cth. 350">
+                  <p class="hint" style="margin:6px 0 0;">Total ongkos otomatis dihitung: tarif per kg &times; total tonase barang di bawah.</p>
+                </div>
+                <div class="field" id="pkbUangJalanBlock" style="display:none;">
+                  <label for="pkbUangJalan" id="pkbUangJalanLabel">Tarif ongkos vendor (Rp)</label>
+                  <input type="text" id="pkbUangJalan" placeholder="cth. 250000 (boleh kosong atau &quot;-&quot;)">
+                  <p class="hint" id="pkbUangJalanVendorHint" style="margin:6px 0 0; display:none;">Boleh dikosongkan/diisi "-" dulu kalau ongkosnya digabung jadi 1 tagihan dengan PO/DO lain & belum diketahui angka pastinya (PO gabungan) -- bisa disusulkan kapan saja lewat Edit DO di LINTAS begitu sudah pasti.</p>
                 </div>
                 <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
                   <label>Jenis barang, jumlah roll &amp; tonase <span class="hint">(bisa lebih dari satu jenis dalam 1 PKB)</span></label>
@@ -2412,6 +2459,10 @@ document.getElementById('poFilterBulan').addEventListener('change', renderPO);
    LINTAS sendiri, Sesi keseratuslimapuluhtiga -- lihat catatan fbMergeArraySave di bawah). */
 let kendaraanList = [];
 let driverList = [];
+/* Data Ongkos Borongan (dikelola LINTAS) -- dibaca READ-ONLY di sini, cuma untuk saran rute+tarif
+   vendor luar (Sesi keseratustujuhpuluh). Sama seperti kendaraanList/driverList, Marketing TIDAK
+   PERNAH menulis ke node ini. */
+let boronganData = { table1: [], table2: [] };
 let appSettings = { nextNoPKB: 1421 };
 function saveAppSettings(){ fbPush('appSettings', appSettings); }
 function fbMergeArraySave(path, localList, tombstonesKey){
@@ -2534,20 +2585,188 @@ function collectPkbJenisBarangDetail(){
 function updatePkbTotalTonase(){
   const total = collectPkbJenisBarangDetail().reduce((s, it) => s + (Number(it.tonase) || 0), 0);
   document.getElementById('pkbTotalTonase').textContent = `Total tonase: ${total.toLocaleString('id-ID')} kg`;
+  // Vendor Luar Franco + tarif Per KG: total tonase berubah -> total ongkos ikut dihitung ulang otomatis.
+  const vendorKetEl = document.getElementById('pkbVendorKet');
+  const vendorJenisTarifEl = document.getElementById('pkbVendorJenisTarif');
+  if(vendorKetEl && vendorKetEl.value === 'franco' && vendorJenisTarifEl && vendorJenisTarifEl.value === 'perkg'){
+    recalcPkbVendorTarifPerKg();
+  }
 }
 document.getElementById('btnAddPkbJenisBarang').addEventListener('click', function(){ addPkbJenisBarangRow('', '', ''); });
 resetPkbJenisBarangRows();
 document.getElementById('pkbTanggal').valueAsDate = new Date();
 
+/* ---------- VENDOR LUAR di Input PKB (Sesi keseratustujuhpuluh) ----------
+   Diport dari LINTAS Ekspedisi (radio Jenis Angkutan, toggleAngkutanSections/updateVendorKetUI,
+   saran rute+tarif dari Ongkos Borongan) supaya Input PKB versi Marketing punya opsi Vendor Luar
+   yang sama persis. SATU perbedaan sengaja dari LINTAS: untuk Angkutan Organik, field "Uang
+   jalan"/ongkos TETAP disembunyikan & tersimpan 0 (desain awal Marketing -- ongkos organik selalu
+   "dilengkapi belakangan oleh LINTAS", lihat submit handler formPKB) -- field ongkos di sini HANYA
+   muncul untuk Vendor Luar, karena tarif vendor biasanya sudah diketahui di muka (dari Ongkos
+   Borongan atau kesepakatan per-kg), beda dengan ongkos driver organik yang memang urusan LINTAS. */
+function parseRupiahLoose(str){
+  const digits = String(str || '').replace(/[^\d]/g, '');
+  return digits ? parseInt(digits, 10) : 0;
+}
+function currentPkbJenisAngkutan(){
+  const el = document.querySelector('input[name="pkbJenisAngkutan"]:checked');
+  return el ? el.value : 'organik';
+}
+function getPkbVendorRuteOptions(){
+  const opts = [];
+  (boronganData.table1 || []).forEach((it, idx) => {
+    if(!it || it.armada === 'TRONTON' || it.armada === 'ENGKEL') return;
+    const label = `${it.armada || 'VENDOR'} — ${[it.start, it.midle, it.tujuan].filter(Boolean).join(' → ')} (${it.nominal || '-'})`;
+    opts.push({ key: 't1-' + idx, vendor: it.armada || '-', label, harga: parseRupiahLoose(it.nominal), rute: [it.start, it.midle, it.tujuan].filter(Boolean).join(' → ') });
+  });
+  (boronganData.table2 || []).forEach((it, idx) => {
+    if(!it) return;
+    const label = `${it.angkutan || 'VENDOR'} — ${it.tujuan || it.rute || '-'} (${it.harga || '-'})`;
+    opts.push({ key: 't2-' + idx, vendor: it.angkutan || '-', label, harga: parseRupiahLoose(it.harga), rute: it.rute || it.tujuan || '-' });
+  });
+  return opts;
+}
+let pkbVendorRuteLookup = {};
+function populatePkbVendorRuteDropdown(){
+  const dl = document.getElementById('pkbVendorRuteList');
+  if(!dl) return;
+  const opts = getPkbVendorRuteOptions();
+  pkbVendorRuteLookup = {};
+  opts.forEach(o => { pkbVendorRuteLookup[o.label] = { vendor: o.vendor, harga: o.harga, rute: o.rute }; });
+  const ruteOptionsHtml = opts.map(o => `<option value="${esc(o.label)}"></option>`).join('');
+  const customerOptionsHtml = getCustomerNameList().map(n => `<option value="${esc(n)}"></option>`).join('');
+  dl.innerHTML = ruteOptionsHtml + customerOptionsHtml;
+}
+document.getElementById('pkbVendorRute').addEventListener('input', function(){
+  const match = pkbVendorRuteLookup[this.value];
+  if(match){
+    document.getElementById('pkbVendorNamaShow').textContent = match.vendor || '-';
+    document.getElementById('pkbUangJalan').value = match.harga || 0;
+  }else{
+    document.getElementById('pkbVendorNamaShow').textContent = '-';
+  }
+});
+function togglePkbAngkutanSections(){
+  const isVendor = currentPkbJenisAngkutan() === 'vendor';
+  document.getElementById('pkbVendorRuteBlock').style.display = isVendor ? '' : 'none';
+  document.getElementById('pkbVendorKetBlock').style.display = isVendor ? '' : 'none';
+  document.getElementById('pkbNopolLabel').textContent = isVendor ? 'Nopol (armada vendor)' : 'Nopol';
+  document.getElementById('pkbSopirLabel').textContent = isVendor ? 'Nama sopir vendor' : 'Nama sopir';
+  document.getElementById('pkbNopol').style.display = isVendor ? 'none' : '';
+  document.getElementById('pkbNopol').required = !isVendor;
+  document.getElementById('pkbNopolVendor').style.display = isVendor ? '' : 'none';
+  document.getElementById('pkbNopolVendor').required = isVendor;
+  document.getElementById('pkbNopolOrganikHint').style.display = isVendor ? 'none' : '';
+  document.getElementById('pkbSopir').style.display = isVendor ? 'none' : '';
+  document.getElementById('pkbSopirVendor').style.display = isVendor ? '' : 'none';
+  if(!isVendor) populatePkbNopolSopirDropdowns();
+  if(isVendor){
+    populatePkbVendorRuteDropdown();
+  }else{
+    document.getElementById('pkbVendorRute').value = '';
+    document.getElementById('pkbVendorNamaShow').textContent = '-';
+    document.getElementById('pkbVendorKet').value = '';
+    document.getElementById('pkbVendorJenisTarif').value = 'plat';
+    document.getElementById('pkbVendorTarifPerKg').value = '';
+    document.getElementById('pkbUangJalan').value = '';
+    document.getElementById('pkbUangJalan').readOnly = false;
+  }
+  updatePkbVendorKetUI();
+}
+document.getElementById('pkbRaOrganik').addEventListener('change', togglePkbAngkutanSections);
+document.getElementById('pkbRaVendor').addEventListener('change', togglePkbAngkutanSections);
+
+function updatePkbVendorKetUI(){
+  const isVendor = currentPkbJenisAngkutan() === 'vendor';
+  const ketVal = document.getElementById('pkbVendorKet').value;
+  const isFranco = isVendor && ketVal === 'franco';
+  const isLoco = isVendor && ketVal === 'loco';
+  const jenisTarifVal = document.getElementById('pkbVendorJenisTarif').value || 'plat';
+  const isPerKg = isFranco && jenisTarifVal === 'perkg';
+
+  document.getElementById('pkbVendorJenisTarifBlock').style.display = isFranco ? '' : 'none';
+  document.getElementById('pkbVendorTarifPerKgBlock').style.display = isPerKg ? '' : 'none';
+
+  if(!isVendor){
+    // Angkutan Organik: field ongkos TETAP disembunyikan (sengaja beda dari LINTAS -- lihat catatan di atas).
+    document.getElementById('pkbUangJalanBlock').style.display = 'none';
+    return;
+  }
+
+  if(isLoco){
+    document.getElementById('pkbUangJalanBlock').style.display = 'none';
+    document.getElementById('pkbUangJalan').value = '';
+    document.getElementById('pkbUangJalan').readOnly = false;
+  }else if(isPerKg){
+    document.getElementById('pkbUangJalanBlock').style.display = '';
+    document.getElementById('pkbUangJalanLabel').textContent = 'Total tarif ongkos vendor (Rp) — otomatis';
+    document.getElementById('pkbUangJalan').readOnly = true;
+    recalcPkbVendorTarifPerKg();
+  }else if(isFranco){
+    document.getElementById('pkbUangJalanBlock').style.display = '';
+    document.getElementById('pkbUangJalanLabel').textContent = 'Tarif ongkos vendor (Rp)';
+    document.getElementById('pkbUangJalan').readOnly = false;
+  }else{
+    document.getElementById('pkbUangJalanBlock').style.display = 'none';
+  }
+  const hintEl = document.getElementById('pkbUangJalanVendorHint');
+  if(hintEl) hintEl.style.display = (isFranco && !isPerKg) ? '' : 'none';
+}
+function recalcPkbVendorTarifPerKg(){
+  const tarifPerKg = document.getElementById('pkbVendorTarifPerKg').value === '' ? 0 : parseFloat(document.getElementById('pkbVendorTarifPerKg').value);
+  const totalTonase = collectPkbJenisBarangDetail().reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+  document.getElementById('pkbUangJalan').value = (tarifPerKg && totalTonase) ? Math.round(tarifPerKg * totalTonase) : '';
+}
+document.getElementById('pkbVendorKet').addEventListener('change', updatePkbVendorKetUI);
+document.getElementById('pkbVendorJenisTarif').addEventListener('change', updatePkbVendorKetUI);
+document.getElementById('pkbVendorTarifPerKg').addEventListener('input', function(){
+  if(document.getElementById('pkbVendorJenisTarif').value === 'perkg') recalcPkbVendorTarifPerKg();
+});
+
 document.getElementById('formPKB').addEventListener('submit', function(e){
   e.preventDefault();
   const errEl = document.getElementById('pkbFormError');
   errEl.textContent = '';
-  const nopol = document.getElementById('pkbNopol').value.trim();
-  if(!nopol){ errEl.textContent = 'Pilih nopol terlebih dahulu.'; return; }
+
+  const jenisAngkutanVal = currentPkbJenisAngkutan();
+  const isVendorVal = jenisAngkutanVal === 'vendor';
+  const nopol = isVendorVal
+    ? document.getElementById('pkbNopolVendor').value.trim().toUpperCase()
+    : document.getElementById('pkbNopol').value.trim();
+  if(!nopol){ errEl.textContent = isVendorVal ? 'Isi nopol armada vendor terlebih dahulu.' : 'Pilih nopol terlebih dahulu.'; return; }
+  const sopirVal = isVendorVal
+    ? document.getElementById('pkbSopirVendor').value.trim()
+    : document.getElementById('pkbSopir').value.trim();
   const detail = collectPkbJenisBarangDetail();
   if(detail.length === 0){ errEl.textContent = 'Isi minimal satu jenis barang & tonase.'; return; }
   const totalTonase = detail.reduce((s, it) => s + (Number(it.tonase) || 0), 0);
+
+  // ---- Vendor Luar: keterangan Franco/Loco wajib, tarif per KG wajib kalau jenis tarifnya Per KG ----
+  const vendorKetVal = isVendorVal ? document.getElementById('pkbVendorKet').value : '';
+  if(isVendorVal && !vendorKetVal){ errEl.textContent = 'Keterangan Franco/Loco wajib dipilih untuk vendor luar.'; return; }
+  const isFrancoVal = vendorKetVal === 'franco';
+  const isLocoVal = vendorKetVal === 'loco';
+  const vendorJenisTarifVal = isFrancoVal ? (document.getElementById('pkbVendorJenisTarif').value || 'plat') : '';
+  const vendorTarifPerKgVal = (isFrancoVal && vendorJenisTarifVal === 'perkg')
+    ? (document.getElementById('pkbVendorTarifPerKg').value === '' ? 0 : parseFloat(document.getElementById('pkbVendorTarifPerKg').value))
+    : null;
+  let uangJalanValRaw = 0;
+  if(isVendorVal){
+    if(isLocoVal){
+      uangJalanValRaw = 0;
+    }else if(isFrancoVal && vendorJenisTarifVal === 'perkg'){
+      if(!vendorTarifPerKgVal || vendorTarifPerKgVal <= 0){ errEl.textContent = 'Tarif per KG wajib diisi untuk vendor luar Franco dengan jenis tarif Per KG.'; return; }
+      uangJalanValRaw = (totalTonase > 0) ? Math.round(vendorTarifPerKgVal * totalTonase) : 0;
+    }else{
+      // parseRupiahLoose: kosong/"-"/karakter non-angka lain -> 0, boleh disusulkan lewat Edit DO di LINTAS.
+      uangJalanValRaw = parseRupiahLoose(document.getElementById('pkbUangJalan').value);
+    }
+  }
+  const vendorRuteTextVal = isVendorVal ? document.getElementById('pkbVendorRute').value.trim() : '';
+  const vendorMatch = isVendorVal ? pkbVendorRuteLookup[vendorRuteTextVal] : null;
+  const vendorNamaVal = isVendorVal ? (document.getElementById('pkbVendorNamaShow').textContent === '-' ? '' : document.getElementById('pkbVendorNamaShow').textContent) : '';
+  const vendorRuteVal = isVendorVal ? (vendorMatch ? vendorMatch.rute : vendorRuteTextVal) : '';
+
   const poIdVal = document.getElementById('pkbNoCO').value || null;
   const poTerkait = poIdVal ? poList.find(p => String(p.id) === String(poIdVal)) : null;
   const kotaTujuanVal = document.getElementById('pkbKotaTujuan').value.trim();
@@ -2561,11 +2780,12 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
     noDO: '', // dilengkapi belakangan oleh LINTAS
     kotaTujuan: kotaTujuanVal,
     nopol: nopol,
-    sopir: document.getElementById('pkbSopir').value.trim(),
+    sopir: sopirVal,
     kirimBK: true, kirimRoll: false, kirimOCC: false, kirimKosongan: false,
     jenisArmada: 'tronton',
-    jenisAngkutan: 'organik',
-    vendorNama: '', vendorRute: '', vendorKet: '', vendorJenisTarif: '', vendorTarifPerKg: null,
+    jenisAngkutan: jenisAngkutanVal,
+    vendorNama: vendorNamaVal, vendorRute: vendorRuteVal, vendorKet: vendorKetVal,
+    vendorJenisTarif: vendorJenisTarifVal, vendorTarifPerKg: vendorTarifPerKgVal,
     kota: '',
     jenisBarangDetail: detail,
     jenisBarangList: detail.map(it => it.nama),
@@ -2573,7 +2793,9 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
     poId: poIdVal,
     noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
     pendapatan: 0,
-    uangJalan: 0, // dilengkapi belakangan oleh LINTAS
+    // Organik: 0, dilengkapi belakangan oleh LINTAS (desain awal, tidak berubah). Vendor Luar: dari
+    // tarif yang baru saja dihitung/diisi di atas -- staf Marketing sudah tahu tarifnya di muka.
+    uangJalan: isVendorVal ? uangJalanValRaw : 0,
     biayaLain: 0,
     tujuanMuat: '', tujuanBongkar: kotaTujuanVal,
     tujuanMuat2: '', tujuanBongkar2: '',
@@ -2589,10 +2811,12 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
   this.reset();
   resetPkbJenisBarangRows();
   document.getElementById('pkbTanggal').valueAsDate = new Date();
+  document.getElementById('pkbRaOrganik').checked = true;
+  togglePkbAngkutanSections();
   prefillNoPKB();
   populatePkbNopolSopirDropdowns();
   populatePkbNoCODropdown();
-  showToast('PKB berhasil disimpan -- ongkos & No. DO akan dilengkapi LINTAS', 'success');
+  showToast(isVendorVal ? 'PKB vendor luar berhasil disimpan' : 'PKB berhasil disimpan -- ongkos & No. DO akan dilengkapi LINTAS', 'success');
   // Sesi keseratusenampuluhsembilan: langsung buka preview PKB begitu tersimpan, sama seperti LINTAS
   // Ekspedisi -- staf marketing bisa langsung cetak/download/bagikan foto PKB ke WA tanpa cari lagi.
   openSuratTugasModal(newId);
@@ -2882,6 +3106,16 @@ function attachDataListeners(){
     driverList = arr ? fbFilterTombstoned('driver', arr) : [];
     if(currentViewName() === 'input') populatePkbNopolSopirDropdowns();
   });
+  /* Ongkos Borongan -- object {table1,table2} (BUKAN array biasa, jadi tidak lewat fbToArray/
+     fbFilterTombstoned seperti kendaraan/driver di atas), dikelola LINTAS, dibaca READ-ONLY di sini
+     cuma untuk saran rute+tarif vendor luar di Input PKB. */
+  fbDb.ref('borongan').on('value', snap => {
+    const val = snap.val();
+    boronganData = (val && (Array.isArray(val.table1) || Array.isArray(val.table2)))
+      ? { table1: Array.isArray(val.table1) ? val.table1 : [], table2: Array.isArray(val.table2) ? val.table2 : [] }
+      : { table1: [], table2: [] };
+    if(currentViewName() === 'input' && currentPkbJenisAngkutan() === 'vendor') populatePkbVendorRuteDropdown();
+  });
 
   /* appSettings -- object tunggal (bukan array), dipakai bersama LINTAS untuk nomor urut No. PKB
      berikutnya (nextNoPKB), supaya penomoran PKB tidak tabrakan antara Marketing & LINTAS. */
@@ -2909,6 +3143,7 @@ function goTo(view){
     populatePkbNopolSopirDropdowns();
     populatePkbNoCODropdown();
     prefillNoPKB();
+    togglePkbAngkutanSections();
     if(!document.getElementById('pkbTanggal').value) document.getElementById('pkbTanggal').valueAsDate = new Date();
   }
 }
