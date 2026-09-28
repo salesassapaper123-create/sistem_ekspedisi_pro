@@ -7157,6 +7157,17 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     return;
   }
 
+  /* Sesi keseratustujuhpuluhempat: tolak simpan kalau No PKB yang diisi sudah dipakai DO lain --
+     dicek ke SELURUH records (termasuk yang dibuat lewat LINTAS Marketing, karena satu database yang
+     sama) supaya No PKB benar-benar tidak pernah dobel di manapun. Dikecualikan: No PKB kosong (boleh
+     dobel-kosong, bukan nomor sungguhan) dan record yang sedang diedit sendiri (editingId -- supaya
+     simpan ulang DO yang sama tanpa ganti No PKB tidak keliru dianggap "dobel dengan dirinya sendiri"). */
+  const noPKBCekVal = document.getElementById('doNoPKB').value.trim();
+  if(noPKBCekVal && records.some(r => (r.noPKB || '').trim() === noPKBCekVal && r.id !== editingId)){
+    errEl.textContent = `No PKB "${noPKBCekVal}" sudah dipakai DO lain -- tidak boleh dobel. Ganti dengan nomor lain atau cek lagi di Rekap Data DO.`;
+    return;
+  }
+
   const tujuanMuatVal = document.getElementById('tujuanMuat').value.trim();
   const tujuanBongkarVal = document.getElementById('tujuanBongkar').value.trim();
   const tujuanMuat2Val = document.getElementById('tujuanMuat2').value.trim();
