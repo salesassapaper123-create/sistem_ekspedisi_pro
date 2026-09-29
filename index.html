@@ -20,6 +20,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<!-- Sesi keseratustujuhpuluhenam: Firebase Messaging (FCM) -- untuk Notifikasi Push (lihat tab
+     "Notifikasi Push" di Pengaturan). Berbarengan dengan notifikasi WA yang sudah ada, bukan pengganti. -->
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-messaging-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
@@ -3175,6 +3178,7 @@
           <button type="button" class="settings-tab" data-settings-tab="umum">Pengaturan Umum</button>
           <button type="button" class="settings-tab" data-settings-tab="notif-wa">Notifikasi WA</button>
           <button type="button" class="settings-tab" data-settings-tab="setup-wa">Setup WA Otomatis</button>
+          <button type="button" class="settings-tab" data-settings-tab="push-notif">Notifikasi Push</button>
           <button type="button" class="settings-tab" data-settings-tab="keamanan">Keamanan Sistem</button>
           <button type="button" class="settings-tab" data-settings-tab="backup-do">Backup Data DO</button>
           <button type="button" class="settings-tab" data-settings-tab="akun">Akun Terdaftar</button>
@@ -3287,6 +3291,9 @@
             <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--amber-600); background:#fff8ec;">
               <b>Kalau sebelumnya sudah pernah pasang kode Apps Script ini:</b> nomor WA tujuan yang tadinya SATU (<span class="mono">WA_TARGET</span>, dipakai bareng untuk semua notif) sekarang dipecah jadi DUA — <span class="mono">WA_TARGET_ADMIN</span> untuk notif KIR/Pajak/Service Berkala, dan <span class="mono">WA_TARGET_OWNER</span> untuk notif PO Baru — supaya Owner cukup dapat notif PO tanpa ikut kebanjiran pengingat perbaikan/kelengkapan kendaraan. Untuk mengaktifkan ini, buka lagi project di script.google.com &rarr; hapus semua kode lama &rarr; tempel ulang kode terbaru di bawah ini &rarr; isi ulang nomor Admin/Staff &amp; Owner-nya masing-masing &rarr; Save (tidak perlu bikin trigger baru, trigger yang sudah ada tetap jalan otomatis pakai kode yang baru).
             </p>
+            <p class="hint" style="line-height:1.7; margin-bottom:14px; padding:10px; border-left:3px solid var(--blue-600, #2563eb); background:#eff6ff;">
+              <b>Baru (Sesi keseratustujuhpuluhenam):</b> kode di bawah sekarang JUGA mengirim <b>notifikasi push sistem</b> untuk PO Baru — muncul persis seperti notifikasi WA/aplikasi chat lain di HP/laptop, walau aplikasi LINTAS sedang tertutup total, BERBARENGAN dengan WA (bukan pengganti). Ini butuh 3 nilai TAMBAHAN dari Service Account Google Cloud (<span class="mono">FCM_CLIENT_EMAIL</span> &amp; <span class="mono">FCM_PRIVATE_KEY</span> di kode) — cara ambilnya ada di langkah 7 di bawah, dan setup sisi HP/browser-nya ada di tab <b>"Notifikasi Push"</b> menu Pengaturan ini. Kalau belum sempat setup FCM-nya, tidak masalah — jalur WA tetap jalan seperti biasa, bagian push cuma otomatis dilewati diam-diam.
+            </p>
 
             <div style="border-top:1px solid var(--border); padding-top:14px;">
               <label style="margin-bottom:8px; display:block;">Cara setup (sekali saja)</label>
@@ -3297,6 +3304,7 @@
                 4. Daftar gratis di <b>fonnte.com</b>, hubungkan nomor WA yang akan jadi pengirim, lalu salin <b>Token</b>-nya. Ganti <span class="mono">FONNTE_TOKEN</span> dengan token itu. Nomor tujuan sekarang dipisah dua supaya tidak tercampur: ganti <span class="mono">WA_TARGET_ADMIN</span> dengan nomor WA <b>Admin/Staff</b> (tujuan notif KIR/Pajak/Service Berkala — urusan kelengkapan &amp; perbaikan kendaraan), dan <span class="mono">WA_TARGET_OWNER</span> dengan nomor WA <b>Owner/Pimpinan</b> (tujuan notif PO Baru saja) — masing-masing format 62xxx, boleh lebih dari satu nomor dipisah koma, dan boleh diisi nomor yang sama kalau memang belum perlu dipisah.<br>
                 5. Klik ikon jam (Triggers) di sisi kiri editor &rarr; Add Trigger &rarr; pilih function <span class="mono">checkAndNotify</span>, jenis "Time-driven" &rarr; "Day timer" &rarr; pilih jam pengecekan (mis. 07.00–08.00) &rarr; Save. Tidak perlu Deploy sebagai Web App — trigger terjadwal saja sudah cukup. Notif dari function ini (KIR/Pajak/Service) terkirim ke nomor <span class="mono">WA_TARGET_ADMIN</span>.<br>
                 6. <b>Untuk notifikasi PO baru:</b> tambah trigger kedua &rarr; Add Trigger &rarr; pilih function <span class="mono">checkAndNotifyPoBaru</span>, jenis "Time-driven" &rarr; "Minutes timer" &rarr; pilih "Every 5 minutes" (atau "Every minute" kalau mau paling cepat) &rarr; Save. Setiap ada PO baru yang diinput di menu "Input SO &amp; Upload PO", WA notifikasi otomatis terkirim dalam beberapa menit ke nomor <span class="mono">WA_TARGET_OWNER</span> — tidak perlu buka aplikasi ini.<br>
+                7. <b>Opsional — notifikasi push sistem untuk PO baru (tambahan, WA tetap jalan):</b> buka <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a> &rarr; pastikan project yang dipilih di kiri atas adalah <span class="mono">ekspedisi-jaya</span> &rarr; menu IAM &amp; Admin &rarr; Service Accounts &rarr; Create Service Account (nama bebas, mis. "fcm-push-sender") &rarr; beri role <b>"Firebase Cloud Messaging API Admin"</b> &rarr; setelah dibuat, buka service account itu &rarr; tab Keys &rarr; Add Key &rarr; Create new key &rarr; pilih JSON &rarr; Create (file JSON otomatis terdownload). Buka file JSON itu dengan text editor, salin nilai <span class="mono">client_email</span> ke <span class="mono">FCM_CLIENT_EMAIL</span> di kode, dan salin nilai <span class="mono">private_key</span> (termasuk baris BEGIN/END-nya, apa adanya) ke <span class="mono">FCM_PRIVATE_KEY</span>. Tidak perlu trigger baru — function ini dipanggil otomatis dari dalam <span class="mono">checkAndNotifyPoBaru</span> yang triggernya sudah dibuat di langkah 6. Lalu lanjut ke tab "Notifikasi Push" di menu Pengaturan ini untuk mengaktifkan penerimaan push-nya di HP/laptop.<br>
                 <b>Opsional — tarik KM &amp; lokasi/status GPS otomatis dari Cartrack:</b> isi <span class="mono">CARTRACK_USERNAME</span> dan <span class="mono">CARTRACK_PASSWORD</span> di kode (dari akun Cartrack Fleetweb Anda, menu API Settings), lalu tambah trigger kedua untuk function <span class="mono">syncOdometerFromCartrack</span>, jenis "Time-driven" &rarr; "Minute timer" &rarr; pilih <b>"Every 5 minutes"</b> supaya Monitoring Armada selalu ter-update (jangan pilih interval jam-an seperti sebelumnya kalau mau lokasi selalu terkini — "Every 5 minutes" adalah interval tercepat yang wajar dipakai terus-menerus). KM, Lokasi Terakhir, dan Status (Berjalan/Berhenti) akan otomatis masuk ke Firebase dan langsung terlihat di halaman Maintenance Perbaikan &amp; Monitoring Armada — tidak perlu tarik manual. <b>Kalau trigger ini sudah pernah dibuat sebelumnya:</b> tidak perlu dihapus/dibuat ulang, cukup klik ikon jam (Triggers) di kiri editor &rarr; klik trigger <span class="mono">syncOdometerFromCartrack</span> yang sudah ada &rarr; ubah interval waktunya jadi "Every 5 minutes" &rarr; Save.
               </p>
               <textarea id="waAppsScriptCode" readonly style="width:100%; min-height:260px; font-family:'IBM Plex Mono',monospace; font-size:11.5px; padding:10px; border:1px solid var(--border); border-radius:var(--radius); background:#fafbfc; color:var(--text); text-transform:none;">// ================== KONFIGURASI ==================
@@ -3310,6 +3318,16 @@ const WA_TARGET_ADMIN = '6281234567890'; // nomor WA Admin/Staff -- tujuan notif
 const WA_TARGET_OWNER = '6281234567890'; // nomor WA Owner/Pimpinan -- tujuan notif PO Baru Masuk (checkAndNotifyPoBaru). Format 62xxx, lebih dari 1 nomor pisahkan koma
 const H_REMINDER = 10; // kirim notif KIR/Pajak mulai H-berapa hari
 const KM_REMINDER = 1000; // kirim notif Service Berkala saat sisa berapa km lagi
+
+// --- Notifikasi Push (FCM) -- BERBARENGAN dengan WA, bukan pengganti (Sesi keseratustujuhpuluhenam) ---
+// Supaya notif PO Baru juga muncul sebagai notifikasi SISTEM langsung di HP/laptop (seperti WA/aplikasi
+// chat lain), walau aplikasi LINTAS sedang tertutup total -- bukan cuma lewat WhatsApp. Isi 3 nilai di
+// bawah dari file JSON Service Account (lihat panduan setup di tab "Notifikasi Push" menu Pengaturan):
+// FCM_PROJECT_ID = field "project_id", FCM_CLIENT_EMAIL = field "client_email", FCM_PRIVATE_KEY = field
+// "private_key" (SALIN PERSIS termasuk baris "-----BEGIN PRIVATE KEY-----" & "-----END PRIVATE KEY-----").
+const FCM_PROJECT_ID = 'ekspedisi-jaya';
+const FCM_CLIENT_EMAIL = 'ISI_client_email_DARI_JSON_SERVICE_ACCOUNT_DI_SINI';
+const FCM_PRIVATE_KEY = `ISI_private_key_DARI_JSON_SERVICE_ACCOUNT_DI_SINI`;
 
 // --- Integrasi Cartrack (opsional, isi hanya jika mau tarik KM otomatis dari GPS) ---
 const CARTRACK_USERNAME = 'ISI_USERNAME_CARTRACK_DI_SINI';
@@ -3468,6 +3486,12 @@ function checkAndNotifyPoBaru(){
       + 'Sisa updet PO : ' + Math.round(totalSisaPo / 1000).toLocaleString('id-ID') + ' ton\n\n'
       + 'Mohon segera dicek & dikonfirmasi di menu Konfirmasi PO.';
     sendWhatsApp(msg, WA_TARGET_OWNER);
+    // Notif push (FCM) dikirim BERBARENGAN dengan WA -- judul & isi singkat karena tampil sebagai
+    // notifikasi sistem (bukan chat panjang seperti WA), cukup untuk memberi tahu lalu buka aplikasi.
+    sendFcmPushToAll_(
+      'PO Baru Masuk',
+      (p.namaCustomer || '-') + ' -- ' + (p.noPO || p.noCO || 'No. PO belum ada') + ' -- ' + Math.round((Number(p.tonase)||0) / 1000).toLocaleString('id-ID') + ' ton'
+    );
     p.notifWaSent = true;
   });
 
@@ -3483,6 +3507,95 @@ function sendWhatsApp(message, target){
     muteHttpExceptions: true
   };
   UrlFetchApp.fetch(url, options);
+}
+
+// ================== NOTIFIKASI PUSH (FCM) -- notif SISTEM asli, muncul walau app LINTAS tertutup total,
+// persis seperti notifikasi WA/aplikasi chat lain. Dikirim BERBARENGAN dengan sendWhatsApp() di atas,
+// BUKAN pengganti (Sesi keseratustujuhpuluhenam). Tiap device/browser yang sudah klik "Aktifkan
+// Notifikasi Push" di menu Pengaturan aplikasi akan punya 1 token tersimpan di Firebase /fcmTokens --
+// fungsi-fungsi di bawah ini yang kirim push ke SEMUA token itu tiap ada PO baru. ==================
+function fcmTokensList_(){
+  var data = fbGet('/fcmTokens');
+  if (!data) return [];
+  return Object.keys(data); // key node ini = token FCM itu sendiri (lihat cara disimpan dari aplikasi)
+}
+function base64UrlEncode_(input){
+  return Utilities.base64EncodeWebSafe(input).replace(/=+$/, '');
+}
+// Access token OAuth2 (dari Service Account) di-cache ~50 menit (aslinya berlaku 1 jam) supaya tidak
+// perlu bikin & tanda tangan JWT baru tiap kali checkAndNotifyPoBaru() mengirim push untuk beberapa PO
+// sekaligus dalam satu kali jalan trigger.
+function getFcmAccessToken_(){
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get('fcm_access_token');
+  if (cached) return cached;
+
+  var header = { alg: 'RS256', typ: 'JWT' };
+  var now = Math.floor(Date.now() / 1000);
+  var claims = {
+    iss: FCM_CLIENT_EMAIL,
+    scope: 'https://www.googleapis.com/auth/firebase.messaging',
+    aud: 'https://oauth2.googleapis.com/token',
+    exp: now + 3600,
+    iat: now
+  };
+  var toSign = base64UrlEncode_(JSON.stringify(header)) + '.' + base64UrlEncode_(JSON.stringify(claims));
+  var signatureBytes = Utilities.computeRsaSha256Signature(toSign, FCM_PRIVATE_KEY);
+  var jwt = toSign + '.' + base64UrlEncode_(signatureBytes);
+
+  var res = UrlFetchApp.fetch('https://oauth2.googleapis.com/token', {
+    method: 'post',
+    payload: {
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt
+    },
+    muteHttpExceptions: true
+  });
+  if (res.getResponseCode() !== 200){
+    Logger.log('GAGAL ambil access token FCM (cek FCM_CLIENT_EMAIL/FCM_PRIVATE_KEY): ' + res.getContentText().substring(0, 300));
+    return null;
+  }
+  var accessToken = JSON.parse(res.getContentText()).access_token;
+  cache.put('fcm_access_token', accessToken, 3000); // detik -- 50 menit
+  return accessToken;
+}
+// Kirim notifikasi push ke SEMUA perangkat yang sudah "Aktifkan Notifikasi Push" (token tersimpan di
+// Firebase /fcmTokens). Token yang sudah tidak valid lagi (app di-uninstall/browser data dihapus/dsb)
+// otomatis dibuang dari Firebase supaya daftar token tidak menumpuk sampah dari waktu ke waktu.
+function sendFcmPushToAll_(title, body){
+  if (!FCM_CLIENT_EMAIL || FCM_CLIENT_EMAIL.indexOf('ISI_') === 0) return; // belum di-setup -- lewati diam-diam, tidak mengganggu jalur WA
+  var tokens = fcmTokensList_();
+  if (tokens.length === 0) return;
+  var accessToken = getFcmAccessToken_();
+  if (!accessToken) return;
+
+  tokens.forEach(function(token){
+    var payload = {
+      message: {
+        token: token,
+        notification: { title: title, body: body },
+        webpush: {
+          notification: { icon: 'icon192.png' },
+          fcm_options: { link: '/index.html' }
+        }
+      }
+    };
+    var res = UrlFetchApp.fetch('https://fcm.googleapis.com/v1/projects/' + FCM_PROJECT_ID + '/messages:send', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: { Authorization: 'Bearer ' + accessToken },
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    });
+    if (res.getResponseCode() >= 400){
+      var errText = res.getContentText();
+      Logger.log('Gagal kirim push ke 1 token (' + res.getResponseCode() + '): ' + errText.substring(0, 200));
+      // Token sudah tidak terdaftar/kedaluwarsa di sisi Google -- hapus dari Firebase supaya tidak terus dicoba tiap run.
+      if (errText.indexOf('UNREGISTERED') !== -1 || errText.indexOf('NOT_FOUND') !== -1 || errText.indexOf('INVALID_ARGUMENT') !== -1){
+        fbSet('/fcmTokens/' + token, null);
+      }
+    }
+  });
 }
 
 function addMonths(dateObj, months){
@@ -3640,6 +3753,45 @@ function syncOdometerFromCartrack(){
   }
 }</textarea>
               <button type="button" class="btn btn-secondary" id="btnCopyWaScript" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin kode</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sesi keseratustujuhpuluhenam: Notifikasi Push (FCM) -- notif SISTEM asli (bukan WA), muncul
+             persis seperti notifikasi WhatsApp/aplikasi chat lain, walau aplikasi LINTAS sedang tertutup
+             total. BERBARENGAN dengan notif WA yang sudah ada (lihat tab "Setup WA Otomatis"), bukan
+             pengganti. Tab ini murni untuk sisi PENERIMA (aktifkan di HP/browser masing-masing) -- sisi
+             PENGIRIM (server, dipicu tiap ada PO baru) diatur lewat kode Apps Script di tab sebelah
+             ("Setup WA Otomatis" -- fungsi sendFcmPushToAll_ dipanggil dari checkAndNotifyPoBaru). -->
+        <div class="panel" data-settings-panel="push-notif">
+          <div class="panel-head">
+            <div>
+              <h2>Notifikasi Push <span class="hint">(seperti notifikasi WhatsApp)</span></h2>
+              <p>Aktifkan supaya PERANGKAT INI (HP/laptop yang sedang dipakai) menerima notifikasi sistem langsung begitu ada PO baru masuk -- muncul di layar walau aplikasi LINTAS sedang tertutup, persis seperti notifikasi WA</p>
+            </div>
+          </div>
+          <div class="panel-body">
+            <p class="hint" style="line-height:1.7; margin:-4px 0 14px;">
+              Notifikasi ini TERPISAH per perangkat/browser -- kalau Owner/Admin buka aplikasi ini dari beberapa HP/laptop, aktifkan di SETIAP perangkat yang mau ikut dapat notifikasi. Ini tambahan di luar notifikasi WA yang sudah ada (tab "Setup WA Otomatis") -- keduanya tetap berjalan bersamaan.
+            </p>
+
+            <div class="field" style="max-width:560px; margin-bottom:12px;">
+              <label for="setFcmVapidKey">Kunci VAPID (Web Push certificate)</label>
+              <input type="text" id="setFcmVapidKey" placeholder="Tempel kunci VAPID dari Firebase Console di sini">
+              <p class="hint" style="line-height:1.6; margin-top:8px;">Diambil SEKALI SAJA oleh admin dari <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">Firebase Console</a> &rarr; project <span class="mono">ekspedisi-jaya</span> &rarr; ikon gerigi (Project settings) &rarr; tab <b>Cloud Messaging</b> &rarr; bagian <b>Web configuration</b> &rarr; kalau belum ada "Web Push certificates", klik <b>Generate key pair</b> &rarr; salin kunci yang muncul, tempel di sini, lalu klik "Simpan kunci VAPID" di bawah. Tersimpan ke Firebase, berlaku sama untuk semua akun/perangkat -- cukup diisi sekali oleh admin.</p>
+            </div>
+            <div class="btn-row" style="margin-bottom:18px;">
+              <button type="button" class="btn btn-secondary" id="btnSimpanFcmVapidKey">Simpan kunci VAPID</button>
+              <span class="hint" id="fcmVapidKeyStatus" style="align-self:center;"></span>
+            </div>
+
+            <div style="border-top:1px solid var(--border); padding-top:14px;">
+              <label style="margin-bottom:8px; display:block;">Aktifkan di perangkat ini</label>
+              <div class="btn-row" style="margin-bottom:8px;">
+                <button type="button" class="btn btn-primary" id="btnAktifkanPush">Aktifkan Notifikasi Push</button>
+                <button type="button" class="btn btn-secondary" id="btnNonaktifkanPush" style="display:none;">Nonaktifkan di Perangkat Ini</button>
+              </div>
+              <p class="hint" id="fcmPushStatus" style="line-height:1.6;">Belum diaktifkan di perangkat ini.</p>
             </div>
           </div>
         </div>
@@ -4846,7 +4998,7 @@ function attachFirebaseListenersInner(){
     if(fbPendingWrites['appSettings']) return;
     const val = snap.val();
     if(val && typeof val === 'object'){
-      appSettings = Object.assign({ dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421 }, val);
+      appSettings = Object.assign({ dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421, fcmVapidKey: '' }, val);
       localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(appSettings));
       const v = currentViewName();
       if(v === 'dashboard') renderDashboard();
@@ -4854,6 +5006,8 @@ function attachFirebaseListenersInner(){
       if(selEl) selEl.value = getDashJenisFilter();
       const nextNoPKBEl = document.getElementById('setNextNoPKB');
       if(nextNoPKBEl) nextNoPKBEl.value = appSettings.nextNoPKB;
+      const fcmVapidEl = document.getElementById('setFcmVapidKey');
+      if(fcmVapidEl && document.activeElement !== fcmVapidEl) fcmVapidEl.value = appSettings.fcmVapidKey || '';
       if(v === 'input') prefillNoPKB(); // perangkat lain ubah nomor -> ikut sinkron kalau sedang buka DO baru (bukan mode edit)
     }else if(val == null){
       fbPush('appSettings', appSettings); // Firebase masih kosong (pertama kali pakai) -> unggah default lokal
@@ -5104,8 +5258,8 @@ const APP_SETTINGS_KEY = 'ekspedisi_pro_app_settings';
 // nextNoPKB: nomor urut No. PKB berikutnya yang otomatis diisi di Input PKB (DO baru) -- default 1421
 // karena user sudah pakai nomor manual sampai 1420 (Sesi ketujuhpuluhdelapan), lihat prefillNoPKB()/bumpNextNoPKB().
 function loadAppSettings(){
-  try{ return Object.assign({ dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421 }, JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)) || {}); }
-  catch(e){ return { dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421 }; }
+  try{ return Object.assign({ dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421, fcmVapidKey: '' }, JSON.parse(localStorage.getItem(APP_SETTINGS_KEY)) || {}); }
+  catch(e){ return { dashJenisAngkutanDefault: 'organik', nextNoPKB: 1421, fcmVapidKey: '' }; }
 }
 function saveAppSettings(){ localStorage.setItem(APP_SETTINGS_KEY, JSON.stringify(appSettings)); fbPush('appSettings', appSettings); }
 let appSettings = loadAppSettings();
@@ -5953,6 +6107,9 @@ function goTo(view){
     if(settingsTabsEl) settingsTabsEl.style.display = isAdmin ? '' : 'none';
     const nextNoPKBEl = document.getElementById('setNextNoPKB');
     if(nextNoPKBEl) nextNoPKBEl.value = appSettings.nextNoPKB || 1421;
+    const fcmVapidEl = document.getElementById('setFcmVapidKey');
+    if(fcmVapidEl) fcmVapidEl.value = appSettings.fcmVapidKey || '';
+    refreshFcmPushUi(); // lihat blok Notifikasi Push (FCM) -- update status Aktif/Belum di tab "Notifikasi Push"
     setSettingsTab('profil');
     if(isAdmin) renderAccountList();
     const setUmumEl = document.getElementById('setDashJenisAngkutanDefault');
@@ -14819,6 +14976,140 @@ document.getElementById('btnSimpanSetUmum').addEventListener('click', function()
   if(okEl) okEl.textContent = 'Pengaturan berhasil disimpan.';
   showToast('Pengaturan umum berhasil disimpan', 'success');
 });
+
+/* ================== NOTIFIKASI PUSH (FCM) -- sisi PENERIMA (Sesi keseratustujuhpuluhenam) ==================
+   Berbarengan dengan notifikasi WA yang sudah ada, BUKAN pengganti -- lihat tab "Notifikasi Push" di
+   Pengaturan. Sisi PENGIRIM (server, dipicu tiap ada PO baru) ada di kode Apps Script pada tab "Setup WA
+   Otomatis" (fungsi sendFcmPushToAll_, dipanggil dari checkAndNotifyPoBaru). Alur di sini murni: minta
+   izin notifikasi browser -> ambil "token" unik utk perangkat ini dari Firebase Messaging -> simpan token
+   itu ke Firebase /fcmTokens supaya Apps Script tahu ke mana push harus dikirim. Background (app tertutup)
+   ditangani oleh serviceworker.js (importScripts firebase-messaging-compat.js + onBackgroundMessage). */
+const FCM_TOKEN_KEY = 'ekspedisi_pro_fcm_token';
+let fcmMessagingInstance = null;
+function getFcmMessaging(){
+  if(fcmMessagingInstance) return fcmMessagingInstance;
+  try{ fcmMessagingInstance = firebase.messaging(); }
+  catch(e){ fcmMessagingInstance = null; } // browser/protokol tidak mendukung (mis. Safari lama, dibuka dari file:// bukan https://)
+  return fcmMessagingInstance;
+}
+function fcmPushDidukung(){
+  return ('Notification' in window) && ('serviceWorker' in navigator) && !!getFcmMessaging();
+}
+// Dipanggil tiap kali halaman Pengaturan dibuka/di-refresh (lihat handleAuthStateChange) supaya status
+// Aktif/Belum & tombol yang ditampilkan selalu sesuai kondisi nyata perangkat ini.
+function refreshFcmPushUi(){
+  const btnOn = document.getElementById('btnAktifkanPush');
+  const btnOff = document.getElementById('btnNonaktifkanPush');
+  const statusEl = document.getElementById('fcmPushStatus');
+  if(!btnOn || !btnOff || !statusEl) return;
+  if(!fcmPushDidukung()){
+    btnOn.disabled = true;
+    btnOn.style.display = '';
+    btnOff.style.display = 'none';
+    statusEl.textContent = 'Browser/perangkat ini tidak mendukung notifikasi push (pakai Chrome/Edge terbaru di Android atau desktop).';
+    return;
+  }
+  btnOn.disabled = false;
+  const savedToken = localStorage.getItem(FCM_TOKEN_KEY);
+  if(savedToken && typeof Notification !== 'undefined' && Notification.permission === 'granted'){
+    btnOn.style.display = 'none';
+    btnOff.style.display = '';
+    statusEl.textContent = 'Aktif di perangkat ini -- notifikasi PO Baru akan muncul walau aplikasi tertutup.';
+  }else{
+    btnOn.style.display = '';
+    btnOff.style.display = 'none';
+    statusEl.textContent = (typeof Notification !== 'undefined' && Notification.permission === 'denied')
+      ? 'Izin notifikasi diblokir di browser ini -- aktifkan lewat pengaturan situs di browser, lalu coba lagi.'
+      : 'Belum diaktifkan di perangkat ini.';
+  }
+}
+async function aktifkanFcmPush(){
+  const btn = document.getElementById('btnAktifkanPush');
+  const statusEl = document.getElementById('fcmPushStatus');
+  if(!appSettings.fcmVapidKey){
+    showToast('Isi & simpan dulu Kunci VAPID di atas sebelum mengaktifkan', 'error');
+    return;
+  }
+  const messaging = getFcmMessaging();
+  if(!messaging){
+    showToast('Browser ini tidak mendukung notifikasi push', 'error');
+    return;
+  }
+  btn.disabled = true;
+  statusEl.textContent = 'Memproses...';
+  try{
+    const permission = await Notification.requestPermission();
+    if(permission !== 'granted'){
+      statusEl.textContent = 'Izin notifikasi ditolak -- tidak bisa mengaktifkan.';
+      showToast('Izin notifikasi ditolak', 'error');
+      return;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    const token = await messaging.getToken({ vapidKey: appSettings.fcmVapidKey, serviceWorkerRegistration: reg });
+    if(!token) throw new Error('Token kosong');
+    const acc = currentAccount();
+    await fbDb.ref('fcmTokens/' + token).set({
+      email: (acc && acc.email) || '',
+      nama: (acc && acc.nama) || '',
+      userAgent: navigator.userAgent,
+      createdAt: Date.now()
+    });
+    localStorage.setItem(FCM_TOKEN_KEY, token);
+    showToast('Notifikasi push berhasil diaktifkan di perangkat ini', 'success');
+  }catch(err){
+    console.warn('Gagal mengaktifkan notifikasi push:', err);
+    statusEl.textContent = 'Gagal mengaktifkan -- coba lagi (lihat console browser untuk detail).';
+    showToast('Gagal mengaktifkan notifikasi push', 'error');
+  }finally{
+    btn.disabled = false;
+    refreshFcmPushUi();
+  }
+}
+async function nonaktifkanFcmPush(){
+  const btn = document.getElementById('btnNonaktifkanPush');
+  const savedToken = localStorage.getItem(FCM_TOKEN_KEY);
+  btn.disabled = true;
+  try{
+    const messaging = getFcmMessaging();
+    if(messaging){ try{ await messaging.deleteToken(); }catch(e){} }
+    if(savedToken && fbDb){ fbDb.ref('fcmTokens/' + savedToken).remove().catch(()=>{}); }
+    localStorage.removeItem(FCM_TOKEN_KEY);
+    showToast('Notifikasi push dinonaktifkan di perangkat ini', 'success');
+  }catch(err){
+    console.warn('Gagal menonaktifkan notifikasi push:', err);
+  }finally{
+    btn.disabled = false;
+    refreshFcmPushUi();
+  }
+}
+document.getElementById('btnSimpanFcmVapidKey').addEventListener('click', function(){
+  const val = document.getElementById('setFcmVapidKey').value.trim();
+  appSettings.fcmVapidKey = val;
+  saveAppSettings();
+  const statusEl = document.getElementById('fcmVapidKeyStatus');
+  if(statusEl){
+    statusEl.textContent = 'Tersimpan.';
+    setTimeout(() => { if(statusEl.textContent === 'Tersimpan.') statusEl.textContent = ''; }, 3000);
+  }
+  showToast('Kunci VAPID tersimpan', 'success');
+  refreshFcmPushUi();
+});
+document.getElementById('btnAktifkanPush').addEventListener('click', aktifkanFcmPush);
+document.getElementById('btnNonaktifkanPush').addEventListener('click', nonaktifkanFcmPush);
+// Notifikasi yang diterima saat aplikasi SEDANG TERBUKA (foreground) tidak otomatis muncul sebagai
+// notifikasi sistem (perilaku standar browser) -- di sini ditampilkan sebagai toast dalam-app sebagai
+// gantinya. Saat aplikasi tertutup/di-minimize, notifikasi sistem asli ditangani oleh serviceworker.js.
+(function(){
+  const messaging = getFcmMessaging();
+  if(!messaging) return;
+  try{
+    messaging.onMessage(function(payload){
+      const n = payload && payload.notification;
+      if(n) showToast((n.title ? n.title + ': ' : '') + (n.body || ''), 'info');
+    });
+  }catch(e){ /* browser tidak mendukung fitur ini -- diamkan, fitur lain tetap normal */ }
+})();
+
 document.getElementById('formPassword').addEventListener('submit', async function(e){
   e.preventDefault();
   const acc = currentAccount();
