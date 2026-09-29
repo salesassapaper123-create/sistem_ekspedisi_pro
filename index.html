@@ -7335,7 +7335,8 @@ document.getElementById('formDO').addEventListener('submit', function(e){
       id: newId,
     }, fieldsData));
     savedRecordId = newId;
-    bumpNextNoPKB(fieldsData.noPKB); // majukan nomor PKB berikutnya (DO baru saja, bukan edit)
+    // Sesi keseratustujuhpuluhlima: tidak perlu bump manual lagi -- nomor usulan berikutnya sekarang
+    // dihitung live dari records tiap prefillNoPKB() dipanggil (lihat computeNextNoPKB()).
     showToast(uangJalanPendingMsg ? 'Data DO berhasil disimpan. ' + uangJalanPendingMsg : 'Data DO berhasil disimpan', 'success');
   }
   save();
@@ -7411,25 +7412,32 @@ function editRecordDO(id){
 }
 
 /* ---------- No. PKB otomatis berurut (untuk DO BARU saja, TIDAK untuk mode Edit) ----------
-   User sudah menomori manual sampai 1420 -- appSettings.nextNoPKB (default 1421, lihat loadAppSettings())
-   dipakai sebagai nomor urut berikutnya. Field TETAP bisa diedit manual (bukan readonly) kalau user
-   perlu lompat nomor atau pakai format lain, tapi begitu DO baru berhasil disimpan, nomornya otomatis
-   maju lewat bumpNextNoPKB(). */
+   Sesi keseratustujuhpuluhlima: nomor usulan berikutnya SEKARANG DIHITUNG LIVE dari data Rekap Data DO
+   (records) setiap kali form dibuka -- BUKAN LAGI angka tersimpan yang di-"bump" maju terus tiap DO baru
+   disimpan (appSettings.nextNoPKB dulu cuma bisa maju, tidak pernah mundur -- lihat versi lama fungsi ini
+   di riwayat README). Masalah cara lama: kalau user salah input No PKB lalu menghapus DO yang salah itu
+   di Rekap Data DO, nomor usulan TETAP lanjut ke depan (nomor yang salah tadi jadi "hilang", tidak pernah
+   kepakai lagi). Sekarang nomor usulan = (No PKB numerik TERBESAR yang ADA SAAT INI di records) + 1 --
+   jadi otomatis IKUT MUNDUR lagi begitu DO dengan nomor tertinggi itu dihapus, betul-betul mengikuti data
+   Rekap Data DO yang sebenarnya, bukan angka yang dikunci terpisah. appSettings.nextNoPKB (field "Nomor
+   PKB berikutnya" di menu Pengaturan) tetap dipakai, tapi sekarang statusnya jadi BATAS BAWAH/starting
+   point saja (berguna waktu migrasi dari sistem lama yang nomornya belum tercatat di records) -- nomor
+   usulan akhir = mana yang LEBIH BESAR di antara hasil hitung live vs batas bawah itu. Field TETAP bisa
+   diedit manual (bukan readonly) kalau user perlu lompat nomor atau pakai format lain. */
+function computeNextNoPKB(){
+  let maxFromRecords = 0;
+  records.forEach(r => {
+    const digits = String((r && r.noPKB) || '').replace(/[^\d]/g, '');
+    if(!digits) return;
+    const num = parseInt(digits, 10);
+    if(!isNaN(num) && num > maxFromRecords) maxFromRecords = num;
+  });
+  const floor = Number(appSettings.nextNoPKB) || 1421;
+  return Math.max(maxFromRecords + 1, floor);
+}
 function prefillNoPKB(){
   const el = document.getElementById('doNoPKB');
-  if(el && !editingId) el.value = String(appSettings.nextNoPKB || 1421);
-}
-function bumpNextNoPKB(savedNoPKB){
-  const digits = String(savedNoPKB || '').replace(/[^\d]/g, '');
-  if(!digits) return;
-  const num = parseInt(digits, 10);
-  // cuma maju ke depan, tidak pernah mundur -- jaga-jaga kalau user sempat isi manual nomor lebih kecil
-  if(!isNaN(num) && (num + 1) > (Number(appSettings.nextNoPKB) || 0)){
-    appSettings.nextNoPKB = num + 1;
-    saveAppSettings();
-    const nextNoPKBEl = document.getElementById('setNextNoPKB');
-    if(nextNoPKBEl) nextNoPKBEl.value = appSettings.nextNoPKB;
-  }
+  if(el && !editingId) el.value = String(computeNextNoPKB());
 }
 
 function cancelEditDO(){
@@ -12397,6 +12405,7 @@ function renderTable(){
         renderTable();
         renderDashboard(); // ikut refresh widget Monitoring Armada & statistik lain di Dashboard begitu DO dihapus
         renderMonitoringArmadaCard('monitoringArmadaFullWrap'); // halaman penuh Monitoring Armada -- driver/rute diambil dari DO TERBARU per nopol (dashVehicleLatestRecord), jadi harus ikut refresh begitu DO dihapus, bukan hanya nunggu navigasi ulang
+        prefillNoPKB(); // Sesi keseratustujuhpuluhlima: begitu DO dihapus, usulan No PKB berikutnya di Input PKB langsung ikut mundur mengikuti data Rekap Data DO yang tersisa (kalau bukan sedang mode edit)
         showToast('Data DO berhasil dihapus', 'danger');
       }
     }));
