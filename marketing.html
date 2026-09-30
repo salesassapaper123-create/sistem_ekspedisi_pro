@@ -1515,6 +1515,7 @@
               <button class="btn btn-secondary" id="btnPoClearFilter">Reset filter</button>
             </div>
             <div id="poTableWrap"></div>
+            <div id="poRekapDitutupWrap"></div>
           </div>
         </div>
       </div>
@@ -2175,7 +2176,10 @@ function compressImageFile(file, maxDim, quality){
 function updatePoBadge(){
   const badge = document.getElementById('poBadge');
   if(!badge) return;
-  if(!canConfirmPO()){ badge.style.display = 'none'; badge.textContent = ''; return; }
+  // Sesi keseratustujuhpuluhdelapan: badge ini menandakan "ada PO yang perlu ditindak (ACC/Tolak)" --
+  // karena ACC/Tolak/Tutup/Buka Kembali sekarang khusus admin, badge cuma relevan ditampilkan ke admin
+  // (sebelumnya pakai canConfirmPO(), termasuk akun non-admin ber-izin "Bisa konfirmasi PO").
+  if(!isAdminUser()){ badge.style.display = 'none'; badge.textContent = ''; return; }
   const count = poList.filter(p => (p.status || 'menunggu') === 'menunggu').length;
   if(count > 0){
     badge.textContent = count > 99 ? '99+' : String(count);
@@ -2196,7 +2200,10 @@ function renderPO(){
   const wrap = document.getElementById('poTableWrap');
   if(!wrap) return;
   const admin = isAdminUser();
-  const bisaKonfirmasi = canConfirmPO();
+  // Sesi keseratustujuhpuluhdelapan: ACC/Tolak/Tutup/Buka Kembali sekarang SEMUA khusus admin (sebelumnya
+  // ACC/Tolak/Buka Kembali memakai syarat bisaKonfirmasi = canConfirmPO(), yang juga meloloskan akun
+  // non-admin ber-izin "Bisa konfirmasi PO" -- izin itu sekarang tidak lagi berefek apa-apa di halaman
+  // PO Marketing ini, murni fungsi admin saja).
   const poDescText = document.getElementById('poDescText');
   if(poDescText) poDescText.style.display = admin ? '' : 'none';
   updatePoBadge();
@@ -2223,6 +2230,7 @@ function renderPO(){
       totalPengirimanSum += terpakai;
       totalSisaSum += sisaPO;
       const poHabis = p.status === 'dikonfirmasi' && p.tonase && sisaPO <= 0;
+      const closed = !!p.closed;
       return `
       <tr>
         <td class="mono">${esc(p.noCO || '-')}</td>
@@ -2238,14 +2246,22 @@ function renderPO(){
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
         <td>${p.statusKirim ? esc(p.statusKirim) : '-'}</td>
         <td>${p.fotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
-        <td>${poStatusBadge(p.status || 'menunggu')}${poHabis ? `<div style="margin-top:4px;"><span class="badge badge-done"><span class="badge-dot"></span>PO Habis</span></div>` : ''}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
+        <td>${poStatusBadge(p.status || 'menunggu')}${poHabis ? `<div style="margin-top:4px;"><span class="badge badge-done"><span class="badge-dot"></span>PO Habis</span></div>` : ''}${closed ? `<div style="margin-top:4px;"><span class="badge badge-legal-warn"><span class="badge-dot"></span>Ditutup</span></div>` : ''}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
         <td class="row-actions">
-          ${(bisaKonfirmasi && (p.status || 'menunggu') === 'menunggu') ? `
-            <button type="button" class="icon-btn po-acc" data-id="${p.id}" title="Konfirmasi (ACC)" style="color:var(--green-600);">
+          ${(admin && (p.status || 'menunggu') === 'menunggu') ? `
+            <button type="button" class="icon-btn po-acc" data-id="${p.id}" title="Konfirmasi (ACC) -- khusus admin" style="color:var(--green-600);">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
             </button>
-            <button type="button" class="icon-btn po-tolak" data-id="${p.id}" title="Tolak order" style="color:#c0392b;">
+            <button type="button" class="icon-btn po-tolak" data-id="${p.id}" title="Tolak order -- khusus admin" style="color:#c0392b;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>` : ''}
+          ${(admin && p.status === 'dikonfirmasi' && !closed) ? `
+            <button type="button" class="icon-btn po-close" data-id="${p.id}" title="Tutup PO (hentikan, walau sisa belum terkirim habis) -- khusus admin" style="color:#b9740a;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </button>` : ''}
+          ${(admin && closed) ? `
+            <button type="button" class="icon-btn po-reopen" data-id="${p.id}" title="Buka kembali PO ini -- khusus admin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
             </button>` : ''}
           ${admin ? `<button type="button" class="icon-btn del" data-id="${p.id}" title="Hapus">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -2263,7 +2279,12 @@ function renderPO(){
     const item = poList.find(x => String(x.id) === String(this.dataset.id));
     if(item && item.fotoPO) window.open(item.fotoPO, '_blank');
   }));
-  if(bisaKonfirmasi){
+  if(admin){
+    /* Sesi keseratustujuhpuluhtujuh & keseratustujuhpuluhdelapan: ACC, Tolak, Tutup, dan Buka Kembali PO
+       SEMUA dipindah jadi KHUSUS ADMIN (atas permintaan user) -- sebelumnya keempatnya memakai syarat
+       bisaKonfirmasi (canConfirmPO(), true untuk admin ATAU akun non-admin yang diberi izin khusus "Bisa
+       konfirmasi PO" di menu Pengaturan > Akun Terdaftar LINTAS Ekspedisi). Izin bisaKonfirmasiPO itu
+       sekarang TIDAK LAGI berefek apa pun di halaman PO Marketing ini -- semua 4 aksi murni fungsi admin. */
     wrap.querySelectorAll('.po-acc').forEach(btn => btn.addEventListener('click', function(){
       const targetId = this.dataset.id;
       const item = poList.find(x => String(x.id) === String(targetId));
@@ -2295,8 +2316,25 @@ function renderPO(){
       renderPO();
       showToast('Order ditandai tidak dikonfirmasi', 'danger');
     }));
-  }
-  if(admin){
+    wrap.querySelectorAll('.po-reopen').forEach(btn => btn.addEventListener('click', function(){
+      reopenPOItem(this.dataset.id);
+    }));
+    wrap.querySelectorAll('.po-close').forEach(btn => btn.addEventListener('click', function(){
+      const targetId = this.dataset.id;
+      const item = poList.find(x => String(x.id) === String(targetId));
+      if(!item) return;
+      const sisa = computePOSisa(item);
+      const pesanSisa = sisa > 0 ? ` Sisa yang BELUM terkirim saat ini: ${Number(sisa).toLocaleString('id-ID')} kg.` : '';
+      if(confirm(`Tutup PO ${item.noPO || item.noCO || ''}?${pesanSisa}\n\nSetelah ditutup, PO ini tidak akan muncul lagi di Monitoring Sisa PO, dan tidak bisa dipilih lagi untuk Input PKB baru.`)){
+        item.closed = true;
+        item.closedAt = new Date().toISOString();
+        const acc = currentAccount();
+        item.ditutupOleh = acc ? acc.email : '';
+        savePO();
+        renderPO();
+        showToast('PO berhasil ditutup', 'success');
+      }
+    }));
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus data SO/PO ini?')){
         const before = poList.length;
@@ -2310,6 +2348,82 @@ function renderPO(){
         renderPO();
         showToast('Data SO/PO berhasil dihapus', 'danger');
       }
+    }));
+  }
+  renderPORekapDitutup();
+}
+
+/* Sesi keseratustujuhpuluhdua: logika "buka kembali PO" dipisah jadi fungsi tersendiri (diport dari
+   LINTAS Ekspedisi) supaya bisa dipakai bareng dari 2 tempat: tombol .po-reopen di tabel utama DAN
+   tombol "Buka Kembali" di tabel "Rekap PO Ditutup" di bawah -- KEDUANYA khusus admin sejak Sesi
+   keseratustujuhpuluhdelapan (tombol .po-reopen di tabel utama sebelumnya syaratnya bisaKonfirmasi). */
+function reopenPOItem(targetId){
+  const item = poList.find(x => String(x.id) === String(targetId));
+  if(!item) return;
+  if(confirm(`Buka kembali PO ${item.noPO || item.noCO || ''}? PO ini akan muncul lagi di Monitoring Sisa PO kalau sisanya masih ada.`)){
+    item.closed = false;
+    item.closedAt = '';
+    item.ditutupOleh = '';
+    savePO();
+    renderPO();
+    renderPOMonitoring();
+    showToast('PO berhasil dibuka kembali', 'success');
+  }
+}
+
+/* ---------- REKAP PO YANG DITUTUP (sisa tidak terkirim) — diport dari LINTAS Ekspedisi, sesi
+   keseratustujuhpuluhdua ----------
+   Ringkasan khusus PO yang sudah ditandai "Ditutup" lewat tombol Tutup PO di atas -- supaya kelihatan
+   total tonase customer yang PO-nya ditutup tapi ternyata belum terkirim semua. Sisa dihitung LIVE
+   lewat computePOSisa supaya selalu akurat. Kolom "Aksi" (tombol "Buka Kembali") KHUSUS admin --
+   sebelumnya (sebelum sesi ini) Marketing tidak punya fitur Tutup PO/Buka Kembali sama sekali. */
+function renderPORekapDitutup(){
+  const wrap = document.getElementById('poRekapDitutupWrap');
+  if(!wrap) return;
+  const admin = isAdminUser();
+  const closedList = poList.filter(p => p.closed).slice().sort((a,b) => (a.closedAt < b.closedAt ? 1 : -1));
+  if(closedList.length === 0){
+    wrap.innerHTML = '';
+    return;
+  }
+  const totalSisa = closedList.reduce((sum, p) => sum + Math.max(0, computePOSisa(p)), 0);
+  const totalSisaCount = closedList.filter(p => computePOSisa(p) > 0).length;
+  wrap.innerHTML = `
+    <div class="panel" style="margin-top:22px;">
+      <div class="panel-head">
+        <div>
+          <h2>Rekap PO Ditutup</h2>
+          <p>PO yang sudah ditutup (${closedList.length} PO) -- ${totalSisaCount} di antaranya masih menyisakan tonase yang belum terkirim ke customer.</p>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="overflow-x:auto;"><table class="sv-table"><thead><tr>
+          <th>No. CO</th><th>No. PO</th><th>Customer</th><th>Sales</th><th>Tonase PO</th><th>Terkirim</th><th>Sisa Tidak Terkirim</th><th>Tgl Ditutup</th><th>Ditutup Oleh</th>${admin ? '<th>Aksi</th>' : ''}
+        </tr></thead><tbody>${closedList.map(p => {
+          const terkirim = computePOTerpakai(p);
+          const sisa = computePOSisa(p);
+          return `<tr>
+            <td class="mono">${esc(p.noCO || '-')}</td>
+            <td class="mono">${esc(p.noPO || '-')}</td>
+            <td class="sv-left">${esc(p.namaCustomer || '-')}</td>
+            <td class="sv-left">${esc(p.sales || '-')}</td>
+            <td class="sv-num">${p.tonase ? Number(p.tonase).toLocaleString('id-ID') + ' kg' : '-'}</td>
+            <td class="sv-num">${terkirim ? Number(terkirim).toLocaleString('id-ID') + ' kg' : '-'}</td>
+            <td class="sv-num" style="${sisa > 0 ? 'color:#c0392b; font-weight:700;' : ''}">${sisa > 0 ? Number(sisa).toLocaleString('id-ID') + ' kg' : '0 kg'}</td>
+            <td>${p.closedAt ? fmtDate(p.closedAt.slice(0,10)) : '-'}</td>
+            <td class="sv-left">${esc(p.ditutupOleh || '-')}</td>
+            ${admin ? `<td><button type="button" class="btn btn-secondary po-rekap-reopen" data-id="${esc(p.id)}" title="Buka kembali PO ini (admin only)" style="padding:6px 12px; font-size:12.5px; white-space:nowrap;">Buka Kembali</button></td>` : ''}
+          </tr>`;
+        }).join('')}</tbody><tfoot><tr style="font-weight:700; background:var(--bg);">
+          <td colspan="6" class="sv-left">TOTAL SISA TIDAK TERKIRIM (PO DITUTUP)</td>
+          <td class="sv-num" style="color:#c0392b;">${totalSisa.toLocaleString('id-ID')} kg</td>
+          <td colspan="${admin ? 3 : 2}"></td>
+        </tr></tfoot></table></div>
+      </div>
+    </div>`;
+  if(admin){
+    wrap.querySelectorAll('.po-rekap-reopen').forEach(btn => btn.addEventListener('click', function(){
+      reopenPOItem(this.dataset.id);
     }));
   }
 }
