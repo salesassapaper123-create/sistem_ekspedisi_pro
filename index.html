@@ -2044,6 +2044,11 @@
                 </select>
               </div>
               <button class="btn btn-secondary" id="btnRpcClearFilter">Reset filter</button>
+              <button class="btn btn-secondary" id="btnRpcExportExcel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Export Excel
+              </button>
+              <span class="hint" id="rpcExportStatus" style="align-self:center;"></span>
             </div>
             <div id="rekapPengirimanCustWrap"></div>
           </div>
@@ -10502,6 +10507,215 @@ function buildRekapPengirimanCustTableHtml(groups){
     </tr></tfoot>
   </table></div>`;
 }
+
+/* ==================================================================================
+   EXPORT EXCEL -- "Rekap Pengiriman ke Customer" (Sesi keseratusdelapanpuluhdua).
+   Dibangun dengan cara yang SAMA PERSIS dengan exportLaporanExcel() (ZIP + OOXML tangan,
+   lihat makeZip()/xlsxColLetter() di bagian bawah file) supaya tetap jalan 100% offline tanpa
+   library luar. SENGAJA punya styles.xml sendiri (RPC_XLSX_STYLES_XML, bukan dipakai bareng
+   LAPORAN_XLSX_STYLES_XML) karena format angkanya beda (ada akhiran " roll" / " kg" langsung
+   di format sel -- bukan digabung manual ke teks -- supaya nilainya tetap angka asli yang bisa
+   dihitung ulang/SUM di Excel, bukan teks), jadi tidak mengganggu/berisiko merusak export
+   Laporan Pengiriman yang sudah ada & sudah diverifikasi sebelumnya.
+   Struktur baris & penggabungan sel (Customer & No PO, pakai mergeCells) dibuat meniru PERSIS
+   tampilan tabel di layar (rowspan Customer & No PO di buildRekapPengirimanCustTableHtml di
+   atas) -- supaya hasil download betul-betul "rapi sesuai di sistem" seperti diminta user,
+   bukan cuma daftar baris datar. ================================================================================== */
+const RPC_XS = { TITLE:1, SUB:2, HEAD:3, CELL:4, CELL_ALT:5, ROLL:6, ROLL_ALT:7, KG:8, KG_ALT:9, TOTAL_LABEL:10, TOTAL_ROLL:11, TOTAL_KG:12 };
+const RPC_XLSX_STYLES_XML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<numFmts count="2">
+<numFmt numFmtId="164" formatCode="#,##0&quot; roll&quot;"/>
+<numFmt numFmtId="165" formatCode="#,##0&quot; kg&quot;"/>
+</numFmts>
+<fonts count="6">
+<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>
+<font><b/><sz val="14"/><color rgb="FF1B2A4A"/><name val="Calibri"/></font>
+<font><i/><sz val="11"/><color rgb="FF5B6472"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>
+<font><sz val="11"/><color theme="1"/><name val="Calibri"/></font>
+<font><b/><sz val="11"/><color rgb="FF14181F"/><name val="Calibri"/></font>
+</fonts>
+<fills count="5">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF1B2A4A"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFAFBFC"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFEFF2F7"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="3">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFD9DCE3"/></left><right style="thin"><color rgb="FFD9DCE3"/></right><top style="thin"><color rgb="FFD9DCE3"/></top><bottom style="thin"><color rgb="FFD9DCE3"/></bottom><diagonal/></border>
+<border><left style="thin"><color rgb="FFD9DCE3"/></left><right style="thin"><color rgb="FFD9DCE3"/></right><top style="double"><color rgb="FF9AA3B2"/></top><bottom style="thin"><color rgb="FFD9DCE3"/></bottom><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="13">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment horizontal="left"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment horizontal="left"/></xf>
+<xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="164" fontId="0" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="165" fontId="0" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="0" fontId="5" fillId="4" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="164" fontId="5" fillId="4" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+<xf numFmtId="165" fontId="5" fillId="4" borderId="2" xfId="0" applyNumberFormat="1" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>`;
+
+function getRpcPeriodLabel(fDari, fSampai, fBln, fCust){
+  let label;
+  if(fBln) label = bulanLabel(fBln);
+  else if(fDari && fSampai) label = `${fmtDate(fDari)} s/d ${fmtDate(fSampai)}`;
+  else if(fDari) label = `Mulai ${fmtDate(fDari)}`;
+  else if(fSampai) label = `Sampai ${fmtDate(fSampai)}`;
+  else label = 'Semua Periode';
+  if(fCust) label += ` · Customer: ${fCust}`;
+  return label;
+}
+function buildRekapPengirimanCustSheetXml(periodLabel, groups, totalKiriman){
+  const headerRowIdx = 4;
+  let rowIdx = headerRowIdx + 1;
+  let rowsXml = '';
+  rowsXml += `<row r="1"><c r="A1" t="inlineStr" s="${RPC_XS.TITLE}"><is><t>${esc('REKAP PENGIRIMAN KE CUSTOMER')}</t></is></c></row>`;
+  rowsXml += `<row r="2"><c r="A2" t="inlineStr" s="${RPC_XS.SUB}"><is><t>${esc('Periode: ' + periodLabel)}</t></is></c></row>`;
+  rowsXml += `<row r="3"></row>`;
+  const headers = ['Customer', 'No PO', 'Ukuran', 'Jumlah Roll', 'Tonase'];
+  let headerCells = '';
+  headers.forEach((h, i) => { headerCells += `<c r="${xlsxColLetter(i+1)}${headerRowIdx}" t="inlineStr" s="${RPC_XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
+  rowsXml += `<row r="${headerRowIdx}">${headerCells}</row>`;
+
+  const firstDataRow = rowIdx;
+  const merges = [];
+  let grandRoll = 0, grandTon = 0, zebra = 0;
+  groups.forEach(g => {
+    const noPOs = computeCustNoPoUkuranAgg(g);
+    const custRowspan = noPOs.reduce((s,po) => s + po.ukurans.length, 0);
+    const custStartRow = rowIdx;
+    let custFirst = true;
+    noPOs.forEach(po => {
+      const poRowspan = po.ukurans.length;
+      const poStartRow = rowIdx;
+      po.ukurans.forEach((it) => {
+        const alt = zebra % 2 === 1;
+        const sText = alt ? RPC_XS.CELL_ALT : RPC_XS.CELL;
+        const sRoll = alt ? RPC_XS.ROLL_ALT : RPC_XS.ROLL;
+        const sKg = alt ? RPC_XS.KG_ALT : RPC_XS.KG;
+        let cells = '';
+        if(custFirst){
+          cells += `<c r="A${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(g.customer)}</t></is></c>`;
+          custFirst = false;
+        }else{
+          cells += `<c r="A${rowIdx}" s="${sText}"/>`;
+        }
+        if(rowIdx === poStartRow){
+          cells += `<c r="B${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(po.noPO)}</t></is></c>`;
+        }else{
+          cells += `<c r="B${rowIdx}" s="${sText}"/>`;
+        }
+        cells += `<c r="C${rowIdx}" t="inlineStr" s="${sText}"><is><t>${esc(it.ukuran)}</t></is></c>`;
+        cells += it.jumlahRoll ? `<c r="D${rowIdx}" s="${sRoll}"><v>${it.jumlahRoll}</v></c>` : `<c r="D${rowIdx}" s="${sRoll}"/>`;
+        cells += it.tonase ? `<c r="E${rowIdx}" s="${sKg}"><v>${it.tonase}</v></c>` : `<c r="E${rowIdx}" s="${sKg}"/>`;
+        rowsXml += `<row r="${rowIdx}">${cells}</row>`;
+        grandRoll += (Number(it.jumlahRoll) || 0);
+        grandTon += (Number(it.tonase) || 0);
+        rowIdx++;
+        zebra++;
+      });
+      if(poRowspan > 1) merges.push(`B${poStartRow}:B${rowIdx - 1}`);
+    });
+    if(custRowspan > 1) merges.push(`A${custStartRow}:A${rowIdx - 1}`);
+  });
+
+  const totalRowIdx = rowIdx;
+  // Label TOTAL digabung kolom A-C (meniru colspan="3" di tabel layar) -- hanya A yang diisi teks,
+  // B & C dibiarkan kosong tapi tetap diberi style TOTAL_LABEL (border/warna) supaya gabungannya rapi.
+  let totalCells = `<c r="A${totalRowIdx}" t="inlineStr" s="${RPC_XS.TOTAL_LABEL}"><is><t>${esc('TOTAL (' + totalKiriman + ' pengiriman)')}</t></is></c>`;
+  totalCells += `<c r="B${totalRowIdx}" s="${RPC_XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="C${totalRowIdx}" s="${RPC_XS.TOTAL_LABEL}"/>`;
+  totalCells += `<c r="D${totalRowIdx}" s="${RPC_XS.TOTAL_ROLL}"><f>SUM(D${firstDataRow}:D${totalRowIdx - 1})</f><v>${grandRoll}</v></c>`;
+  totalCells += `<c r="E${totalRowIdx}" s="${RPC_XS.TOTAL_KG}"><f>SUM(E${firstDataRow}:E${totalRowIdx - 1})</f><v>${grandTon}</v></c>`;
+  rowsXml += `<row r="${totalRowIdx}">${totalCells}</row>`;
+
+  const widths = [30, 22, 16, 14, 16];
+  const colsXml = widths.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const dimensionRef = `A1:E${totalRowIdx}`;
+  const mergeRefs = ['A1:E1', 'A2:E2', `A${totalRowIdx}:C${totalRowIdx}`].concat(merges);
+  const mergeXml = mergeRefs.map(m => `<mergeCell ref="${m}"/>`).join('');
+
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="${dimensionRef}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colsXml}</cols>
+<sheetData>${rowsXml}</sheetData>
+<mergeCells count="${mergeRefs.length}">${mergeXml}</mergeCells>
+</worksheet>`;
+}
+function exportRekapPengirimanCustExcel(){
+  const fDari = document.getElementById('rpcFilterDari') ? document.getElementById('rpcFilterDari').value : '';
+  const fSampai = document.getElementById('rpcFilterSampai') ? document.getElementById('rpcFilterSampai').value : '';
+  const fBln = document.getElementById('rpcFilterBulan') ? document.getElementById('rpcFilterBulan').value : '';
+  const fCust = document.getElementById('rpcFilterCustomer') ? document.getElementById('rpcFilterCustomer').value : '';
+  const groups = computeRekapPengirimanCust(fDari, fSampai, fBln, fCust);
+  if(groups.length === 0){ alert('Tidak ada data pengiriman untuk diexport pada periode/customer yang sedang difilter.'); return; }
+  const totalKiriman = groups.reduce((s,g) => s + g.shipments.length, 0);
+  const periodLabel = getRpcPeriodLabel(fDari, fSampai, fBln, fCust);
+  const statusEl = document.getElementById('rpcExportStatus');
+  if(statusEl) statusEl.textContent = 'Menyiapkan file Excel...';
+  try{
+    const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+    const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+    const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Rekap Pengiriman Cust" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+    const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+    const sheetXml = buildRekapPengirimanCustSheetXml(periodLabel, groups, totalKiriman);
+
+    const zipBytes = makeZip([
+      { name: '[Content_Types].xml', data: contentTypesXml },
+      { name: '_rels/.rels', data: rootRelsXml },
+      { name: 'xl/workbook.xml', data: workbookXml },
+      { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
+      { name: 'xl/styles.xml', data: RPC_XLSX_STYLES_XML },
+      { name: 'xl/worksheets/sheet1.xml', data: sheetXml },
+    ]);
+
+    const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const fnamePart = fBln ? fBln : ((fDari || fSampai) ? `${fDari || 'awal'}_${fSampai || 'akhir'}` : 'semua-periode');
+    a.href = url; a.download = `rekap_pengiriman_customer_${fnamePart}.xlsx`; a.click();
+    URL.revokeObjectURL(url);
+    showToast('Rekap Pengiriman ke Customer berhasil diexport ke Excel', 'success');
+  }catch(err){
+    alert('Gagal membuat file Excel: ' + err.message);
+  }finally{
+    if(statusEl) statusEl.textContent = '';
+  }
+}
+if(document.getElementById('btnRpcExportExcel')) document.getElementById('btnRpcExportExcel').addEventListener('click', exportRekapPengirimanCustExcel);
+
 /* Isi ulang dropdown "Filter Customer" -- daftar customer diambil dari SELURUH pengiriman yang
    terkait PO (tidak ikut kena filter tanggal/bulan yang sedang aktif), supaya pilihan customer di
    dropdown tidak "menghilang-hilang" saat filter periode diganti. Pilihan yang sedang aktif tetap
