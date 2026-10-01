@@ -1308,6 +1308,13 @@
               <span class="period-lbl">Periode</span>
               <span class="period-val" id="dashPeriodBadge">&nbsp;</span>
             </span>
+            <!-- Dropdown pilih bulan tertentu (Sesi keseratusdelapanpuluhsatu) -- default "Bulan berjalan"
+                 (perilaku lama: tanggal 1 s/d hari ini, dibanding jumlah hari sama bulan lalu). Kalau
+                 user pilih bulan lain (mis. September), tampilkan SATU BULAN PENUH itu dibanding SATU
+                 BULAN PENUH sebelumnya -- lihat dashboardPeriodRanges(). -->
+            <select id="dashPeriodMonthPicker" title="Pilih bulan tertentu untuk ditampilkan -- default: bulan berjalan (ikut tanggal hari ini)" style="background:transparent; border:none; color:inherit; font:inherit; font-weight:600; cursor:pointer; outline:none; padding:0; margin-left:2px;">
+              <option value="">Bulan berjalan</option>
+            </select>
           </div>
         </div>
       </div>
@@ -11742,14 +11749,43 @@ function renderDashboard(){
 
 /* Isi pil "Periode" di kanan atas Dashboard & label kecil di header kartu Biaya Operasional --
    keduanya menampilkan rentang bulan berjalan yang PERSIS sama dipakai kartu statistik & tren di
-   bawahnya, supaya tidak ada kesan dua rentang tanggal berbeda di satu halaman. */
+   bawahnya, supaya tidak ada kesan dua rentang tanggal berbeda di satu halaman. Juga mengisi &
+   menjaga dropdown "Pilih Bulan" di sebelahnya (Sesi keseratusdelapanpuluhsatu). */
 function renderDashPeriodBadges(){
+  populateDashPeriodMonthPicker();
   const p = dashboardPeriodRanges();
   const rangeLabel = `${fmtDate(p.curStart)} &mdash; ${fmtDate(p.curEnd)}`;
   const badge = document.getElementById('dashPeriodBadge');
   if(badge) badge.innerHTML = rangeLabel;
   const biayaLbl = document.getElementById('biayaOpPeriodLabel');
   if(biayaLbl) biayaLbl.textContent = p.curLabel;
+}
+/* Dropdown "Pilih Bulan" di sebelah pil Periode -- supaya user bisa lihat Dashboard untuk bulan
+   TERTENTU di masa lalu (mis. September), bukan cuma "bulan berjalan" otomatis. Diisi sekali saja
+   (dicek lewat dataset.populated, supaya pilihan user tidak ke-reset tiap kali Dashboard di-render
+   ulang oleh listener Firebase real-time) dengan 12 bulan ke belakang dari bulan ini. Pilihan
+   tersimpan di variabel `dashSelectedMonth` (bukan di Firebase/localStorage) -- sengaja per sesi
+   browser saja, reset ke "Bulan berjalan" tiap kali aplikasi dibuka ulang, supaya tidak ada kesan
+   "Dashboard nyangkut" di bulan lama buat user lain/perangkat lain. */
+let dashSelectedMonth = '';
+function populateDashPeriodMonthPicker(){
+  const sel = document.getElementById('dashPeriodMonthPicker');
+  if(!sel || sel.dataset.populated) return;
+  const now = new Date();
+  let opts = '<option value="">Bulan berjalan</option>';
+  for(let i = 1; i <= 12; i++){
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const val = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    opts += `<option value="${val}">${esc(label)}</option>`;
+  }
+  sel.innerHTML = opts;
+  sel.value = dashSelectedMonth;
+  sel.dataset.populated = '1';
+  sel.addEventListener('change', function(){
+    dashSelectedMonth = this.value;
+    renderDashboard();
+  });
 }
 /* Rentang "bulan berjalan" vs "bulan lalu", dipakai semua kartu statistik supaya konsisten.
    curStart selalu tanggal 1 bulan berjalan; curEnd selalu HARI INI (bukan akhir bulan) --
@@ -11761,19 +11797,56 @@ function renderDashPeriodBadges(){
    untuk zona waktu WIB/WITA/WIT (UTC+7/8/9) tanggal 1 jam 00:00 lokal jadi mundur ke tanggal
    terakhir bulan sebelumnya begitu dikonversi ke UTC (mis. "01 Agu 00:00 WIB" -> "31 Jul 17:00 UTC"),
    sehingga pil Periode salah tampil "31 Jul" alih-alih "01 Agu". toISO() di bawah ambil
-   tahun/bulan/tanggal langsung dari komponen lokal supaya tidak ikut bergeser. */
+   tahun/bulan/tanggal langsung dari komponen lokal supaya tidak ikut bergeser.
+   KALAU user sudah pilih bulan tertentu lewat dropdown "Pilih Bulan" (dashSelectedMonth terisi,
+   Sesi keseratusdelapanpuluhsatu) -- tampilkan SATU BULAN PENUH itu dibanding SATU BULAN PENUH
+   sebelumnya (adil, sama-sama penuh sebulan, beda dengan mode "Bulan berjalan" di bawah yang
+   curEnd-nya cuma sampai hari ini). */
 function dashboardPeriodRanges(){
+  const toISO2 = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  if(dashSelectedMonth){
+    const [yy, mm] = dashSelectedMonth.split('-').map(Number);
+    const curStart2 = new Date(yy, mm - 1, 1);
+    const curEnd2 = new Date(yy, mm, 0);
+    const prevStart2 = new Date(yy, mm - 2, 1);
+    const prevEnd2 = new Date(yy, mm - 1, 0);
+    return {
+      curLabel: curStart2.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
+      prevLabel: prevStart2.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
+      curStart: toISO2(curStart2), curEnd: toISO2(curEnd2),
+      prevStart: toISO2(prevStart2), prevEnd: toISO2(prevEnd2),
+    };
+  }
   const now = new Date();
   const curStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const curEnd = now;
   const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+  /* PERBAIKAN (dilaporkan user, dasbor kelihatan "eror" karena turun drastis di awal bulan):
+     SEBELUMNYA prevEnd selalu akhir bulan lalu (sebulan PENUH), padahal curEnd selalu HARI INI
+     (baru sebagian bulan berjalan). Akibatnya perbandingan jadi TIDAK ADIL -- mis. tanggal 1
+     pasti membandingkan "1 hari bulan ini" vs "30 hari penuh bulan lalu", jadi SELALU kelihatan
+     anjlok 90-100% walau kinerja sebenarnya normal (bukan berarti ada yang eror/hilang datanya).
+     Masalah yang sama -- walau tidak separah -- juga terjadi di tanggal-tanggal lain (mis.
+     tanggal 15 pun tetap membandingkan baru setengah bulan vs sebulan penuh).
+     SEKARANG prevEnd dipotong mengikuti jumlah hari yang SUDAH berjalan di bulan ini, supaya
+     perbandingan selalu apple-to-apple (jumlah hari yang sama persis) -- mis. tanggal 1
+     dibandingkan 1 hari vs 1 hari, tanggal 15 dibandingkan 15 hari vs 15 hari, dst. Kalau bulan
+     lalu lebih pendek (mis. sekarang tanggal 31 tapi bulan lalu cuma 30/28/29 hari), dibatasi
+     maksimal sampai akhir bulan lalu. */
+  const prevMonthLastDate = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
+  const daysElapsed = now.getDate();
+  const prevEnd = new Date(now.getFullYear(), now.getMonth() - 1, Math.min(daysElapsed, prevMonthLastDate));
   const toISO = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const prevStartISO = toISO(prevStart), prevEndISO = toISO(prevEnd);
   return {
     curLabel: curStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
-    prevLabel: prevStart.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
+    // prevLabel sekarang rentang tanggal persis (bukan cuma nama bulan), karena rentang bulan lalu
+    // yang dibandingkan sekarang ikut dipotong (lihat catatan di atas) -- supaya label "vs ..." di
+    // tiap kartu statistik tetap jujur menunjukkan rentang yang benar-benar dipakai, tidak menyesatkan
+    // seolah dibandingkan ke sebulan penuh.
+    prevLabel: prevStartISO === prevEndISO ? fmtDate(prevStartISO) : `${fmtDate(prevStartISO)} – ${fmtDate(prevEndISO)}`,
     curStart: toISO(curStart), curEnd: toISO(curEnd),
-    prevStart: toISO(prevStart), prevEnd: toISO(prevEnd),
+    prevStart: prevStartISO, prevEnd: prevEndISO,
   };
 }
 function dashInRange(tanggal, start, end){
