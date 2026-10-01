@@ -1667,7 +1667,7 @@
           <div class="panel-head">
             <div>
               <h2>Rekap data DO</h2>
-              <p>Seluruh DO tersimpan, urut dari tanggal terlama ke terbaru (data terbaru di paling bawah)</p>
+              <p>Urut dari tanggal terlama ke terbaru (data terbaru di paling bawah). Default tampil bulan berjalan saja -- ganti "Filter bulan" di bawah atau klik "Reset filter" untuk lihat semua data/bulan lain.</p>
             </div>
           </div>
           <div class="panel-body">
@@ -12859,6 +12859,15 @@ function renderTable(){
     }));
   }
 }
+/* Default "Filter bulan" = bulan berjalan (Sesi keseratusdelapanpuluhtiga) -- sebelumnya kosong,
+   jadi begitu halaman Rekap Data DO dibuka langsung menampilkan SELURUH data sejak hari pertama
+   dipakai (bisa ribuan baris "disatukan" jadi satu tabel panjang) sampai user sadar & isi sendiri
+   salah satu filter. Sekarang begitu dibuka otomatis sudah terfilter ke bulan berjalan saja --
+   jauh lebih ringan & relevan buat kerja harian. Tombol "Reset filter" TETAP mengosongkan balik ke
+   "Semua data" seperti biasa (itu aksi eksplisit kalau user memang mau cari lintas bulan), TIDAK
+   ikut diubah di sini -- cuma TAMPILAN AWAL saat halaman pertama dibuka yang berubah. */
+document.getElementById('filterBulan').value = todayISO().slice(0, 7);
+
 ['searchBox','filterTanggal','filterBulan','filterStatus','filterAngkutan'].forEach(id => {
   document.getElementById(id).addEventListener('input', renderTable);
   document.getElementById(id).addEventListener('change', renderTable);
