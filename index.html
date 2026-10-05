@@ -2567,7 +2567,7 @@
 
       <!-- MODAL: KELOLA BAN PER KENDARAAN (kondisi tiap posisi, ganti ban, rotasi, riwayat) -->
       <div class="form-modal-overlay" id="banDetailModalOverlay">
-        <div class="form-modal" style="max-width:760px;">
+        <div class="form-modal" style="max-width:920px;">
           <div class="form-modal-head">
             <div>
               <h3 id="banDetailModalTitle">Kelola Ban</h3>
@@ -9366,7 +9366,12 @@ function renderBanDetailModalBody(k){
     <p class="hint" style="margin:0;">${esc(jenisArmadaBanLabel(k))} — ${posisiList.length} posisi ban (termasuk cadangan).</p>
     ${posisiKosong.length > 0 ? `<button type="button" class="btn btn-secondary" id="btnToggleBanBulkForm" style="font-size:12px; padding:7px 12px; white-space:nowrap;">${banBulkFormOpen ? 'Batal' : `Isi Data Awal Massal (${posisiKosong.length} posisi kosong)`}</button>` : ''}
   </div>
-  <table class="sv-table" style="margin-bottom:16px;"><thead><tr>
+  <div style="overflow-x:auto;"><table class="sv-table" style="min-width:900px; margin-bottom:16px; table-layout:fixed;">
+    <colgroup>
+      <col style="width:9%"><col style="width:7%"><col style="width:8%"><col style="width:25%">
+      <col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:15%">
+    </colgroup>
+    <thead><tr>
       <th class="sv-left">Posisi</th><th class="sv-left">Kode Ban</th><th class="sv-left">Merk</th><th class="sv-left">Kondisi</th><th>Tgl Pasang</th><th>KM Pasang</th><th>Estimasi</th><th>Status</th><th></th>
     </tr></thead><tbody>${posisiList.map(p => {
       const ban = banOf(k, p.key);
@@ -9381,12 +9386,12 @@ function renderBanDetailModalBody(k){
         <td class="sv-num">${ban && ban.kmPasang != null ? Number(ban.kmPasang).toLocaleString('id-ID') : '-'}</td>
         <td>${estTxt}</td>
         <td>${banStatusBadge(info)}</td>
-        <td style="white-space:nowrap;">
-          <button type="button" class="btn btn-secondary btn-ganti-ban-toggle" data-posisi="${p.key}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap;">${banGantiOpenPosisi === p.key ? 'Batal' : (ban ? 'Ganti Ban' : '+ Pasang Ban')}</button>
+        <td>
+          <button type="button" class="btn btn-secondary btn-ganti-ban-toggle" data-posisi="${p.key}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap; margin-bottom:4px;">${banGantiOpenPosisi === p.key ? 'Batal' : (ban ? 'Ganti Ban' : '+ Pasang Ban')}</button>
           ${ban ? `<button type="button" class="btn btn-secondary btn-hapus-ban" data-posisi="${p.key}" style="font-size:11.5px; padding:5px 9px; white-space:nowrap; margin-left:6px; color:#c0392b; border-color:#e0b4b4;" title="Hapus data ban di posisi ini -- posisi kembali kosong, riwayat penggantian sebelumnya tetap tersimpan">Hapus</button>` : ''}
         </td>
       </tr>`;
-    }).join('')}</tbody></table>`;
+    }).join('')}</tbody></table></div>`;
 
   /* Sesi keseratusempatpuluh: tabel "Pelacakan Rotasi per Ban" -- per permintaan user yang butuh
      pencatatan rotasi ban REAKTIF (bukan jadwal tetap): tiap ban fisik ditandai pakai Kode Ban, dan
