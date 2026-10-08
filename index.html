@@ -4313,6 +4313,19 @@ function fbMergeArraySave(path, localList, tombstonesKey){
       return Array.from(byId.values());
     })).catch(err => {
       console.warn(`Gagal sinkron (merge) ke Firebase (path: ${path}), data tetap aman di localStorage perangkat ini:`, err);
+      /* Sesi keseratussembilanpuluhdua: sebelumnya kegagalan di sini HANYA tercatat di console.warn --
+         tidak terlihat sama sekali oleh user. Akibatnya kalau Security Rules menolak tulis (mis. akun
+         dataInputRestricted / belum approved), input yang baru diubah (tonase, No DO, dst) kelihatan
+         "berhasil" sesaat di layar (karena `records` lokal sudah diubah), tapi SEBENARNYA tidak pernah
+         sampai ke server -- begitu listener 'records' nangkap snapshot server berikutnya (reload halaman,
+         dsb), data lokal ketimpa balik ke versi lama & perubahan hilang TANPA pesan error apa pun. Sekarang
+         ditampilkan toast supaya user langsung tahu saat itu juga perubahannya belum tersimpan permanen. */
+      if(path === 'records' && typeof showToast === 'function'){
+        const isPermission = err && (err.code === 'PERMISSION_DENIED' || /permission/i.test(err.message || ''));
+        showToast(isPermission
+          ? 'Gagal simpan ke server: akun ini tidak punya izin edit data (hubungi admin). Perubahan akan HILANG saat reload.'
+          : 'Gagal simpan ke server (cek koneksi internet). Perubahan belum tersimpan permanen.', 'danger');
+      }
     });
   }).catch(() => {}).finally(() => {
     fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
