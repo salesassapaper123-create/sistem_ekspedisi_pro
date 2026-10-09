@@ -3386,6 +3386,18 @@ function poList_(){
   if (!data) return [];
   return Array.isArray(data) ? data : Object.keys(data).map(function(k){ return data[k]; });
 }
+/* Sama seperti poList_() tapi ikut mengembalikan KEY asli tiap PO di Firebase (index array kalau /po
+   tersimpan sebagai array, atau key object kalau tersimpan sebagai object) -- dipakai supaya
+   checkAndNotifyPoBaru() bisa menandai notifWaSent SATU PO SAJA lewat fbPatch ke path spesifiknya,
+   BUKAN menimpa ulang SELURUH node /po (lihat catatan race condition di checkAndNotifyPoBaru). */
+function poListWithKeys_(){
+  var data = fbGet('/po');
+  if (!data) return [];
+  if (Array.isArray(data)){
+    return data.map(function(item, idx){ return { key: String(idx), item: item }; });
+  }
+  return Object.keys(data).map(function(k){ return { key: k, item: data[k] }; });
+}
 function kendaraanList_(){
   var data = fbGet('/kendaraan');
   if (!data) return [];
@@ -3471,11 +3483,22 @@ function checkAndNotify(){
 
 // ================== NOTIFIKASI WA PO BARU — dijalankan tiap beberapa menit oleh trigger kedua ==================
 // Cek PO yang baru diinput (notifWaSent belum true), kirim WA per PO, lalu tandai notifWaSent supaya
-// tidak terkirim dobel di run berikutnya. Berlaku untuk SEMUA PO baru (belum tentu sudah di-ACC) —
-// tujuannya memberi tahu begitu ada PO masuk yang perlu ditinjau/dikonfirmasi.
+// tidak terkirim dobel di run berikutnya. Berlaku HANYA untuk PO yang BENAR-BENAR baru masuk (status
+// "menunggu" konfirmasi) — begitu PO sudah di-ACC/ditolak, TIDAK dikirim notif WA lagi.
+//
+// PERBAIKAN PENTING: sebelumnya function ini menandai notifWaSent dengan membaca SELURUH list /po,
+// mengubahnya di memori, lalu menimpa SELURUH node /po sekaligus lewat fbSet('/po', list) -- ini
+// race condition dengan aplikasi Marketing (yang juga menyimpan PO dengan cara menimpa SELURUH array
+// /po tiap kali ACC/Tolak/Tutup PO lewat savePO()). Kalau staf meng-ACC sebuah PO di saat yang hampir
+// bersamaan dengan jadwal trigger ini jalan, salah satu penulisan bisa "menang" dan menimpa balik
+// punya yang lain -- termasuk membuat notifWaSent balik ke false untuk PO yang SUDAH pernah dinotif,
+// sehingga PO itu dianggap "baru" lagi di run berikutnya dan WA terkirim ULANG (biasanya kejadiannya
+// malah pas/sesudah PO itu di-ACC, karena itulah momen aplikasi Marketing ikut menimpa /po). Sekarang
+// diperbaiki: tiap PO yang sudah dinotif HANYA ditandai lewat fbPatch ke PATH-nya sendiri (/po/<key>),
+// bukan menimpa seluruh array -- jadi tidak akan pernah bentrok dengan penyimpanan PO lain manapun.
 function checkAndNotifyPoBaru(){
-  var list = poList_();
-  var belumNotif = list.filter(function(p){ return p && !p.notifWaSent; });
+  var all = poListWithKeys_();
+  var belumNotif = all.filter(function(row){ return row.item && row.item.status === 'menunggu' && !row.item.notifWaSent; });
   if (belumNotif.length === 0) return;
 
   /* "Sisa updet PO" di notif ini adalah TOTAL SISA Outstanding LUAR KOTA (PO yang sudah Dikonfirmasi/ACC,
@@ -3484,7 +3507,8 @@ function checkAndNotifyPoBaru(){
      baru yang dinotifikasi di run yang sama. Lihat totalSisaPoDikonfirmasi_() untuk detail filter BK 1. */
   var totalSisaPo = totalSisaPoDikonfirmasi_();
 
-  belumNotif.forEach(function(p){
+  belumNotif.forEach(function(row){
+    var p = row.item;
     var msg = '*LINTAS - Lingga Integrated Transport Administration System*\n'
       + '_Notifikasi otomatis sistem, mohon tidak dibalas_\n\n'
       + 'PO Baru Masuk\n\n'
@@ -3504,10 +3528,9 @@ function checkAndNotifyPoBaru(){
       'PO Baru Masuk',
       (p.namaCustomer || '-') + ' -- ' + (p.noPO || p.noCO || 'No. PO belum ada') + ' -- ' + Math.round((Number(p.tonase)||0) / 1000).toLocaleString('id-ID') + ' ton'
     );
-    p.notifWaSent = true;
+    // Tandai HANYA field notifWaSent di PO ini lewat path spesifiknya -- tidak menyentuh/menimpa PO lain.
+    fbPatch('/po/' + row.key, { notifWaSent: true });
   });
-
-  fbSet('/po', list);
 }
 
 function sendWhatsApp(message, target){
