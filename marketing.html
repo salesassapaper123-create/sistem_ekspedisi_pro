@@ -1681,6 +1681,47 @@ function fbRemoveFromList(path, matchesItemToRemove, id){
   return thisWrite;
 }
 
+/* Sesi keseratussembilanpuluhdelapan: patch SATU item di dalam list Firebase pakai transaksi atomic
+   (read-modify-write di SERVER, otomatis retry kalau data berubah di tengah jalan) -- BEDA dengan
+   savePO()/fbPush() yang nge-overwrite SELURUH array dari salinan lokal client ini. Overwrite-seluruh-
+   array berisiko balapan (race condition): kalau dua admin menekan ACC/Tolak/Tutup/dsb di PO yang
+   BERBEDA hampir bersamaan, masing-masing baca poList lokalnya sendiri (snapshot sedikit berbeda),
+   lalu masing-masing nulis balik SELURUH array -- yang nulis belakangan bisa menimpa balik perubahan
+   yang baru saja disimpan yang lain, termasuk No. CO yang baru saja ke-assign. Ini persis gejala
+   laporan user: "No CO ada yang tidak sesuai, sudah di input tapi tidak muncul". `mutateFn(item,
+   fullArr)` menerima item target DAN seluruh array versi TERBARU dari SERVER (bukan poList lokal yang
+   mungkin sudah basi) -- penting dipakai utk generateNextNoCO() supaya nomor urut CO dihitung dari data
+   server yang paling baru saat commit, bukan dari data lokal yang ketinggalan, supaya tidak ada lagi
+   dua PO yang kebetulan dapat No. CO yang sama. */
+function fbUpdateItemInList(path, targetId, mutateFn){
+  if(!fbDb) return Promise.resolve({committed:false});
+  fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
+  const prevInQueue = fbWriteQueue[path] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+    return fbDb.ref(path).transaction(currentData => {
+      const arr = fbToArray(currentData);
+      if(arr === null) return undefined; // path kosong/tidak ada -- batalkan transaksi
+      const idx = arr.findIndex(item => item && String(item.id) === String(targetId));
+      if(idx === -1) return undefined; // item tidak ditemukan di server -- batalkan transaksi
+      arr[idx] = mutateFn(arr[idx], arr) || arr[idx];
+      return arr;
+    }).then(result => {
+      if(result && result.committed === false){
+        console.warn(`Transaksi update di Firebase tidak ter-commit (path: ${path}, id: ${targetId}).`);
+      }
+      return result;
+    }).catch(err => {
+      console.warn(`Gagal transaksi update di Firebase (path: ${path}):`, err);
+      showToast('Gagal sinkron ke server -- cek koneksi internet, coba lagi.', 'danger');
+      return {committed:false};
+    });
+  }).catch(() => ({committed:false})).finally(() => {
+    fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
+  });
+  fbWriteQueue[path] = thisWrite;
+  return thisWrite;
+}
+
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 
@@ -2132,9 +2173,9 @@ function computePOTerpakai(po, excludeRecordId){
 function computePOSisa(po, excludeRecordId){
   return (Number(po.tonase)||0) - computePOTerpakai(po, excludeRecordId);
 }
-function generateNextNoCO(){
+function generateNextNoCO(sourceList){
   const yy = String(new Date().getFullYear()).slice(-2);
-  const existingNums = poList
+  const existingNums = (sourceList || poList)
     .map(p => p.noCO || '')
     .filter(noCO => noCO.endsWith('-' + yy))
     .map(noCO => parseInt(noCO.split('-')[0], 10))
@@ -2260,6 +2301,10 @@ function renderPO(){
             <button type="button" class="icon-btn po-tolak" data-id="${p.id}" title="Tolak order -- khusus admin" style="color:#c0392b;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>` : ''}
+          ${admin ? `
+            <button type="button" class="icon-btn po-edit-noco" data-id="${p.id}" title="Edit No. CO -- khusus admin">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </button>` : ''}
           ${(bisaTutupPO && p.status === 'dikonfirmasi' && !closed) ? `
             <button type="button" class="icon-btn po-close" data-id="${p.id}" title="Tutup PO (hentikan, walau sisa belum terkirim habis)" style="color:#b9740a;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -2295,15 +2340,27 @@ function renderPO(){
       const item = poList.find(x => String(x.id) === String(targetId));
       if(!item) return;
       if(confirm(`Konfirmasi (ACC) order PO ${item.noPO || item.noCO || ''}?`)){
-        item.status = 'dikonfirmasi';
-        item.catatanTolak = '';
-        if(!item.noCO) item.noCO = generateNextNoCO();
         const acc = currentAccount();
-        item.dikonfirmasiOleh = acc ? acc.email : '';
-        item.tanggalKonfirmasi = new Date().toISOString();
-        savePO();
-        renderPO();
-        showToast('Order berhasil dikonfirmasi (ACC)', 'success');
+        // Sesi keseratussembilanpuluhdelapan: pakai fbUpdateItemInList (transaksi atomic) -- noCO
+        // dihitung dari `fullArr` (array TERBARU dari server saat commit), BUKAN dari poList lokal yang
+        // bisa basi kalau ada admin lain yang barusan ACC PO lain -- ini yang mencegah dua PO kebetulan
+        // dapat No. CO yang sama saat dua admin ACC hampir bersamaan.
+        fbUpdateItemInList('po', targetId, (serverItem, fullArr) => {
+          serverItem.status = 'dikonfirmasi';
+          serverItem.catatanTolak = '';
+          if(!serverItem.noCO) serverItem.noCO = generateNextNoCO(fullArr);
+          serverItem.dikonfirmasiOleh = acc ? acc.email : '';
+          serverItem.tanggalKonfirmasi = new Date().toISOString();
+          return serverItem;
+        }).then(result => {
+          if(!result || result.committed === false){
+            showToast('Gagal mengonfirmasi order -- coba lagi.', 'danger');
+            return;
+          }
+          const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
+          if(arr){ poList = fbFilterTombstoned('po', arr); renderPO(); }
+          showToast('Order berhasil dikonfirmasi (ACC)', 'success');
+        });
       }
     }));
     wrap.querySelectorAll('.po-tolak').forEach(btn => btn.addEventListener('click', function(){
@@ -2312,17 +2369,56 @@ function renderPO(){
       if(!item) return;
       const alasan = prompt(`Alasan menolak order PO ${item.noPO || item.noCO || ''} (opsional):`, '');
       if(alasan === null) return; // batal
-      item.status = 'ditolak';
-      item.catatanTolak = alasan.trim();
       const acc = currentAccount();
-      item.dikonfirmasiOleh = acc ? acc.email : '';
-      item.tanggalKonfirmasi = new Date().toISOString();
-      savePO();
-      renderPO();
-      showToast('Order ditandai tidak dikonfirmasi', 'danger');
+      fbUpdateItemInList('po', targetId, serverItem => {
+        serverItem.status = 'ditolak';
+        serverItem.catatanTolak = alasan.trim();
+        serverItem.dikonfirmasiOleh = acc ? acc.email : '';
+        serverItem.tanggalKonfirmasi = new Date().toISOString();
+        return serverItem;
+      }).then(result => {
+        if(!result || result.committed === false){
+          showToast('Gagal menolak order -- coba lagi.', 'danger');
+          return;
+        }
+        const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
+        if(arr){ poList = fbFilterTombstoned('po', arr); renderPO(); }
+        showToast('Order ditandai tidak dikonfirmasi', 'danger');
+      });
     }));
     wrap.querySelectorAll('.po-reopen').forEach(btn => btn.addEventListener('click', function(){
       reopenPOItem(this.dataset.id);
+    }));
+    // Sesi keseratussembilanpuluhdelapan: fitur baru "Edit No. CO" (khusus admin) -- sebelumnya No. CO
+    // MURNI auto-generate saat ACC (generateNextNoCO()) dan sama sekali tidak bisa diedit/dikoreksi
+    // manual lewat UI manapun. Ditambahkan atas laporan user: "ada eror di no co ada yang tidak sesuai
+    // sudah di input tapi tidak muncul" -- akar masalahnya adalah savePO()/fbPush() yang overwrite
+    // SELURUH array /po dari salinan lokal client (lihat komentar fbUpdateItemInList di atas), yang
+    // sekarang sudah diperbaiki supaya tidak terulang. Tombol ini memberi admin cara MENGOREKSI manual
+    // No. CO yang sudah kadung salah/duplikat dari kejadian sebelum perbaikan ini.
+    wrap.querySelectorAll('.po-edit-noco').forEach(btn => btn.addEventListener('click', function(){
+      const targetId = this.dataset.id;
+      const item = poList.find(x => String(x.id) === String(targetId));
+      if(!item) return;
+      const current = item.noCO || '';
+      const input = prompt(`Edit No. CO untuk PO ${item.noPO || '-'} (${item.namaCustomer || '-'}):\n\nFormat standar: nomor urut 3 digit + tahun, contoh "205-26". Kosongkan untuk menghapus No. CO.`, current);
+      if(input === null) return; // batal
+      const newNoCO = input.trim();
+      if(newNoCO === current) return; // tidak ada perubahan
+      const duplikat = poList.find(x => String(x.id) !== String(targetId) && newNoCO !== '' && (x.noCO || '') === newNoCO);
+      if(duplikat && !confirm(`No. CO "${newNoCO}" sudah dipakai PO ${duplikat.noPO || '-'} (${duplikat.namaCustomer || '-'}).\n\nTetap lanjutkan? (akan ada 2 PO dengan No. CO yang sama)`)) return;
+      fbUpdateItemInList('po', targetId, serverItem => {
+        serverItem.noCO = newNoCO;
+        return serverItem;
+      }).then(result => {
+        if(!result || result.committed === false){
+          showToast('Gagal menyimpan perubahan No. CO -- coba lagi.', 'danger');
+          return;
+        }
+        const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
+        if(arr){ poList = fbFilterTombstoned('po', arr); renderPO(); }
+        showToast('No. CO berhasil diperbarui', 'success');
+      });
     }));
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus data SO/PO ini?')){
@@ -2351,13 +2447,21 @@ function renderPO(){
       const sisa = computePOSisa(item);
       const pesanSisa = sisa > 0 ? ` Sisa yang BELUM terkirim saat ini: ${Number(sisa).toLocaleString('id-ID')} kg.` : '';
       if(confirm(`Tutup PO ${item.noPO || item.noCO || ''}?${pesanSisa}\n\nSetelah ditutup, PO ini tidak akan muncul lagi di Monitoring Sisa PO, dan tidak bisa dipilih lagi untuk Input PKB baru.`)){
-        item.closed = true;
-        item.closedAt = new Date().toISOString();
         const acc2 = currentAccount();
-        item.ditutupOleh = acc2 ? acc2.email : '';
-        savePO();
-        renderPO();
-        showToast('PO berhasil ditutup', 'success');
+        fbUpdateItemInList('po', targetId, serverItem => {
+          serverItem.closed = true;
+          serverItem.closedAt = new Date().toISOString();
+          serverItem.ditutupOleh = acc2 ? acc2.email : '';
+          return serverItem;
+        }).then(result => {
+          if(!result || result.committed === false){
+            showToast('Gagal menutup PO -- coba lagi.', 'danger');
+            return;
+          }
+          const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
+          if(arr){ poList = fbFilterTombstoned('po', arr); renderPO(); }
+          showToast('PO berhasil ditutup', 'success');
+        });
       }
     }));
   }
@@ -2372,13 +2476,21 @@ function reopenPOItem(targetId){
   const item = poList.find(x => String(x.id) === String(targetId));
   if(!item) return;
   if(confirm(`Buka kembali PO ${item.noPO || item.noCO || ''}? PO ini akan muncul lagi di Monitoring Sisa PO kalau sisanya masih ada.`)){
-    item.closed = false;
-    item.closedAt = '';
-    item.ditutupOleh = '';
-    savePO();
-    renderPO();
-    renderPOMonitoring();
-    showToast('PO berhasil dibuka kembali', 'success');
+    fbUpdateItemInList('po', targetId, serverItem => {
+      serverItem.closed = false;
+      serverItem.closedAt = '';
+      serverItem.ditutupOleh = '';
+      return serverItem;
+    }).then(result => {
+      if(!result || result.committed === false){
+        showToast('Gagal membuka kembali PO -- coba lagi.', 'danger');
+        return;
+      }
+      const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
+      if(arr){ poList = fbFilterTombstoned('po', arr); renderPO(); }
+      renderPOMonitoring();
+      showToast('PO berhasil dibuka kembali', 'success');
+    });
   }
 }
 
