@@ -1699,10 +1699,22 @@ function fbUpdateItemInList(path, targetId, mutateFn){
   const prevInQueue = fbWriteQueue[path] || Promise.resolve();
   const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
     return fbDb.ref(path).transaction(currentData => {
+      // PENTING (bug yang sempat bikin ACC & Edit No. CO "tidak berfungsi"/"klik OK tapi tidak
+      // berubah"): Firebase SECARA RESMI mendokumentasikan bahwa callback transaksi ini BISA dipanggil
+      // dengan currentData === null di percobaan PERTAMA (cache lokal SDK belum sempat tersinkron saat
+      // itu juga, BUKAN berarti datanya benar-benar kosong di server). Kalau kita return `undefined` di
+      // sini, itu artinya memberitahu Firebase "BATALKAN transaksi ini sepenuhnya" -- BUKAN "coba lagi
+      // nanti" -- jadi transaksinya langsung gagal diam-diam di percobaan pertama itu juga, PERSIS
+      // gejala yang dilaporkan user (ACC tidak berfungsi, Edit No. CO diklik OK tapi tidak berubah).
+      // Perbaikan: kalau currentData masih null, kembalikan APA ADANYA (tetap null) -- itu otomatis akan
+      // "tidak cocok" dengan data asli di server (yang pasti sudah terisi), sehingga Firebase OTOMATIS
+      // memanggil ulang callback ini dengan data ASLI dari server pada percobaan berikutnya (mekanisme
+      // retry bawaan transaksi Firebase, bukan sesuatu yang perlu kita tangani manual).
+      if(currentData === null || currentData === undefined) return currentData;
       const arr = fbToArray(currentData);
-      if(arr === null) return undefined; // path kosong/tidak ada -- batalkan transaksi
+      if(arr === null) return currentData; // bentuk data tidak dikenal -- jangan diubah, biarkan apa adanya
       const idx = arr.findIndex(item => item && String(item.id) === String(targetId));
-      if(idx === -1) return undefined; // item tidak ditemukan di server -- batalkan transaksi
+      if(idx === -1) return undefined; // data SUDAH ada isinya tapi item memang tidak ketemu -- batalkan beneran
       arr[idx] = mutateFn(arr[idx], arr) || arr[idx];
       return arr;
     }).then(result => {
