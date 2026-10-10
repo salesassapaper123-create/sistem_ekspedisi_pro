@@ -2259,7 +2259,24 @@ function renderPO(){
   }
   const poFTgl = document.getElementById('poFilterTanggal') ? document.getElementById('poFilterTanggal').value : '';
   const poFBln = document.getElementById('poFilterBulan') ? document.getElementById('poFilterBulan').value : '';
-  let sorted = poList.slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
+  // Sesi keseratussembilanpuluhsembilan: urutan tampilan tabel diganti -- SEBELUMNYA diurutkan murni
+  // berdasar createdAt (kapan SO/PO itu pertama kali diinput ke sistem), PADAHAL No. CO di-assign
+  // berdasar URUTAN ACC (kapan admin menekan tombol ACC-nya, bisa jauh berbeda waktunya dari kapan PO
+  // itu diinput) -- dua "urutan waktu" yang beda itulah yang bikin kolom No. CO kelihatan loncat-loncat
+  // acak kalau dibaca dari atas ke bawah tabel (laporan user: "no co dibuat otomatis tersusun
+  // meneruskan setiap waktu acc bukan malah jadi acak acakan loncat2"). No. CO itu sendiri SUDAH benar
+  // berurutan sesuai waktu ACC (apalagi setelah perbaikan race condition sesi lalu) -- yang salah cuma
+  // urutan TAMPILANNYA. Diperbaiki: PO yang masih "Menunggu Konfirmasi" (belum ada No. CO) ditaruh
+  // PALING ATAS diurutkan createdAt (supaya admin langsung lihat mana yang perlu ditindak), lalu PO
+  // yang SUDAH di-ACC ditaruh di bawahnya diurutkan NAIK berdasar No. CO (bukan createdAt lagi) --
+  // dengan begitu kolom No. CO pasti terbaca tersusun rapi (mis. 188-26, 190-26, 191-26, ... 200-26),
+  // persis urutan saat masing-masing di-ACC, tidak loncat-loncat lagi.
+  let sorted = poList.slice().sort((a,b) => {
+    const aPending = !a.noCO, bPending = !b.noCO;
+    if(aPending !== bPending) return aPending ? -1 : 1;
+    if(aPending) return (a.createdAt < b.createdAt ? -1 : 1);
+    return (a.noCO < b.noCO ? -1 : (a.noCO > b.noCO ? 1 : 0));
+  });
   if(poFTgl) sorted = sorted.filter(p => p.tanggalCO === poFTgl);
   else if(poFBln) sorted = sorted.filter(p => p.tanggalCO && p.tanggalCO.startsWith(poFBln));
   if(sorted.length === 0){
