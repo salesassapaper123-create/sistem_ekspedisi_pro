@@ -2470,6 +2470,11 @@
                 <input type="date" id="bpSampai">
               </div>
               <button class="btn btn-primary" id="btnBpGenerate">Tampilkan</button>
+              <button class="btn btn-secondary" id="btnBpExportExcel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Export Excel
+              </button>
+              <span class="hint" id="bpExportStatus" style="align-self:center;"></span>
             </div>
             <div id="bpSummaryWrap"></div>
             <h3 style="margin:18px 0 10px; font-size:14px;">Rincian biaya perbaikan</h3>
@@ -2500,6 +2505,11 @@
                 <input type="date" id="bpvSampai">
               </div>
               <button class="btn btn-primary" id="btnBpvGenerate">Tampilkan</button>
+              <button class="btn btn-secondary" id="btnBpvExportExcel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+                Export Excel
+              </button>
+              <span class="hint" id="bpvExportStatus" style="align-self:center;"></span>
             </div>
             <div id="bpvSummaryWrap"></div>
             <h3 style="margin:22px 0 10px; font-size:14px;">Rincian biaya per pengiriman vendor luar</h3>
@@ -14133,6 +14143,288 @@ function exportLaporanExcel(){
   }
 }
 document.getElementById('btnExportExcel').addEventListener('click', exportLaporanExcel);
+
+/* ==================================================================================
+   EXPORT EXCEL — "Biaya Pengeluaran Organik" & "Biaya Pengeluaran Vendor Luar" (Sesi
+   keseratussembilanpuluhtujuh). Dibangun dengan cara yang SAMA PERSIS dengan exportLaporanExcel()/
+   exportRekapPengirimanCustExcel() di atas (ZIP + OOXML tangan, makeZip()/xlsxColLetter() di bawah),
+   dan SENGAJA memakai ulang styles.xml + indeks style yang sudah ada (LAPORAN_XLSX_STYLES_XML, XS)
+   supaya tidak perlu styles.xml baru -- stylenya sudah pas (TITLE/SUB/HEAD/CELL/CUR/TOTAL) untuk
+   kebutuhan kedua laporan ini. Tiap laporan diexport sebagai SATU sheet berisi SEMUA bagian yang
+   ada di layar (ringkasan angka, lalu tabel rincian) ditumpuk ke bawah persis urutan tampilannya di
+   halaman ini -- supaya hasil downloadnya "rapi sesuai sistem" seperti diminta user, bukan cuma
+   daftar baris datar terpisah per tabel. ================================================================================== */
+
+/* Baris ringkasan "Label : Nilai" (dipakai di kedua laporan) -- label di kolom A (style CELL biasa,
+   TANPA border kanan dihilangkan supaya tetap konsisten dengan sel tabel lain), nilai di kolom B saja
+   (kolom sisanya dibiarkan kosong, tidak perlu merge karena cuma informasi ringkas). `isCount=true`
+   dipakai untuk nilai yang berupa JUMLAH/angka biasa (mis. "Jumlah Vendor Terpakai": 3) supaya tidak
+   ikut diberi style mata uang "Rp" seperti nilai Rupiah lainnya -- bug yang sempat ketahuan saat
+   verifikasi render (angka "1" vendor malah tercetak "Rp 1"). */
+function bpSummaryRowXml(rowIdx, label, value, isTotal, isCount){
+  const sLabel = isTotal ? XS.TOTAL_LABEL : XS.CELL;
+  const sVal = isCount ? (isTotal ? XS.TOTAL_NUM : XS.NUM) : (isTotal ? XS.TOTAL_CUR : XS.CUR);
+  return `<row r="${rowIdx}"><c r="A${rowIdx}" t="inlineStr" s="${sLabel}"><is><t>${esc(label)}</t></is></c><c r="B${rowIdx}" s="${sVal}"><v>${value}</v></c></row>`;
+}
+/* Banner judul section (mis. "RINCIAN BIAYA PERBAIKAN") -- pita penuh pakai style HEAD, digabung
+   (merge) dari kolom A sampai kolom terakhir supaya tampil seperti satu pita warna penuh. */
+function bpSectionBannerXml(rowIdx, text, nCols){
+  return `<row r="${rowIdx}"><c r="A${rowIdx}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(text)}</t></is></c></row>`;
+}
+
+function buildBiayaPengeluaranOrganikSheetXml(periodLabel, biayaBulan, doWithUangJalan, totals){
+  let r = 1;
+  let rowsXml = '';
+  const merges = [];
+  const nCols = 6; // kolom terlebar dipakai tabel uang jalan (Tanggal/Nopol/Driver/Rute/Uang Jalan/Biaya Lain-lain)
+  const lastCol = xlsxColLetter(nCols);
+
+  rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.TITLE}"><is><t>${esc('BIAYA PENGELUARAN ORGANIK')}</t></is></c></row>`;
+  merges.push(`A${r}:${lastCol}${r}`); r++;
+  rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.SUB}"><is><t>${esc('Periode: ' + periodLabel)}</t></is></c></row>`;
+  merges.push(`A${r}:${lastCol}${r}`); r++;
+  r++; // baris kosong
+
+  rowsXml += bpSectionBannerXml(r, 'RINGKASAN', nCols); merges.push(`A${r}:${lastCol}${r}`); r++;
+  rowsXml += bpSummaryRowXml(r, 'Biaya Perbaikan', totals.totalBiayaPerbaikan, false); r++;
+  rowsXml += bpSummaryRowXml(r, 'Uang Jalan Driver', totals.totalUangJalan, false); r++;
+  rowsXml += bpSummaryRowXml(r, 'Biaya Lain-lain', totals.totalBiayaLain, false); r++;
+  rowsXml += bpSummaryRowXml(r, 'TOTAL PENGELUARAN', totals.totalKeseluruhan, true); merges.push(`B${r}:${lastCol}${r}`); r++;
+  r++; // baris kosong
+
+  // ---- Rincian biaya perbaikan ----
+  rowsXml += bpSectionBannerXml(r, 'RINCIAN BIAYA PERBAIKAN', nCols); merges.push(`A${r}:${lastCol}${r}`); r++;
+  const perbaikanHeaders = ['Tanggal','Nopol','Jenis Perbaikan','Biaya','Catatan'];
+  if(biayaBulan.length === 0){
+    rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.CELL}"><is><t>${esc('Tidak ada catatan biaya perbaikan pada periode ini.')}</t></is></c></row>`;
+    merges.push(`A${r}:${lastCol}${r}`); r++;
+  }else{
+    let headerCells = '';
+    perbaikanHeaders.forEach((h,i) => { headerCells += `<c r="${xlsxColLetter(i+1)}${r}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
+    rowsXml += `<row r="${r}">${headerCells}</row>`; r++;
+    const firstDataRow = r;
+    const sorted = biayaBulan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+    sorted.forEach((m,i) => {
+      const alt = i % 2 === 1;
+      const sText = alt ? XS.CELL_ALT : XS.CELL;
+      const sCur = alt ? XS.CUR_ALT : XS.CUR;
+      let cells = `<c r="A${r}" t="inlineStr" s="${sText}"><is><t>${esc(fmtDate(m.tanggal))}</t></is></c>`;
+      cells += `<c r="B${r}" t="inlineStr" s="${sText}"><is><t>${esc(m.nopol || '')}</t></is></c>`;
+      cells += `<c r="C${r}" t="inlineStr" s="${sText}"><is><t>${esc(m.jenis || '')}</t></is></c>`;
+      cells += `<c r="D${r}" s="${sCur}"><v>${Number(m.biaya)||0}</v></c>`;
+      cells += `<c r="E${r}" t="inlineStr" s="${sText}"><is><t>${esc(m.catatan || '-')}</t></is></c>`;
+      rowsXml += `<row r="${r}">${cells}</row>`; r++;
+    });
+    const lastDataRow = r - 1;
+    let totalCells = `<c r="A${r}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>TOTAL</t></is></c>`;
+    totalCells += `<c r="B${r}" s="${XS.TOTAL_LABEL}"/><c r="C${r}" s="${XS.TOTAL_LABEL}"/>`;
+    totalCells += `<c r="D${r}" s="${XS.TOTAL_CUR}"><f>SUM(D${firstDataRow}:D${lastDataRow})</f><v>${totals.totalBiayaPerbaikan}</v></c>`;
+    totalCells += `<c r="E${r}" s="${XS.TOTAL_LABEL}"/>`;
+    rowsXml += `<row r="${r}">${totalCells}</row>`;
+    merges.push(`A${r}:C${r}`); r++;
+  }
+  r++; // baris kosong
+
+  // ---- Rincian uang jalan driver & biaya lain-lain per DO (organik) ----
+  rowsXml += bpSectionBannerXml(r, 'RINCIAN UANG JALAN DRIVER & BIAYA LAIN-LAIN PER DO (ORGANIK)', nCols); merges.push(`A${r}:${lastCol}${r}`); r++;
+  const ujHeaders = ['Tanggal','Nopol','Driver','Rute','Uang Jalan','Biaya Lain-lain'];
+  if(doWithUangJalan.length === 0){
+    rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.CELL}"><is><t>${esc('Tidak ada data uang jalan driver / biaya lain-lain pada periode ini.')}</t></is></c></row>`;
+    merges.push(`A${r}:${lastCol}${r}`); r++;
+  }else{
+    let headerCells = '';
+    ujHeaders.forEach((h,i) => { headerCells += `<c r="${xlsxColLetter(i+1)}${r}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
+    rowsXml += `<row r="${r}">${headerCells}</row>`; r++;
+    const firstDataRow = r;
+    const sorted2 = doWithUangJalan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+    sorted2.forEach((rec,i) => {
+      const alt = i % 2 === 1;
+      const sText = alt ? XS.CELL_ALT : XS.CELL;
+      const sCur = alt ? XS.CUR_ALT : XS.CUR;
+      let cells = `<c r="A${r}" t="inlineStr" s="${sText}"><is><t>${esc(fmtDate(rec.tanggal))}</t></is></c>`;
+      cells += `<c r="B${r}" t="inlineStr" s="${sText}"><is><t>${esc(rec.nopol || '')}</t></is></c>`;
+      cells += `<c r="C${r}" t="inlineStr" s="${sText}"><is><t>${esc(rec.sopir || '-')}</t></is></c>`;
+      cells += `<c r="D${r}" t="inlineStr" s="${sText}"><is><t>${esc(tujuanListText(rec))}</t></is></c>`;
+      cells += `<c r="E${r}" s="${sCur}"><v>${Number(rec.uangJalan)||0}</v></c>`;
+      cells += `<c r="F${r}" s="${sCur}"><v>${Number(rec.biayaLain)||0}</v></c>`;
+      rowsXml += `<row r="${r}">${cells}</row>`; r++;
+    });
+    const lastDataRow = r - 1;
+    let totalCells = `<c r="A${r}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>TOTAL</t></is></c>`;
+    totalCells += `<c r="B${r}" s="${XS.TOTAL_LABEL}"/><c r="C${r}" s="${XS.TOTAL_LABEL}"/><c r="D${r}" s="${XS.TOTAL_LABEL}"/>`;
+    totalCells += `<c r="E${r}" s="${XS.TOTAL_CUR}"><f>SUM(E${firstDataRow}:E${lastDataRow})</f><v>${totals.totalUangJalan}</v></c>`;
+    totalCells += `<c r="F${r}" s="${XS.TOTAL_CUR}"><f>SUM(F${firstDataRow}:F${lastDataRow})</f><v>${totals.totalBiayaLain}</v></c>`;
+    rowsXml += `<row r="${r}">${totalCells}</row>`;
+    merges.push(`A${r}:D${r}`); r++;
+  }
+
+  const lastRow = r - 1;
+  const widths = [30,12,18,24,15,15];
+  const colsXml = widths.slice(0,nCols).map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const mergeXml = merges.map(m => `<mergeCell ref="${m}"/>`).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="A1:${lastCol}${lastRow}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colsXml}</cols>
+<sheetData>${rowsXml}</sheetData>
+<mergeCells count="${merges.length}">${mergeXml}</mergeCells>
+</worksheet>`;
+}
+
+/* Workbook OOXML generik 1 sheet -- dipakai bersama oleh export Biaya Pengeluaran Organik & Vendor
+   Luar (bedanya cuma nama sheet & isi sheetXml-nya), supaya Content_Types/rels/workbook.xml tidak
+   perlu ditulis ulang dua kali. */
+function downloadSingleSheetXlsx(sheetName, sheetXml, filename, successMsg, statusEl){
+  const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+</Types>`;
+  const rootRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+  const workbookXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="${esc(sheetName)}" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`;
+  const workbookRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+  const zipBytes = makeZip([
+    { name: '[Content_Types].xml', data: contentTypesXml },
+    { name: '_rels/.rels', data: rootRelsXml },
+    { name: 'xl/workbook.xml', data: workbookXml },
+    { name: 'xl/_rels/workbook.xml.rels', data: workbookRelsXml },
+    { name: 'xl/styles.xml', data: LAPORAN_XLSX_STYLES_XML },
+    { name: 'xl/worksheets/sheet1.xml', data: sheetXml },
+  ]);
+  const blob = new Blob([zipBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast(successMsg, 'success');
+  if(statusEl) statusEl.textContent = '';
+}
+
+function exportBiayaPengeluaranExcel(){
+  const period = getRangePeriod('bpDari', 'bpSampai');
+  const statusEl = document.getElementById('bpExportStatus');
+  if(!period){ alert('Pilih periode terlebih dahulu.'); return; }
+  const biayaBulan = maintenanceList.filter(m => m.tanggal && m.tanggal >= period.startDate && m.tanggal <= period.endDate);
+  const doBulan = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate && (r.jenisAngkutan || 'organik') === 'organik');
+  const doWithUangJalan = doBulan.filter(r => Number(r.uangJalan) > 0 || Number(r.biayaLain) > 0);
+  if(biayaBulan.length === 0 && doWithUangJalan.length === 0){ alert('Tidak ada data biaya pengeluaran organik untuk diexport pada periode ini.'); return; }
+  const totals = {
+    totalBiayaPerbaikan: biayaBulan.reduce((s,m) => s + (Number(m.biaya)||0), 0),
+    totalUangJalan: doBulan.reduce((s,r) => s + (Number(r.uangJalan)||0), 0),
+    totalBiayaLain: doBulan.reduce((s,r) => s + (Number(r.biayaLain)||0), 0),
+  };
+  totals.totalKeseluruhan = totals.totalBiayaPerbaikan + totals.totalUangJalan + totals.totalBiayaLain;
+  if(statusEl) statusEl.textContent = 'Menyiapkan file Excel...';
+  try{
+    const sheetXml = buildBiayaPengeluaranOrganikSheetXml(period.label, biayaBulan, doWithUangJalan, totals);
+    downloadSingleSheetXlsx('Biaya Pengeluaran Organik', sheetXml, `biaya_pengeluaran_organik_${period.startDate}_${period.endDate}.xlsx`, 'Biaya Pengeluaran Organik berhasil diexport ke Excel', statusEl);
+  }catch(err){
+    alert('Gagal membuat file Excel: ' + err.message);
+    if(statusEl) statusEl.textContent = '';
+  }
+}
+if(document.getElementById('btnBpExportExcel')) document.getElementById('btnBpExportExcel').addEventListener('click', exportBiayaPengeluaranExcel);
+
+function buildBiayaPengeluaranVendorSheetXml(periodLabel, doBulan, totals){
+  let r = 1;
+  let rowsXml = '';
+  const merges = [];
+  const headers = ['Tanggal','Nopol','Sopir','Vendor','Rute','Ket.','Jenis Tarif','Tarif Ongkos'];
+  const nCols = headers.length;
+  const lastCol = xlsxColLetter(nCols);
+
+  rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.TITLE}"><is><t>${esc('BIAYA PENGELUARAN VENDOR LUAR')}</t></is></c></row>`;
+  merges.push(`A${r}:${lastCol}${r}`); r++;
+  rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.SUB}"><is><t>${esc('Periode: ' + periodLabel)}</t></is></c></row>`;
+  merges.push(`A${r}:${lastCol}${r}`); r++;
+  r++;
+
+  rowsXml += bpSectionBannerXml(r, 'RINGKASAN', nCols); merges.push(`A${r}:${lastCol}${r}`); r++;
+  rowsXml += bpSummaryRowXml(r, 'Jumlah Pengiriman Vendor Luar', doBulan.length, false, true); r++;
+  rowsXml += bpSummaryRowXml(r, 'Jumlah Vendor Terpakai', totals.jumlahVendor, false, true); r++;
+  rowsXml += bpSummaryRowXml(r, 'TOTAL TARIF ONGKOS VENDOR', totals.totalTarifVendor, true); merges.push(`B${r}:${lastCol}${r}`); r++;
+  r++;
+
+  rowsXml += bpSectionBannerXml(r, 'RINCIAN BIAYA PER PENGIRIMAN VENDOR LUAR', nCols); merges.push(`A${r}:${lastCol}${r}`); r++;
+  if(doBulan.length === 0){
+    rowsXml += `<row r="${r}"><c r="A${r}" t="inlineStr" s="${XS.CELL}"><is><t>${esc('Tidak ada pengiriman via vendor luar pada periode ini.')}</t></is></c></row>`;
+    merges.push(`A${r}:${lastCol}${r}`); r++;
+  }else{
+    let headerCells = '';
+    headers.forEach((h,i) => { headerCells += `<c r="${xlsxColLetter(i+1)}${r}" t="inlineStr" s="${XS.HEAD}"><is><t>${esc(h)}</t></is></c>`; });
+    rowsXml += `<row r="${r}">${headerCells}</row>`; r++;
+    const firstDataRow = r;
+    const sorted = doBulan.slice().sort((a,b) => (a.tanggal < b.tanggal ? 1 : -1));
+    sorted.forEach((rec,i) => {
+      const alt = i % 2 === 1;
+      const sText = alt ? XS.CELL_ALT : XS.CELL;
+      const sCur = alt ? XS.CUR_ALT : XS.CUR;
+      const jenisTarif = rec.vendorJenisTarif === 'perkg' ? `Per KG${rec.vendorTarifPerKg ? ` (${rupiah(Number(rec.vendorTarifPerKg))}/kg)` : ''}` : (rec.vendorKet === 'loco' ? '-' : 'Plat');
+      const ket = rec.vendorKet === 'loco' ? 'Loco' : (rec.vendorKet === 'franco' ? 'Franco' : '-');
+      const vals = [fmtDate(rec.tanggal), rec.nopol || '-', rec.sopir || '-', rec.vendorNama || '-', rec.vendorRute || '-', ket, jenisTarif];
+      let cells = '';
+      vals.forEach((v,ci) => { cells += `<c r="${xlsxColLetter(ci+1)}${r}" t="inlineStr" s="${sText}"><is><t>${esc(String(v))}</t></is></c>`; });
+      cells += `<c r="H${r}" s="${sCur}"><v>${Number(rec.uangJalan)||0}</v></c>`;
+      rowsXml += `<row r="${r}">${cells}</row>`; r++;
+    });
+    const lastDataRow = r - 1;
+    let totalCells = `<c r="A${r}" t="inlineStr" s="${XS.TOTAL_LABEL}"><is><t>TOTAL</t></is></c>`;
+    for(let ci = 2; ci <= 7; ci++) totalCells += `<c r="${xlsxColLetter(ci)}${r}" s="${XS.TOTAL_LABEL}"/>`;
+    totalCells += `<c r="H${r}" s="${XS.TOTAL_CUR}"><f>SUM(H${firstDataRow}:H${lastDataRow})</f><v>${totals.totalTarifVendor}</v></c>`;
+    rowsXml += `<row r="${r}">${totalCells}</row>`;
+    merges.push(`A${r}:G${r}`); r++;
+  }
+
+  const lastRow = r - 1;
+  const widths = [30,12,16,18,22,10,20,16];
+  const colsXml = widths.map((w,i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const mergeXml = merges.map(m => `<mergeCell ref="${m}"/>`).join('');
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<dimension ref="A1:${lastCol}${lastRow}"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetFormatPr defaultRowHeight="18"/>
+<cols>${colsXml}</cols>
+<sheetData>${rowsXml}</sheetData>
+<mergeCells count="${merges.length}">${mergeXml}</mergeCells>
+</worksheet>`;
+}
+
+function exportBiayaPengeluaranVendorExcel(){
+  const period = getRangePeriod('bpvDari', 'bpvSampai');
+  const statusEl = document.getElementById('bpvExportStatus');
+  if(!period){ alert('Pilih periode terlebih dahulu.'); return; }
+  const doBulan = records.filter(r => r.tanggal && r.tanggal >= period.startDate && r.tanggal <= period.endDate && r.jenisAngkutan === 'vendor');
+  if(doBulan.length === 0){ alert('Tidak ada pengiriman via vendor luar untuk diexport pada periode ini.'); return; }
+  const totals = {
+    totalTarifVendor: doBulan.reduce((s,r) => s + (Number(r.uangJalan)||0), 0),
+    jumlahVendor: new Set(doBulan.map(r => r.vendorNama || '-')).size,
+  };
+  if(statusEl) statusEl.textContent = 'Menyiapkan file Excel...';
+  try{
+    const sheetXml = buildBiayaPengeluaranVendorSheetXml(period.label, doBulan, totals);
+    downloadSingleSheetXlsx('Biaya Pengeluaran Vendor', sheetXml, `biaya_pengeluaran_vendor_${period.startDate}_${period.endDate}.xlsx`, 'Biaya Pengeluaran Vendor Luar berhasil diexport ke Excel', statusEl);
+  }catch(err){
+    alert('Gagal membuat file Excel: ' + err.message);
+    if(statusEl) statusEl.textContent = '';
+  }
+}
+if(document.getElementById('btnBpvExportExcel')) document.getElementById('btnBpvExportExcel').addEventListener('click', exportBiayaPengeluaranVendorExcel);
 
 /* ==================================================================================
    EXPORT PDF — buka jendela cetak khusus berisi tabel laporan dengan border rapi
