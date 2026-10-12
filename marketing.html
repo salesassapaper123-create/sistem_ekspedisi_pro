@@ -1734,6 +1734,46 @@ function fbUpdateItemInList(path, targetId, mutateFn){
   return thisWrite;
 }
 
+/* Sesi keduaratussatu: nambah SATU item baru ke list Firebase pakai transaksi atomic juga -- dipakai
+   ganti pola lama (poList.push(item) lokal, lalu savePO()/fbPush() overwrite SELURUH array). Overwrite-
+   seluruh-array pas SUBMIT PO BARU adalah akar masalah laporan user "pengajuan PO sering tiba2 hilang":
+   kalau 2 staf submit PO baru hampir bersamaan (atau satu staf submit PO baru persis saat ADA PO lain
+   lagi di-ACC/diproses admin lain), masing-masing baca poList lokalnya sendiri (snapshot SEBELUM
+   perubahan satu sama lain ter-sync), lalu overwrite SELURUH array -- yang menyimpan BELAKANGAN
+   menimpa balik punya yang lain, PO yang baru saja disubmit bisa lenyap total dari database (bukan
+   cuma "ketimpa field-nya" seperti bug No. CO, tapi datanya benar2 hilang karena tidak pernah ikut
+   tertulis di overwrite terakhir). Beda dengan fbUpdateItemInList, DI SINI kalau `currentData` masih
+   null (lihat komentar null-handling di fbUpdateItemInList di atas), kita TIDAK perlu pass-through --
+   langsung dianggap array kosong (`[]`) itu AMAN karena hasilnya (`[item baru]`) tetap kandidat yang
+   valid: kalau tebakan "kosong" itu ternyata salah (data asli di server TERNYATA sudah berisi), Firebase
+   otomatis mendeteksi ketidakcocokan & retry sendiri dengan data asli -- beda dengan fbUpdateItemInList
+   yang punya cabang "item tidak ketemu -> batalkan" yang BISA salah kalau dijalankan dari data null yang
+   cuma cache kosong sementara (makanya di situ WAJIB pass-through, di sini TIDAK perlu). */
+function fbAppendToList(path, newItem){
+  if(!fbDb) return Promise.resolve({committed:false});
+  fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
+  const prevInQueue = fbWriteQueue[path] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbAuthReadyPromise).then(() => {
+    return fbDb.ref(path).transaction(currentData => {
+      const arr = fbToArray(currentData) || [];
+      return [...arr, newItem];
+    }).then(result => {
+      if(result && result.committed === false){
+        console.warn(`Transaksi tambah item di Firebase tidak ter-commit (path: ${path}).`);
+      }
+      return result;
+    }).catch(err => {
+      console.warn(`Gagal transaksi tambah item di Firebase (path: ${path}):`, err);
+      showToast('Gagal sinkron ke server -- cek koneksi internet, coba lagi.', 'danger');
+      return {committed:false};
+    });
+  }).catch(() => ({committed:false})).finally(() => {
+    fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
+  });
+  fbWriteQueue[path] = thisWrite;
+  return thisWrite;
+}
+
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 
@@ -2162,6 +2202,11 @@ document.getElementById('formBarangInput').addEventListener('submit', function(e
    belum ada yang menulis ke situ dari Marketing. */
 let poList = [];
 let records = [];
+// Sesi keduaratussatu: savePO() SENGAJA DIBIARKAN TIDAK DIPANGGIL LAGI DI MANAPUN (dipertahankan di
+// sini cuma sebagai catatan sejarah) -- SEMUA mutasi /po sekarang lewat fbUpdateItemInList/
+// fbAppendToList (transaksi atomic). JANGAN panggil fungsi ini lagi di kode baru -- overwrite SELURUH
+// array dari salinan lokal ini yang menyebabkan 2 bug nyata (No. CO salah/hilang, PO baru tiba2
+// hilang) sebelum diganti ke pola transaksi.
 function savePO(){ fbPush('po', poList); }
 const PO_STATUS_META = {
   menunggu:     { label: 'Menunggu Konfirmasi', cls: 'badge-legal-warn' },
@@ -2684,7 +2729,7 @@ document.getElementById('formPOInput').addEventListener('submit', async function
     return;
   }
   const acc = currentAccount();
-  poList.push({
+  const newItem = {
     id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
     noCO: '',
     tanggalCO: document.getElementById('poTanggalCO').value,
@@ -2704,8 +2749,18 @@ document.getElementById('formPOInput').addEventListener('submit', async function
     dibuatOleh: acc ? acc.email : '',
     createdAt: new Date().toISOString(),
     notifWaSent: false,
-  });
-  savePO();
+  };
+  // Sesi keduaratussatu: pakai fbAppendToList (transaksi atomic) -- BUKAN lagi poList.push() lokal +
+  // savePO() overwrite seluruh array, yang terbukti jadi penyebab laporan user "pengajuan PO sering
+  // tiba2 hilang" (lihat komentar di fbAppendToList di atas).
+  const result = await fbAppendToList('po', newItem);
+  if(!result || result.committed === false){
+    errEl.textContent = 'Gagal menyimpan SO & PO ke server -- cek koneksi internet, coba lagi.';
+    btn.disabled = false;
+    return;
+  }
+  const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
+  if(arr){ poList = fbFilterTombstoned('po', arr); }
   this.reset();
   document.getElementById('poFotoPreviewWrap').style.display = 'none';
   btn.disabled = false;
