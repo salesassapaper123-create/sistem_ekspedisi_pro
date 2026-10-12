@@ -2240,6 +2240,29 @@ function generateNextNoCO(sourceList){
   const next = existingNums.length ? Math.max(...existingNums) + 1 : 1;
   return String(next).padStart(3, '0') + '-' + yy;
 }
+// Sesi keduaratusdua: helper urutan numerik No. CO yang BENAR -- sebelumnya perbandingan "a.noCO <
+// b.noCO" memakai string compare biasa, yang keliru begitu No. CO lewat pergantian tahun (mis.
+// "050-27" dianggap lebih kecil dari "999-26" padahal 999-26 lebih dulu/lebih kecil secara kronologis)
+// atau begitu jumlah per tahun tembus 4 digit (>999, mis. "1000-26" dianggap lebih kecil dari "999-26"
+// karena '1' < '9' di karakter pertama). compareNoCO() memecah "NNN-YY" jadi angka asli (tahun lalu
+// nomor urut) baru dibandingkan sebagai angka, supaya urutan "dari No. CO terkecil ke terbesar" selalu
+// akurat di Konfirmasi PO & Monitoring Sisa PO. Item tanpa No. CO (noCO kosong) selalu ditaruh di
+// belakang oleh fungsi ini.
+function noCoSortKey(noCO){
+  if(!noCO) return null;
+  const parts = String(noCO).split('-');
+  const num = parseInt(parts[0], 10);
+  const yy = parseInt(parts[1], 10);
+  if(isNaN(num) || isNaN(yy)) return null;
+  return yy * 100000 + num;
+}
+function compareNoCO(noCOa, noCOb){
+  const ka = noCoSortKey(noCOa), kb = noCoSortKey(noCOb);
+  if(ka === null && kb === null) return 0;
+  if(ka === null) return 1;
+  if(kb === null) return -1;
+  return ka - kb;
+}
 function canConfirmPO(){
   try{
     const acc = currentAccount();
@@ -2332,7 +2355,7 @@ function renderPO(){
     const aPending = !a.noCO, bPending = !b.noCO;
     if(aPending !== bPending) return aPending ? -1 : 1;
     if(aPending) return (a.createdAt < b.createdAt ? -1 : 1);
-    return (a.noCO < b.noCO ? -1 : (a.noCO > b.noCO ? 1 : 0));
+    return compareNoCO(a.noCO, b.noCO);
   });
   if(poFTgl) sorted = sorted.filter(p => p.tanggalCO === poFTgl);
   else if(poFBln) sorted = sorted.filter(p => p.tanggalCO && p.tanggalCO.startsWith(poFBln));
@@ -2694,9 +2717,12 @@ function renderPOMonitoring(){
     wrap.innerHTML = emptyState('Belum ada SO/PO. Tambahkan lewat menu Input SO &amp; Upload PO.');
     return;
   }
+  // Sesi keduaratusdua: urutan diganti dari createdAt (kapan PO diinput) jadi No. CO naik dari
+  // terkecil ke terbesar, sesuai permintaan user -- lihat compareNoCO() untuk alasan kenapa
+  // perbandingannya tidak boleh string compare biasa.
   const sorted = poList
     .filter(p => p.status === 'dikonfirmasi' && !p.closed && computePOSisa(p) > 0)
-    .slice().sort((a,b) => (a.createdAt < b.createdAt ? -1 : 1));
+    .slice().sort((a,b) => compareNoCO(a.noCO, b.noCO));
   if(sorted.length === 0){
     wrap.innerHTML = emptyState('Belum ada PO yang dikonfirmasi dengan sisa tersedia -- PO yang belum di-ACC atau sudah habis tidak ditampilkan di sini.');
     return;
