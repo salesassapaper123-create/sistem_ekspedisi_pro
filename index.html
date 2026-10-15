@@ -10529,10 +10529,15 @@ function buildRekapPengirimanCustTableHtml(groups){
   let bodyRows = '';
   groups.forEach(g => {
     const noPOs = computeCustNoPoUkuranAgg(g);
-    const custRowspan = noPOs.reduce((s,po) => s + po.ukurans.length, 0);
+    // Sesi keduaratustiga: tiap PO sekarang dapat 1 baris "TOTAL" tambahan di bawah baris-baris
+    // ukurannya (supaya user tidak perlu jumlah manual Jumlah Roll & Tonase per PO) -- makanya
+    // rowspan Customer & No PO ditambah +1 per PO untuk menampung baris Total itu.
+    const custRowspan = noPOs.reduce((s,po) => s + po.ukurans.length + 1, 0);
     let custFirst = true;
     noPOs.forEach(po => {
-      const poRowspan = po.ukurans.length;
+      const poRowspan = po.ukurans.length + 1;
+      const poTotalRoll = po.ukurans.reduce((s,it) => s + (Number(it.jumlahRoll)||0), 0);
+      const poTotalTonase = po.ukurans.reduce((s,it) => s + (Number(it.tonase)||0), 0);
       po.ukurans.forEach((it, i) => {
         bodyRows += '<tr>';
         if(custFirst){ bodyRows += `<td class="sv-left" rowspan="${custRowspan}" style="vertical-align:middle; font-weight:600;">${esc(g.customer)}</td>`; custFirst = false; }
@@ -10543,6 +10548,11 @@ function buildRekapPengirimanCustTableHtml(groups){
           <td class="mono sv-num">${it.tonase ? it.tonase.toLocaleString('id-ID') + ' kg' : '-'}</td>`;
         bodyRows += '</tr>';
       });
+      bodyRows += `<tr style="background:#f5f7fa; font-weight:700;">
+          <td class="sv-left">TOTAL</td>
+          <td class="mono sv-num">${poTotalRoll ? poTotalRoll.toLocaleString('id-ID') + ' roll' : '-'}</td>
+          <td class="mono sv-num">${poTotalTonase.toLocaleString('id-ID')} kg</td>
+        </tr>`;
     });
   });
   const grandTotalTonase = groups.reduce((s,g) => s + g.shipments.reduce((s2,sh) => s2 + sh.items.reduce((s3,it) => s3 + it.tonase, 0), 0), 0);
@@ -10645,12 +10655,15 @@ function buildRekapPengirimanCustSheetXml(periodLabel, groups, totalKiriman){
   let grandRoll = 0, grandTon = 0, zebra = 0;
   groups.forEach(g => {
     const noPOs = computeCustNoPoUkuranAgg(g);
-    const custRowspan = noPOs.reduce((s,po) => s + po.ukurans.length, 0);
+    // Sesi keduaratustiga: +1 baris per PO untuk baris TOTAL per PO, meniru tampilan layar (lihat
+    // buildRekapPengirimanCustTableHtml) -- supaya versi Excel tetap sinkron persis dengan layar.
+    const custRowspan = noPOs.reduce((s,po) => s + po.ukurans.length + 1, 0);
     const custStartRow = rowIdx;
     let custFirst = true;
     noPOs.forEach(po => {
-      const poRowspan = po.ukurans.length;
+      const poRowspan = po.ukurans.length + 1;
       const poStartRow = rowIdx;
+      let poTotalRoll = 0, poTotalTon = 0;
       po.ukurans.forEach((it) => {
         const alt = zebra % 2 === 1;
         const sText = alt ? RPC_XS.CELL_ALT : RPC_XS.CELL;
@@ -10674,9 +10687,22 @@ function buildRekapPengirimanCustSheetXml(periodLabel, groups, totalKiriman){
         rowsXml += `<row r="${rowIdx}">${cells}</row>`;
         grandRoll += (Number(it.jumlahRoll) || 0);
         grandTon += (Number(it.tonase) || 0);
+        poTotalRoll += (Number(it.jumlahRoll) || 0);
+        poTotalTon += (Number(it.tonase) || 0);
         rowIdx++;
         zebra++;
       });
+      // Baris TOTAL per PO (Sesi keduaratustiga) -- kolom A & B dibiarkan kosong (sudah tercakup
+      // merge Customer/No PO dari baris-baris di atasnya), label "TOTAL" ditaruh di kolom C (Ukuran).
+      const poTotalFirstRow = poStartRow;
+      const poTotalLastRow = rowIdx - 1;
+      let totalPoCells = `<c r="A${rowIdx}" s="${RPC_XS.CELL}"/>`;
+      totalPoCells += `<c r="B${rowIdx}" s="${RPC_XS.CELL}"/>`;
+      totalPoCells += `<c r="C${rowIdx}" t="inlineStr" s="${RPC_XS.TOTAL_LABEL}"><is><t>TOTAL</t></is></c>`;
+      totalPoCells += `<c r="D${rowIdx}" s="${RPC_XS.TOTAL_ROLL}"><f>SUM(D${poTotalFirstRow}:D${poTotalLastRow})</f><v>${poTotalRoll}</v></c>`;
+      totalPoCells += `<c r="E${rowIdx}" s="${RPC_XS.TOTAL_KG}"><f>SUM(E${poTotalFirstRow}:E${poTotalLastRow})</f><v>${poTotalTon}</v></c>`;
+      rowsXml += `<row r="${rowIdx}">${totalPoCells}</row>`;
+      rowIdx++;
       if(poRowspan > 1) merges.push(`B${poStartRow}:B${rowIdx - 1}`);
     });
     if(custRowspan > 1) merges.push(`A${custStartRow}:A${rowIdx - 1}`);
