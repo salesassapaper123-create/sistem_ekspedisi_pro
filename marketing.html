@@ -1538,6 +1538,90 @@
   </div>
 </div>
 
+<!-- MODAL EDIT DATA PO (Sesi keduaratusempat): sebelumnya tombol pensil di Konfirmasi PO cuma bisa
+     koreksi No. CO (lihat fbUpdateItemInList di bagian script -- fitur "Edit No. CO" lama). Atas
+     permintaan user ("tidak hanya edit no co saja tetapi bisa edit harga ukuran gsm dan tonase"),
+     tombol itu sekarang membuka modal lengkap ini (field sama persis dengan modal "Edit data PO" yang
+     sudah ada di LINTAS Ekspedisi/index.html, supaya konsisten) -- TAPI penyimpanannya tetap pakai
+     fbUpdateItemInList (transaksi atomic Firebase), BUKAN savePO()/fbPush() full-array-overwrite yang
+     masih dipakai index.html (itu bug lama yang sama persis dgn akar masalah No. CO di Sesi
+     keseratussembilanpuluhdelapan -- lihat catatan di README). -->
+<div class="form-modal-overlay" id="poEditModalOverlay">
+  <div class="form-modal">
+    <div class="form-modal-head">
+      <div>
+        <h3>Edit data PO</h3>
+        <p>Perbaiki data yang salah input -- tidak mengubah status konfirmasi (ACC/Tolak/Tutup) PO ini.</p>
+      </div>
+      <button type="button" class="form-modal-close" id="btnClosePoEditModal" aria-label="Tutup">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="form-modal-body">
+      <form id="formPoEdit">
+        <div class="grid2">
+          <div class="field">
+            <label for="poEditNoCO">No. CO <span class="hint">(kosongkan kalau belum di-ACC)</span></label>
+            <input type="text" id="poEditNoCO">
+          </div>
+          <div class="field">
+            <label for="poEditTanggalCO">Tanggal CO</label>
+            <input type="date" id="poEditTanggalCO" required>
+          </div>
+          <div class="field">
+            <label for="poEditNoPO">No. PO</label>
+            <input type="text" id="poEditNoPO" style="text-transform:uppercase;" required>
+          </div>
+          <div class="field">
+            <label for="poEditNamaCustomer">Nama customer</label>
+            <input type="text" id="poEditNamaCustomer" list="customerDatalist" required>
+          </div>
+          <div class="field">
+            <label for="poEditSales">Sales</label>
+            <input type="text" id="poEditSales" required>
+          </div>
+          <div class="field">
+            <label for="poEditGsm">GSM</label>
+            <input type="text" id="poEditGsm" required>
+          </div>
+          <div class="field">
+            <label for="poEditUkuran">UK <span class="hint">(ukuran)</span></label>
+            <input type="text" id="poEditUkuran" required>
+          </div>
+          <div class="field">
+            <label for="poEditTonase">Tonase (kg)</label>
+            <input type="number" id="poEditTonase" min="0" step="1" required>
+          </div>
+          <div class="field">
+            <label for="poEditHarga">Harga (Rp)</label>
+            <input type="number" id="poEditHarga" min="0" step="1" required>
+          </div>
+          <div class="field">
+            <label for="poEditStatusKirim">Status PO</label>
+            <select id="poEditStatusKirim" required>
+              <option value="">-- pilih status --</option>
+              <option value="Franco">Franco</option>
+              <option value="Loco">Loco</option>
+            </select>
+          </div>
+          <div class="field full" style="grid-column:1 / -1; border-top:1px solid var(--border); padding-top:14px; margin-top:2px;">
+            <label for="poEditFotoInput">Ganti foto/scan PO <span class="hint">(opsional -- kosongkan supaya foto lama tetap dipakai)</span></label>
+            <input type="file" id="poEditFotoInput" accept="image/*">
+            <div id="poEditFotoPreviewWrap" style="display:none; margin-top:10px;">
+              <img id="poEditFotoPreviewImg" alt="Preview foto PO" style="max-width:220px; max-height:220px; border-radius:8px; border:1px solid var(--border); display:block;">
+            </div>
+            <div class="login-error" id="poEditFotoError" style="margin-top:6px;"></div>
+          </div>
+        </div>
+        <div class="btn-row" style="justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" id="btnBatalPoEdit">Batal</button>
+          <button type="submit" class="btn btn-primary" id="btnSimpanPoEdit">Simpan perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL PREVIEW PKB (Sesi keseratusenampuluhsembilan -- diport dari LINTAS Ekspedisi): begitu Input
      PKB disimpan, modal ini otomatis terbuka menampilkan dokumen PKB siap cetak/download/dibagikan ke
      WA sebagai foto (sama persis fitur "Bagikan ke WA" milik LINTAS Ekspedisi). -->
@@ -2399,7 +2483,7 @@ function renderPO(){
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>` : ''}
           ${admin ? `
-            <button type="button" class="icon-btn po-edit-noco" data-id="${p.id}" title="Edit No. CO -- khusus admin">
+            <button type="button" class="icon-btn po-edit" data-id="${p.id}" title="Edit data PO (No. CO, Harga, Ukuran, GSM, Tonase, dll.) -- khusus admin">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
             </button>` : ''}
           ${(bisaTutupPO && p.status === 'dikonfirmasi' && !closed) ? `
@@ -2486,36 +2570,11 @@ function renderPO(){
     wrap.querySelectorAll('.po-reopen').forEach(btn => btn.addEventListener('click', function(){
       reopenPOItem(this.dataset.id);
     }));
-    // Sesi keseratussembilanpuluhdelapan: fitur baru "Edit No. CO" (khusus admin) -- sebelumnya No. CO
-    // MURNI auto-generate saat ACC (generateNextNoCO()) dan sama sekali tidak bisa diedit/dikoreksi
-    // manual lewat UI manapun. Ditambahkan atas laporan user: "ada eror di no co ada yang tidak sesuai
-    // sudah di input tapi tidak muncul" -- akar masalahnya adalah savePO()/fbPush() yang overwrite
-    // SELURUH array /po dari salinan lokal client (lihat komentar fbUpdateItemInList di atas), yang
-    // sekarang sudah diperbaiki supaya tidak terulang. Tombol ini memberi admin cara MENGOREKSI manual
-    // No. CO yang sudah kadung salah/duplikat dari kejadian sebelum perbaikan ini.
-    wrap.querySelectorAll('.po-edit-noco').forEach(btn => btn.addEventListener('click', function(){
-      const targetId = this.dataset.id;
-      const item = poList.find(x => String(x.id) === String(targetId));
-      if(!item) return;
-      const current = item.noCO || '';
-      const input = prompt(`Edit No. CO untuk PO ${item.noPO || '-'} (${item.namaCustomer || '-'}):\n\nFormat standar: nomor urut 3 digit + tahun, contoh "205-26". Kosongkan untuk menghapus No. CO.`, current);
-      if(input === null) return; // batal
-      const newNoCO = input.trim();
-      if(newNoCO === current) return; // tidak ada perubahan
-      const duplikat = poList.find(x => String(x.id) !== String(targetId) && newNoCO !== '' && (x.noCO || '') === newNoCO);
-      if(duplikat && !confirm(`No. CO "${newNoCO}" sudah dipakai PO ${duplikat.noPO || '-'} (${duplikat.namaCustomer || '-'}).\n\nTetap lanjutkan? (akan ada 2 PO dengan No. CO yang sama)`)) return;
-      fbUpdateItemInList('po', targetId, serverItem => {
-        serverItem.noCO = newNoCO;
-        return serverItem;
-      }).then(result => {
-        if(!result || result.committed === false){
-          showToast('Gagal menyimpan perubahan No. CO -- coba lagi.', 'danger');
-          return;
-        }
-        const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
-        if(arr){ poList = fbFilterTombstoned('po', arr); renderPO(); }
-        showToast('No. CO berhasil diperbarui', 'success');
-      });
+    // Sesi keseratussembilanpuluhdelapan: dulu tombol pensil cuma buka prompt() 1 field (No. CO) --
+    // Sesi keduaratusempat: diganti buka modal "Edit data PO" lengkap (lihat openPoEditModal di bawah)
+    // atas permintaan user supaya Harga, Ukuran, GSM, Tonase, dll juga bisa dikoreksi dari sini.
+    wrap.querySelectorAll('.po-edit').forEach(btn => btn.addEventListener('click', function(){
+      openPoEditModal(this.dataset.id);
     }));
     wrap.querySelectorAll('.del').forEach(btn => btn.addEventListener('click', function(){
       if(confirm('Hapus data SO/PO ini?')){
@@ -2729,6 +2788,133 @@ function renderPOMonitoring(){
   }
   wrap.innerHTML = buildSisaPoTableHtml(sorted);
 }
+
+/* ---------- MODAL: EDIT DATA PO (Sesi keduaratusempat) ----------
+   Diport dari modal "Edit data PO" milik LINTAS Ekspedisi/index.html (field sama persis) supaya admin
+   di Marketing bisa koreksi No. CO, Tanggal CO, No. PO, Nama Customer, Sales, GSM, Ukuran, Tonase,
+   Harga, Status PO, & foto PO -- bukan cuma No. CO seperti fitur lama. BEDANYA dengan index.html:
+   penyimpanan di sini pakai fbUpdateItemInList (transaksi atomic Firebase), bukan savePO()/fbPush()
+   (full-array overwrite) yang masih dipakai index.html -- supaya tidak membuka celah race condition
+   yang sama seperti bug No. CO/"PO hilang" sebelumnya (lihat komentar fbUpdateItemInList/fbAppendToList
+   di atas & README). Modal ini SENGAJA tidak menyentuh field status/catatanTolak/dikonfirmasiOleh/
+   closed dkk -- murni koreksi data, tidak mengubah status konfirmasi PO. */
+let poEditTargetId = null;
+function openPoEditModal(id){
+  const item = poList.find(x => String(x.id) === String(id));
+  if(!item) return;
+  poEditTargetId = id;
+  document.getElementById('poEditNoCO').value = item.noCO || '';
+  document.getElementById('poEditTanggalCO').value = item.tanggalCO || '';
+  document.getElementById('poEditNoPO').value = item.noPO || '';
+  document.getElementById('poEditNamaCustomer').value = item.namaCustomer || '';
+  document.getElementById('poEditSales').value = item.sales || '';
+  document.getElementById('poEditGsm').value = item.gsm || '';
+  document.getElementById('poEditUkuran').value = item.ukuran || '';
+  document.getElementById('poEditTonase').value = item.tonase || '';
+  document.getElementById('poEditHarga').value = item.harga || '';
+  document.getElementById('poEditStatusKirim').value = item.statusKirim || '';
+  document.getElementById('poEditFotoInput').value = '';
+  document.getElementById('poEditFotoError').textContent = '';
+  const previewWrap = document.getElementById('poEditFotoPreviewWrap');
+  if(item.fotoPO){
+    document.getElementById('poEditFotoPreviewImg').src = item.fotoPO;
+    previewWrap.style.display = '';
+  }else{
+    previewWrap.style.display = 'none';
+  }
+  const overlay = document.getElementById('poEditModalOverlay');
+  if(overlay) overlay.classList.add('show');
+}
+function closePoEditModal(){
+  poEditTargetId = null;
+  const overlay = document.getElementById('poEditModalOverlay');
+  if(overlay) overlay.classList.remove('show');
+  const form = document.getElementById('formPoEdit');
+  if(form) form.reset();
+  document.getElementById('poEditFotoPreviewWrap').style.display = 'none';
+}
+(function(){
+  const btnClose = document.getElementById('btnClosePoEditModal');
+  const btnCancel = document.getElementById('btnBatalPoEdit');
+  const overlay = document.getElementById('poEditModalOverlay');
+  if(btnClose) btnClose.addEventListener('click', closePoEditModal);
+  if(btnCancel) btnCancel.addEventListener('click', closePoEditModal);
+  if(overlay) overlay.addEventListener('click', function(e){ if(e.target === overlay) closePoEditModal(); });
+  const fileInput = document.getElementById('poEditFotoInput');
+  if(fileInput){
+    fileInput.addEventListener('change', async function(){
+      const errEl = document.getElementById('poEditFotoError');
+      const previewWrap = document.getElementById('poEditFotoPreviewWrap');
+      errEl.textContent = '';
+      const file = this.files[0];
+      if(!file) return; /* kosongkan pilihan foto = foto lama tetap dipakai, jangan sembunyikan preview */
+      try{
+        const compressed = await compressImageFile(file, 1000, 0.65);
+        document.getElementById('poEditFotoPreviewImg').src = compressed;
+        previewWrap.style.display = '';
+      }catch(err){
+        errEl.textContent = err.message || 'Gagal memproses foto.';
+        this.value = '';
+      }
+    });
+  }
+})();
+document.getElementById('formPoEdit').addEventListener('submit', async function(e){
+  e.preventDefault();
+  if(!poEditTargetId) return;
+  const targetId = poEditTargetId;
+  const item = poList.find(x => String(x.id) === String(targetId));
+  if(!item){ closePoEditModal(); return; }
+  const errEl = document.getElementById('poEditFotoError');
+  errEl.textContent = '';
+  const btn = document.getElementById('btnSimpanPoEdit');
+  const fileInput = document.getElementById('poEditFotoInput');
+  const file = fileInput.files[0];
+
+  btn.disabled = true;
+  let fotoPO = item.fotoPO || null; /* default: pertahankan foto lama */
+  try{
+    if(file) fotoPO = await compressImageFile(file, 1000, 0.65);
+  }catch(err){
+    errEl.textContent = 'Gagal memproses foto PO: ' + (err.message || err);
+    btn.disabled = false;
+    return;
+  }
+
+  const newNoCO = document.getElementById('poEditNoCO').value.trim();
+  const duplikat = newNoCO && poList.find(x => String(x.id) !== String(targetId) && (x.noCO || '') === newNoCO);
+  if(duplikat && !confirm(`No. CO "${newNoCO}" sudah dipakai PO ${duplikat.noPO || '-'} (${duplikat.namaCustomer || '-'}).\n\nTetap lanjutkan? (akan ada 2 PO dengan No. CO yang sama)`)){
+    btn.disabled = false;
+    return;
+  }
+
+  const newData = {
+    noCO: newNoCO,
+    tanggalCO: document.getElementById('poEditTanggalCO').value,
+    noPO: document.getElementById('poEditNoPO').value.trim().toUpperCase(),
+    namaCustomer: document.getElementById('poEditNamaCustomer').value.trim(),
+    sales: document.getElementById('poEditSales').value.trim(),
+    gsm: document.getElementById('poEditGsm').value.trim(),
+    ukuran: document.getElementById('poEditUkuran').value.trim(),
+    tonase: Number(document.getElementById('poEditTonase').value) || 0,
+    harga: Number(document.getElementById('poEditHarga').value) || 0,
+    statusKirim: document.getElementById('poEditStatusKirim').value,
+    fotoPO: fotoPO,
+  };
+
+  fbUpdateItemInList('po', targetId, serverItem => Object.assign(serverItem, newData)).then(result => {
+    btn.disabled = false;
+    if(!result || result.committed === false){
+      showToast('Gagal menyimpan perubahan data PO -- coba lagi.', 'danger');
+      return;
+    }
+    const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
+    if(arr){ poList = fbFilterTombstoned('po', arr); renderPO(); }
+    closePoEditModal();
+    showToast('Data PO berhasil diperbarui', 'success');
+  });
+});
+
 document.getElementById('poFotoInput').addEventListener('change', function(e){
   const file = e.target.files[0];
   const wrap = document.getElementById('poFotoPreviewWrap');
