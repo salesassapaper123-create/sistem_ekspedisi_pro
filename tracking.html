@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
   /* Sesi keduaratusenam: TAHAP 1 -- kerangka/skeleton aplikasi baru "Delivery Trucking" (lihat README).
      Palet warna & pola CSS sengaja disamakan dengan LINTAS/LINTAS Marketing supaya terasa satu keluarga
@@ -114,7 +115,7 @@
     background:var(--warn-100); border:1px solid #f3d9ab; color:var(--warn-500); font-weight:600;
     font-size:12.5px; padding:10px 14px; border-radius:10px; margin-bottom:18px;
   }
-  .kpi-row{display:grid; grid-template-columns:repeat(5, 1fr); gap:16px; margin-bottom:26px;}
+  .kpi-row{display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; margin-bottom:26px;}
   .kpi-card{
     background:#fff; border:1px solid var(--border); border-radius:12px; padding:18px;
     display:flex; flex-direction:column; gap:10px;
@@ -123,7 +124,6 @@
     width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
   }
   .kpi-card.k-scheduled .kpi-icon{background:var(--accent-100); color:var(--accent-500);}
-  .kpi-card.k-loading .kpi-icon{background:#eef0fb; color:#5a5fd1;}
   .kpi-card.k-ondelivery .kpi-icon{background:var(--warn-100); color:var(--warn-500);}
   .kpi-card.k-unloading .kpi-icon{background:#f1eafc; color:#8347d6;}
   .kpi-card.k-delivered .kpi-icon{background:var(--ok-100); color:var(--ok-500);}
@@ -145,13 +145,29 @@
   .tab-content{padding:20px;}
   .tab-pane{display:none;}
   .tab-pane.active{display:block;}
-  .map-placeholder{
-    height:420px; border-radius:10px; border:1px dashed var(--border-strong); background:
-      repeating-linear-gradient(45deg, #eef1f5, #eef1f5 10px, #f5f7fa 10px, #f5f7fa 20px);
-    display:flex; align-items:center; justify-content:center; text-align:center; color:var(--text-muted); font-size:13px; padding:20px;
-  }
   .empty-state{padding:50px 20px; text-align:center; color:var(--text-muted); font-size:13px;}
   .empty-state svg{color:#c3c9d6; margin-bottom:10px;}
+
+  /* ===== Kartu pengiriman (Sesi keduaratustujuh, Tahap 2) ===== */
+  .ship-list{display:flex; flex-direction:column; gap:10px;}
+  .ship-card{
+    border:1px solid var(--border); border-radius:10px; padding:14px 16px; display:flex;
+    align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  }
+  .ship-card-main{flex:1; min-width:240px;}
+  .ship-card-title{font-weight:700; font-size:13.5px; margin-bottom:4px;}
+  .ship-card-title .mono{font-family:'IBM Plex Mono',monospace; color:var(--text-muted); font-weight:600; font-size:12px;}
+  .ship-card-sub{font-size:12.5px; color:var(--text-muted); display:flex; flex-wrap:wrap; gap:4px 14px;}
+  .ship-card-sub b{color:var(--text); font-weight:600;}
+  .ship-card-actions{display:flex; align-items:center; gap:10px; flex-shrink:0;}
+  .ship-advance-btn{
+    border:1px solid var(--accent-500); background:var(--accent-100); color:var(--accent-700);
+    border-radius:8px; padding:8px 14px; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;
+  }
+  .ship-advance-btn:hover{background:var(--accent-500); color:#fff;}
+  .ship-advance-btn:disabled{opacity:.5; cursor:default; background:var(--bg); color:var(--text-muted); border-color:var(--border-strong);}
+  .ship-note{font-size:11.5px; color:var(--text-muted); font-style:italic;}
+  .leaflet-popup-content{font-size:12.5px; line-height:1.5;}
 
   @media (max-width: 860px){
     .shell{flex-direction:column;}
@@ -232,21 +248,17 @@
     <div class="shell-sidebar">
       <div class="filter-field">
         <label>Origin</label>
-        <select id="filterOrigin" disabled><option>Semua Data</option></select>
+        <select id="filterOrigin"><option value="">Semua Data</option></select>
       </div>
       <div class="filter-field">
         <label>Destination</label>
-        <select id="filterDestination" disabled><option>Semua Data</option></select>
+        <select id="filterDestination"><option value="">Semua Data</option></select>
       </div>
 
       <ul class="sb-nav" id="sbNav">
         <li class="sb-nav-item active" data-tab="scheduled">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
           Scheduled <span class="cnt" id="navCntScheduled">0</span>
-        </li>
-        <li class="sb-nav-item" data-tab="loading">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
-          Loading <span class="cnt" id="navCntLoading">0</span>
         </li>
         <li class="sb-nav-item" data-tab="ondelivery">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M14 9h4l4 4v4a1 1 0 0 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
@@ -276,18 +288,14 @@
 
     <!-- MAIN -->
     <div class="shell-main">
-      <div class="banner-tahap1">
-        Tahap 1: kerangka tampilan "Delivery Trucking". Data pengiriman sungguhan, login customer, dan peta live GPS menyusul di tahap berikutnya -- lihat README.
+      <div class="banner-tahap1" id="bannerInfo">
+        Tahap 2: data PKB sungguhan sudah tersambung. Status pakai 4 tahap yang sudah berjalan di LINTAS (Dijadwalkan/Dalam Perjalanan/Sampai Tujuan/Selesai) -- tidak ada field status baru, jadi seluruh riwayat PKB lama & baru otomatis ikut muncul. Menandai "Selesai" (perlu isi tonase &amp; hitung pendapatan) tetap lewat Rekap Data di LINTAS seperti biasa -- lihat README.
       </div>
 
       <div class="kpi-row">
         <div class="kpi-card k-scheduled">
           <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
           <div><div class="kpi-label">Scheduled</div><div class="kpi-value" id="kpiScheduled">0 Shipping</div></div>
-        </div>
-        <div class="kpi-card k-loading">
-          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg></div>
-          <div><div class="kpi-label">Loading</div><div class="kpi-value" id="kpiLoading">0 Shipping</div></div>
         </div>
         <div class="kpi-card k-ondelivery">
           <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M14 9h4l4 4v4a1 1 0 0 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>
@@ -308,22 +316,19 @@
         <div class="tabs" id="tabsBar">
           <button type="button" class="tab-btn active" data-tab="maps">Maps</button>
           <button type="button" class="tab-btn" data-tab="scheduled">Scheduled</button>
-          <button type="button" class="tab-btn" data-tab="loading">Loading</button>
           <button type="button" class="tab-btn" data-tab="ondelivery">On Delivery</button>
           <button type="button" class="tab-btn" data-tab="unloading">Unloading</button>
           <button type="button" class="tab-btn" data-tab="delivered">Delivered <span class="cnt" id="tabCntDelivered">0</span></button>
         </div>
         <div class="tab-content">
           <div class="tab-pane active" data-pane="maps">
-            <div class="map-placeholder">
-              Peta live (posisi GPS Cartrack tiap armada) akan tampil di sini setelah Tahap berikutnya selesai disambungkan.
-            </div>
+            <div id="trackingMap" style="height:420px; border-radius:10px; border:1px solid var(--border);"></div>
+            <div id="mapGpsNote" style="margin-top:10px; font-size:12px; color:var(--text-muted);"></div>
           </div>
-          <div class="tab-pane" data-pane="scheduled"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
-          <div class="tab-pane" data-pane="loading"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
-          <div class="tab-pane" data-pane="ondelivery"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
-          <div class="tab-pane" data-pane="unloading"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
-          <div class="tab-pane" data-pane="delivered"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
+          <div class="tab-pane" data-pane="scheduled"><div id="listScheduled"></div></div>
+          <div class="tab-pane" data-pane="ondelivery"><div id="listOnDelivery"></div></div>
+          <div class="tab-pane" data-pane="unloading"><div id="listUnloading"></div></div>
+          <div class="tab-pane" data-pane="delivered"><div id="listDelivered"></div></div>
         </div>
       </div>
     </div>
@@ -333,15 +338,20 @@
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 /* ========================================================================================
-   Delivery Trucking -- Sesi keduaratusenam, TAHAP 1 (skeleton).
-   File BARU & TERPISAH -- index.html dan marketing.html TIDAK disentuh sama sekali.
+   Delivery Trucking -- Sesi keduaratusenam (TAHAP 1, skeleton) + Sesi keduaratustujuh (TAHAP 2,
+   data PKB sungguhan + peta live). File BARU & TERPISAH dari index.html/marketing.html -- SELURUH
+   perubahan di sini cuma menambah file ini sendiri; index.html HANYA disentuh untuk 2 baris
+   tambahan pada skrip Apps Script Cartrack (simpan koordinat gpsLat/gpsLng mentah, lihat README
+   Sesi keduaratustujuh) -- perilaku Monitoring Armada LINTAS sendiri TIDAK berubah sama sekali.
 
-   Firebase project SAMA PERSIS dengan LINTAS/LINTAS Marketing (supaya nanti Tahap 2 bisa langsung
-   baca data PKB yang sudah ada, real-time, tanpa proses sinkron manual).
+   Firebase project SAMA PERSIS dengan LINTAS/LINTAS Marketing -- papan status & peta di sini
+   membaca data PKB ('records'), armada ('kendaraan'), dan PO ('po') yang sudah ada, real-time,
+   tanpa proses sinkron manual.
 
-   Login Tahap 1 mendukung:
+   Login mendukung:
    - Akun STAF (admin/staf kantor) -- pakai node 'accountsV2' yang SAMA PERSIS dengan LINTAS. Kalau
      akun itu sudah disetujui admin di LINTAS, otomatis bisa langsung dipakai login di sini juga.
      Terdeteksi dari input yang mengandung '@' (format email).
@@ -391,6 +401,8 @@ function showApp(rec){
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appRoot').style.display = 'block';
   document.getElementById('topbarUserLabel').textContent = (rec && (rec.nama || rec.email)) || 'Staf';
+  attachDataListeners();
+  initMap();
 }
 
 let suppressAuthStateHandler = false;
@@ -446,11 +458,289 @@ document.getElementById('btnLogout').addEventListener('click', function(){
   firebase.auth().signOut();
 });
 
-/* ---------- Navigasi tab (sidebar kiri + tab Shipping) -- murni UI di Tahap 1, belum ada data. ---------- */
+/* ========================================================================================
+   TAHAP 2 (Sesi keduaratustujuh) -- sambungkan papan status ke data PKB SUNGGUHAN.
+
+   Status pengiriman SENGAJA TIDAK memakai field baru -- dipakai langsung field `status` yang
+   SUDAH ADA di tiap record PKB/DO (node Firebase 'records', SAMA PERSIS dibaca/ditulis index.html
+   & marketing.html), 4 tahap yang sudah lama berjalan: dijadwalkan -> jalan -> tiba -> selesai
+   (lihat STATUS_STAGES/nextStatus di index.html -- logika di bawah ini port PERSIS supaya 100%
+   konsisten, bukan reimplementasi dari nol). Ditampilkan dengan label Inggris sesuai contoh yang
+   diminta user: Scheduled / On Delivery / Unloading / Delivered (tidak ada kolom "Loading" -- lihat
+   catatan README: 4 tahap, bukan 5, atas persetujuan user, supaya tidak ada status ganda/duplikat).
+
+   KHUSUS tahap "tiba" (Unloading) -> "selesai" (Delivered): SENGAJA TIDAK disediakan tombol maju di
+   papan ini. Menandai Selesai di index.html mewajibkan isi tonase dulu (kalau belum) DAN otomatis
+   menghitung Pendapatan (calcPendapatan, butuh Database Tarif) -- logika itu tidak diduplikasi di
+   sini supaya tidak ada risiko data Selesai tanpa tonase/pendapatan yang bisa merusak Laporan &
+   Margin & Keuntungan di LINTAS. Menandai Selesai TETAP lewat Rekap Data di LINTAS seperti biasa;
+   begitu statusnya 'selesai' di sana, otomatis ikut pindah ke kolom Delivered di papan ini juga
+   (real-time, field yang sama). ======================================================================================== */
+const fbPendingWrites = {};
+const fbWriteQueue = {};
+function fbToArray(val){
+  if(val === null || val === undefined) return null;
+  if(Array.isArray(val)) return val;
+  if(typeof val === 'object') return Object.keys(val).sort((a,b) => Number(a) - Number(b)).map(k => val[k]);
+  return null;
+}
+/* Port PERSIS dari marketing.html (fbUpdateItemInList) -- transaksi atomic read-modify-write di
+   SERVER, BUKAN overwrite seluruh array dari salinan lokal. Null-handling di percobaan pertama WAJIB
+   pass-through apa adanya (lihat catatan panjang di marketing.html soal bug ACC/Edit No.CO yang
+   sempat "tidak berfungsi" gara-gara ini) -- disalin persis, bukan ditulis ulang dari ingatan. */
+function fbUpdateItemInList(path, targetId, mutateFn){
+  if(!fbDb) return Promise.resolve({committed:false});
+  fbPendingWrites[path] = (fbPendingWrites[path] || 0) + 1;
+  const prevInQueue = fbWriteQueue[path] || Promise.resolve();
+  const thisWrite = prevInQueue.then(() => fbDb.ref(path).transaction(currentData => {
+    if(currentData === null || currentData === undefined) return currentData;
+    const arr = fbToArray(currentData);
+    if(arr === null) return currentData;
+    const idx = arr.findIndex(item => item && String(item.id) === String(targetId));
+    if(idx === -1) return undefined;
+    arr[idx] = mutateFn(arr[idx], arr) || arr[idx];
+    return arr;
+  }).then(result => result).catch(err => {
+    console.warn(`Gagal transaksi update di Firebase (path: ${path}):`, err);
+    return {committed:false};
+  })).catch(() => ({committed:false})).finally(() => {
+    fbPendingWrites[path] = Math.max(0, (fbPendingWrites[path] || 0) - 1);
+  });
+  fbWriteQueue[path] = thisWrite;
+  return thisWrite;
+}
+
+const STATUS_STAGES = ['dijadwalkan', 'jalan', 'tiba', 'selesai'];
+const STATUS_LABEL_EN = { dijadwalkan: 'Scheduled', jalan: 'On Delivery', tiba: 'Unloading', selesai: 'Delivered' };
+function normalizeStatus(status){ return STATUS_STAGES.includes(status) ? status : 'dijadwalkan'; }
+function nextStatus(status){
+  const idx = STATUS_STAGES.indexOf(normalizeStatus(status));
+  return STATUS_STAGES[(idx + 1) % STATUS_STAGES.length];
+}
+function recTotalTonase(r){ return (Number(r.tonase1)||0) + (Number(r.tonase2)||0) + (Number(r.tonase3)||0); }
+function esc(s){ return (s ?? '').toString().replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(iso){
+  if(!iso) return '-';
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'});
+}
+function waktuLalu(iso){
+  if(!iso) return null;
+  const then = new Date(iso).getTime();
+  if(isNaN(then)) return null;
+  const menit = Math.floor((Date.now() - then) / 60000);
+  if(menit < 1) return 'baru saja';
+  if(menit < 60) return `${menit} menit lalu`;
+  const jam = Math.floor(menit / 60);
+  if(jam < 24) return `${jam} jam lalu`;
+  return `${Math.floor(jam / 24)} hari lalu`;
+}
+
+let records = [];
+let kendaraanList = [];
+let poList = [];
+let dataListenersAttached = false;
+function attachDataListeners(){
+  if(dataListenersAttached || !fbDb) return;
+  dataListenersAttached = true;
+  fbDb.ref('records').on('value', snap => {
+    records = fbToArray(snap.val()) || [];
+    populateFilterOptions();
+    renderBoard();
+  });
+  fbDb.ref('kendaraan').on('value', snap => {
+    kendaraanList = fbToArray(snap.val()) || [];
+    renderMapMarkers();
+  });
+  fbDb.ref('po').on('value', snap => {
+    poList = fbToArray(snap.val()) || [];
+    renderBoard();
+  });
+}
+
+/* ---------- Filter Origin/Destination (Sesi keduaratustujuh) -- diisi dari data PKB aktif sungguhan,
+   bukan lagi daftar kosong/disabled seperti Tahap 1. Origin = tempat muat (tujuanMuat), Destination =
+   kota tujuan (kotaTujuan, fallback tujuanBongkar utk data lama dari LINTAS). ---------- */
+let filterOriginVal = '';
+let filterDestinationVal = '';
+function recOrigin(r){ return (r.tujuanMuat || '').trim(); }
+function recDestination(r){ return (r.kotaTujuan || r.tujuanBongkar || '').trim(); }
+function populateFilterOptions(){
+  const activeRecs = records.filter(r => normalizeStatus(r.status) !== 'selesai');
+  const origins = Array.from(new Set(activeRecs.map(recOrigin).filter(Boolean))).sort((a,b) => a.localeCompare(b));
+  const dests = Array.from(new Set(activeRecs.map(recDestination).filter(Boolean))).sort((a,b) => a.localeCompare(b));
+  const selO = document.getElementById('filterOrigin');
+  const selD = document.getElementById('filterDestination');
+  const curO = selO.value, curD = selD.value;
+  selO.innerHTML = '<option value="">Semua Data</option>' + origins.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  selD.innerHTML = '<option value="">Semua Data</option>' + dests.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+  if(origins.includes(curO)) selO.value = curO;
+  if(dests.includes(curD)) selD.value = curD;
+  filterOriginVal = selO.value;
+  filterDestinationVal = selD.value;
+}
+document.getElementById('filterOrigin').addEventListener('change', function(){ filterOriginVal = this.value; renderBoard(); });
+document.getElementById('filterDestination').addEventListener('change', function(){ filterDestinationVal = this.value; renderBoard(); });
+
+/* ---------- Papan status -- kelompokkan records berdasar status, render KPI + badge + kartu. ---------- */
+function recCustomerName(r){
+  if(r.poId){
+    const po = poList.find(p => String(p.id) === String(r.poId));
+    if(po && po.namaCustomer) return po.namaCustomer;
+  }
+  return null; // tidak ada fallback yang masuk akal untuk record tanpa poId -- biarkan '-' di tampilan
+}
+function buildShipCard(r){
+  const customer = recCustomerName(r);
+  const tonase = recTotalTonase(r);
+  const status = normalizeStatus(r.status);
+  const canAdvance = status === 'dijadwalkan' || status === 'jalan';
+  const btn = canAdvance
+    ? `<button type="button" class="ship-advance-btn" data-id="${esc(r.id)}">Maju ke ${esc(STATUS_LABEL_EN[nextStatus(status)])} &rarr;</button>`
+    : (status === 'tiba'
+        ? `<span class="ship-note">Tandai Selesai lewat Rekap Data di LINTAS (perlu isi tonase)</span>`
+        : `<span class="ship-note">Selesai</span>`);
+  return `<div class="ship-card">
+    <div class="ship-card-main">
+      <div class="ship-card-title">${esc(r.noPKB || r.noDO || '(tanpa No. PKB)')} <span class="mono">${esc(r.nopol || '-')}</span></div>
+      <div class="ship-card-sub">
+        <span><b>Tanggal:</b> ${esc(fmtDate(r.tanggal))}</span>
+        <span><b>Customer:</b> ${esc(customer || '-')}</span>
+        <span><b>Sopir:</b> ${esc(r.sopir || '-')}</span>
+        <span><b>Rute:</b> ${esc(recOrigin(r) || '-')} &rarr; ${esc(recDestination(r) || '-')}</span>
+        <span><b>Tonase:</b> ${tonase ? tonase.toLocaleString('id-ID') + ' kg' : '-'}</span>
+      </div>
+    </div>
+    <div class="ship-card-actions">${btn}</div>
+  </div>`;
+}
+function renderShipList(elId, arr){
+  const el = document.getElementById(elId);
+  if(!el) return;
+  if(arr.length === 0){
+    el.innerHTML = `<div class="empty-state">Tidak ada pengiriman pada tahap ini${(filterOriginVal || filterDestinationVal) ? ' (sesuai filter yang dipilih)' : ''}.</div>`;
+    return;
+  }
+  el.innerHTML = `<div class="ship-list">${arr.map(buildShipCard).join('')}</div>`;
+  el.querySelectorAll('.ship-advance-btn').forEach(btn => btn.addEventListener('click', function(){
+    const id = this.dataset.id;
+    this.disabled = true;
+    this.textContent = 'Memproses...';
+    fbUpdateItemInList('records', id, rec => { rec.status = nextStatus(rec.status); return rec; }).then(result => {
+      if(!result || result.committed === false){
+        showToast('Gagal mengubah status -- coba lagi.');
+        this.disabled = false;
+        this.textContent = 'Maju';
+        return;
+      }
+      // Langsung pakai hasil transaksi (data TERBARU dari server) utk render ulang -- TIDAK menunggu
+      // listener 'records' refire (pola yang sama persis dipakai marketing.html, supaya papan selalu
+      // konsisten seketika setelah tombol diklik, bukan menunggu round-trip listener).
+      const arr = fbToArray(result.snapshot ? result.snapshot.val() : null);
+      if(arr) records = arr;
+      renderBoard();
+    });
+  }));
+}
+function showToast(msg){
+  // Tahap 2 belum punya toast-stack sendiri seperti LINTAS/Marketing -- alert sederhana sudah cukup
+  // untuk kasus gagal sinkron yang jarang terjadi, tanpa menambah kerumitan UI di tahap ini.
+  alert(msg);
+}
+function renderBoard(){
+  let list = records.slice();
+  if(filterOriginVal) list = list.filter(r => recOrigin(r) === filterOriginVal);
+  if(filterDestinationVal) list = list.filter(r => recDestination(r) === filterDestinationVal);
+  list.sort((a,b) => (b.tanggal || '').localeCompare(a.tanggal || ''));
+
+  const groups = { dijadwalkan: [], jalan: [], tiba: [], selesai: [] };
+  list.forEach(r => groups[normalizeStatus(r.status)].push(r));
+
+  document.getElementById('kpiScheduled').textContent = groups.dijadwalkan.length + ' Shipping';
+  document.getElementById('kpiOnDelivery').textContent = groups.jalan.length + ' Shipping';
+  document.getElementById('kpiUnloading').textContent = groups.tiba.length + ' Shipping';
+  document.getElementById('kpiDelivered').textContent = groups.selesai.length + ' Shipping';
+  document.getElementById('navCntScheduled').textContent = groups.dijadwalkan.length;
+  document.getElementById('navCntOnDelivery').textContent = groups.jalan.length;
+  document.getElementById('navCntUnloading').textContent = groups.tiba.length;
+  document.getElementById('navCntDelivered').textContent = groups.selesai.length;
+  document.getElementById('tabCntDelivered').textContent = groups.selesai.length;
+
+  renderShipList('listScheduled', groups.dijadwalkan);
+  renderShipList('listOnDelivery', groups.jalan);
+  renderShipList('listUnloading', groups.tiba);
+  renderShipList('listDelivered', groups.selesai);
+
+  renderMapMarkers();
+}
+
+/* ---------- Peta live (Sesi keduaratustujuh) -- Leaflet + OpenStreetMap (gratis, tanpa API key).
+   Pin dipasang dari field gpsLat/gpsLng di tiap kendaraan (BARU, lihat perubahan Apps Script Cartrack
+   di index.html > Pengaturan). Field gpsLokasi (teks alamat) TETAP dipakai sebagai isi popup -- field
+   lama ini TIDAK diubah/dihapus, cuma ditambah 2 field koordinat baru di sampingnya. Kendaraan yang
+   belum pernah kirim koordinat (karena Apps Script di sisi user belum diperbarui) tidak dapat pin,
+   tapi tetap dihitung & diberi tahu lewat catatan di bawah peta -- bukan kesalahan/bug, memang baru
+   aktif begitu skrip Apps Script yang baru sudah ditempel & trigger-nya jalan minimal 1x. ---------- */
+let leafletMap = null;
+let leafletMarkers = [];
+function initMap(){
+  if(leafletMap || typeof L === 'undefined') return;
+  const mapEl = document.getElementById('trackingMap');
+  if(!mapEl) return;
+  // Titik tengah & zoom awal mengarah ke Pulau Jawa (area operasional utama) -- pin sungguhan akan
+  // menyesuaikan/menimpa tampilan begitu data koordinat ada.
+  leafletMap = L.map(mapEl).setView([-7.0, 110.0], 7);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 18,
+  }).addTo(leafletMap);
+}
+function recLatestActiveForNopol(nopol){
+  const n = (nopol || '').toUpperCase().replace(/\s+/g, '');
+  if(!n) return null;
+  const active = records.filter(r => (r.nopol || '').toUpperCase().replace(/\s+/g, '') === n && normalizeStatus(r.status) !== 'selesai');
+  if(active.length === 0) return null;
+  active.sort((a,b) => (b.tanggal || '').localeCompare(a.tanggal || ''));
+  return active[0];
+}
+function renderMapMarkers(){
+  if(!leafletMap) return;
+  leafletMarkers.forEach(m => leafletMap.removeLayer(m));
+  leafletMarkers = [];
+  let withCoord = 0, withoutCoord = 0;
+  kendaraanList.forEach(k => {
+    if(!k || !k.nopol) return;
+    if(k.gpsLat == null || k.gpsLng == null){ withoutCoord++; return; }
+    withCoord++;
+    const rec = recLatestActiveForNopol(k.nopol);
+    const waktu = waktuLalu(k.gpsWaktuUpdate);
+    const popup = `<b>${esc(k.nopol)}</b><br>${esc(k.gpsLokasi || 'Lokasi tidak diketahui')}` +
+      (waktu ? `<br><span style="color:#6b7385;">Update ${esc(waktu)}</span>` : '') +
+      (rec ? `<br>Status: <b>${esc(STATUS_LABEL_EN[normalizeStatus(rec.status)])}</b> -- ${esc(recDestination(rec) || '-')}` : '');
+    const marker = L.marker([k.gpsLat, k.gpsLng]).addTo(leafletMap).bindPopup(popup);
+    leafletMarkers.push(marker);
+  });
+  const note = document.getElementById('mapGpsNote');
+  if(note){
+    if(withoutCoord === 0 && withCoord === 0){
+      note.textContent = 'Belum ada data armada.';
+    }else if(withoutCoord > 0){
+      note.textContent = `${withCoord} armada tampil di peta. ${withoutCoord} armada lain belum mengirim koordinat GPS -- pastikan skrip Apps Script Cartrack yang terbaru (lihat index.html > Pengaturan) sudah ditempel & trigger-nya sudah jalan minimal sekali.`;
+    }else{
+      note.textContent = `${withCoord} armada tampil di peta, posisi ter-update otomatis.`;
+    }
+  }
+}
+
+/* ---------- Navigasi tab (sidebar kiri + tab Shipping). ---------- */
 function activateTab(tab){
   document.querySelectorAll('.sb-nav-item[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   document.querySelectorAll('.tab-btn[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
   document.querySelectorAll('.tab-pane[data-pane]').forEach(el => el.classList.toggle('active', el.dataset.pane === tab));
+  if(tab === 'maps' && leafletMap){
+    setTimeout(() => leafletMap.invalidateSize(), 80); // peta butuh "diingatkan" ukurannya begitu kontainernya baru saja ditampilkan lagi (display:none -> block)
+  }
 }
 document.querySelectorAll('.sb-nav-item[data-tab]').forEach(el => el.addEventListener('click', () => activateTab(el.dataset.tab)));
 document.querySelectorAll('.tab-btn[data-tab]').forEach(el => el.addEventListener('click', () => activateTab(el.dataset.tab)));
