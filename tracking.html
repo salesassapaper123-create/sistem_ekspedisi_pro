@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delivery Trucking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  /* Sesi keduaratusenam: TAHAP 1 -- kerangka/skeleton aplikasi baru "Delivery Trucking" (lihat README).
+     Palet warna & pola CSS sengaja disamakan dengan LINTAS/LINTAS Marketing supaya terasa satu keluarga
+     produk, meski file ini BENAR-BENAR terpisah (tidak mengubah index.html / marketing.html sama sekali). */
+  :root{
+    --navy-900:#1a2740; --navy-800:#21304b; --navy-700:#2c3c5c; --navy-600:#384a6e;
+    --accent-500:#2f80c6; --accent-100:#e6f2fc; --accent-700:#225d93;
+    --bg:#f5f6f8; --card:#ffffff; --border:#e4e6eb; --border-strong:#d3d7e0;
+    --text:#1c2534; --text-muted:#6b7385;
+    --ok-500:#1f9d55; --ok-100:#e6f7ec;
+    --warn-500:#c27a0a; --warn-100:#fdf1de;
+    --danger-500:#d64545; --danger-100:#fdeaea;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;
+    background:var(--bg); color:var(--text); font-size:14px; line-height:1.5;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ===== LOGIN SCREEN ===== */
+  .login-screen{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(135deg, var(--navy-900), var(--navy-700));
+    padding:20px; z-index:50;
+  }
+  .login-card{
+    width:100%; max-width:380px; background:#fff; border-radius:18px; padding:36px 32px 28px;
+    box-shadow:0 20px 60px rgba(10,20,40,.35); text-align:center;
+  }
+  .login-illustration{width:140px; height:auto; margin:0 auto 18px;}
+  .login-title{font-size:19px; font-weight:800; margin:0 0 2px; letter-spacing:.01em;}
+  .login-sub{font-size:12.5px; color:var(--text-muted); margin:0 0 22px;}
+  .login-field{text-align:left; margin-bottom:12px;}
+  .login-field-wrap{
+    display:flex; align-items:center; gap:10px; background:var(--accent-100); border:1px solid transparent;
+    border-radius:10px; padding:0 12px; transition:border-color .15s, background .15s;
+  }
+  .login-field-wrap:focus-within{border-color:var(--accent-500); background:#fff;}
+  .login-field-wrap svg{flex-shrink:0; color:#8d9bb5;}
+  .login-field-wrap input{
+    flex:1; border:none; background:transparent; outline:none; padding:13px 0;
+    font-size:14px; font-family:inherit; color:var(--text);
+  }
+  .login-error{color:var(--danger-500); font-size:12.5px; min-height:16px; text-align:left; margin:2px 0 6px;}
+  .login-submit{
+    width:100%; padding:13px; border:none; border-radius:10px; background:var(--accent-500); color:#fff;
+    font-weight:700; font-size:14.5px; cursor:pointer; margin-top:6px; transition:background .15s;
+  }
+  .login-submit:hover{background:var(--accent-700);}
+  .login-submit:disabled{opacity:.6; cursor:default;}
+  .login-footer{margin-top:22px; padding-top:16px; border-top:1px solid var(--border); font-size:11.5px; color:#9aa2b4; font-weight:600; letter-spacing:.02em;}
+
+  /* ===== APP SHELL ===== */
+  #appRoot{display:none; min-height:100vh;}
+  .topbar{
+    background:#fff; border-bottom:1px solid var(--border); padding:16px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .topbar-title{display:flex; align-items:center; gap:10px; font-size:17px; font-weight:800; letter-spacing:.06em; color:var(--navy-800); text-transform:uppercase; font-style:italic;}
+  .topbar-title svg{color:var(--accent-500);}
+  .topbar-user{display:flex; align-items:center; gap:10px; font-size:12.5px; color:var(--text-muted);}
+  .topbar-logout{
+    border:1px solid var(--border-strong); background:#fff; border-radius:8px; padding:7px 12px;
+    font-size:12.5px; font-weight:600; color:var(--text); cursor:pointer;
+  }
+  .topbar-logout:hover{background:var(--bg);}
+
+  .shell{display:flex; align-items:flex-start;}
+  .shell-sidebar{
+    width:230px; flex-shrink:0; background:#fff; border-right:1px solid var(--border);
+    padding:22px 16px; min-height:calc(100vh - 61px);
+  }
+  .filter-field{margin-bottom:16px;}
+  .filter-field label{display:block; font-size:12px; font-weight:700; color:var(--text); margin-bottom:6px;}
+  .filter-field select{
+    width:100%; padding:9px 10px; border:1px solid var(--border-strong); border-radius:8px;
+    font-size:13px; font-family:inherit; background:#fff; color:var(--text);
+  }
+  .sb-nav{list-style:none; margin:18px 0 0; padding:0; border-top:1px solid var(--border); padding-top:10px;}
+  .sb-nav-item{
+    display:flex; align-items:center; gap:10px; padding:10px 10px; border-radius:8px; cursor:pointer;
+    font-size:13.5px; font-weight:600; color:var(--text); margin-bottom:2px;
+  }
+  .sb-nav-item svg{flex-shrink:0; color:var(--text-muted);}
+  .sb-nav-item:hover{background:var(--bg);}
+  .sb-nav-item.active{background:var(--navy-800); color:#fff;}
+  .sb-nav-item.active svg{color:var(--accent-500);}
+  .sb-nav-item .cnt{
+    margin-left:auto; background:var(--border); color:var(--text-muted); border-radius:999px;
+    font-size:11px; font-weight:700; padding:1px 8px;
+  }
+  .sb-nav-item.active .cnt{background:var(--accent-500); color:#fff;}
+  .sb-foot{margin-top:18px; padding-top:14px; border-top:1px solid var(--border);}
+  .sb-foot-item{
+    display:flex; align-items:center; gap:10px; padding:10px 10px; border-radius:8px; cursor:pointer;
+    font-size:13.5px; font-weight:600; color:var(--text-muted);
+  }
+  .sb-foot-item:hover{background:var(--bg); color:var(--text);}
+
+  .shell-main{flex:1; padding:24px 28px; min-width:0;}
+  .banner-tahap1{
+    background:var(--warn-100); border:1px solid #f3d9ab; color:var(--warn-500); font-weight:600;
+    font-size:12.5px; padding:10px 14px; border-radius:10px; margin-bottom:18px;
+  }
+  .kpi-row{display:grid; grid-template-columns:repeat(5, 1fr); gap:16px; margin-bottom:26px;}
+  .kpi-card{
+    background:#fff; border:1px solid var(--border); border-radius:12px; padding:18px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .kpi-icon{
+    width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+  }
+  .kpi-card.k-scheduled .kpi-icon{background:var(--accent-100); color:var(--accent-500);}
+  .kpi-card.k-loading .kpi-icon{background:#eef0fb; color:#5a5fd1;}
+  .kpi-card.k-ondelivery .kpi-icon{background:var(--warn-100); color:var(--warn-500);}
+  .kpi-card.k-unloading .kpi-icon{background:#f1eafc; color:#8347d6;}
+  .kpi-card.k-delivered .kpi-icon{background:var(--ok-100); color:var(--ok-500);}
+  .kpi-label{font-size:11.5px; font-weight:800; letter-spacing:.05em; color:var(--text-muted); text-transform:uppercase;}
+  .kpi-value{font-size:13px; color:var(--text-muted); margin-top:-6px;}
+
+  .panel{background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden;}
+  .panel-head{padding:18px 20px 0;}
+  .panel-head h2{margin:0 0 14px; font-size:15px; font-weight:800;}
+  .tabs{display:flex; gap:4px; border-bottom:1px solid var(--border); padding:0 20px;}
+  .tab-btn{
+    border:none; background:none; padding:11px 14px; font-size:12.5px; font-weight:700; color:var(--text-muted);
+    cursor:pointer; border-bottom:2px solid transparent; display:flex; align-items:center; gap:6px;
+    letter-spacing:.03em; text-transform:uppercase;
+  }
+  .tab-btn:hover{color:var(--text);}
+  .tab-btn.active{color:var(--accent-700); border-bottom-color:var(--accent-500);}
+  .tab-btn .cnt{background:var(--accent-500); color:#fff; border-radius:999px; font-size:10.5px; padding:1px 7px;}
+  .tab-content{padding:20px;}
+  .tab-pane{display:none;}
+  .tab-pane.active{display:block;}
+  .map-placeholder{
+    height:420px; border-radius:10px; border:1px dashed var(--border-strong); background:
+      repeating-linear-gradient(45deg, #eef1f5, #eef1f5 10px, #f5f7fa 10px, #f5f7fa 20px);
+    display:flex; align-items:center; justify-content:center; text-align:center; color:var(--text-muted); font-size:13px; padding:20px;
+  }
+  .empty-state{padding:50px 20px; text-align:center; color:var(--text-muted); font-size:13px;}
+  .empty-state svg{color:#c3c9d6; margin-bottom:10px;}
+
+  @media (max-width: 860px){
+    .shell{flex-direction:column;}
+    .shell-sidebar{width:100%; min-height:auto; border-right:none; border-bottom:1px solid var(--border);}
+    .kpi-row{grid-template-columns:repeat(2, 1fr);}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN SCREEN ===================== -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <!-- Ilustrasi isometrik kotak + papan klip -- terinspirasi contoh yang dikirim user, digambar ulang
+         sebagai SVG inline (bukan file gambar) supaya file ini tetap satu-file & tidak butuh asset lain. -->
+    <svg class="login-illustration" viewBox="0 0 140 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="70" cy="108" rx="48" ry="7" fill="#eef1f5"/>
+      <g>
+        <polygon points="18,70 45,56 72,70 45,84" fill="#f3b562"/>
+        <polygon points="18,70 45,84 45,104 18,90" fill="#e2983b"/>
+        <polygon points="72,70 45,84 45,104 72,90" fill="#f3b562"/>
+        <polygon points="45,56 58,49 85,63 72,70" fill="#f8c988" opacity=".9"/>
+      </g>
+      <g>
+        <polygon points="40,46 62,35 84,46 62,57" fill="#f6c988"/>
+        <polygon points="40,46 62,57 62,80 40,69" fill="#e2983b"/>
+        <polygon points="84,46 62,57 62,80 84,69" fill="#f3b562"/>
+        <rect x="47" y="50" width="30" height="5" fill="#d6792a" opacity=".55"/>
+      </g>
+      <g>
+        <rect x="80" y="40" width="34" height="48" rx="4" fill="#fff" stroke="#e4e6eb" stroke-width="2"/>
+        <rect x="88" y="33" width="18" height="10" rx="3" fill="#d64545"/>
+        <rect x="87" y="50" width="20" height="4" rx="2" fill="#dfe3ea"/>
+        <rect x="87" y="59" width="20" height="4" rx="2" fill="#dfe3ea"/>
+        <rect x="87" y="68" width="14" height="4" rx="2" fill="#dfe3ea"/>
+        <circle cx="90" cy="51.6" r="4" fill="#1f9d55"/>
+        <path d="M88.3 51.6l1.1 1.1 2.1-2.3" stroke="#fff" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="90" cy="60.6" r="4" fill="#2f80c6"/>
+        <path d="M88.3 60.6l1.1 1.1 2.1-2.3" stroke="#fff" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </svg>
+    <p class="login-title">Delivery Trucking</p>
+    <p class="login-sub" id="loginSub">Masuk untuk memantau status pengiriman</p>
+    <form id="loginForm">
+      <div class="login-field">
+        <div class="login-field-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" id="loginId" placeholder="Email staf / ID Customer" autocomplete="username" required>
+        </div>
+      </div>
+      <div class="login-field">
+        <div class="login-field-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password" required>
+        </div>
+      </div>
+      <div class="login-error" id="loginError"></div>
+      <button type="submit" class="login-submit" id="btnLoginSubmit">Log In</button>
+    </form>
+    <div class="login-footer">EKSPEDISI JAYA &middot; TRUCKING COMPANY</div>
+  </div>
+</div>
+
+<!-- ===================== APP SHELL ===================== -->
+<div id="appRoot">
+  <div class="topbar">
+    <div class="topbar-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M14 9h4l4 4v4a1 1 0 0 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+      Delivery Tracking
+    </div>
+    <div class="topbar-user">
+      <span id="topbarUserLabel">-</span>
+      <button type="button" class="topbar-logout" id="btnLogout">Keluar</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <!-- SIDEBAR -->
+    <div class="shell-sidebar">
+      <div class="filter-field">
+        <label>Origin</label>
+        <select id="filterOrigin" disabled><option>Semua Data</option></select>
+      </div>
+      <div class="filter-field">
+        <label>Destination</label>
+        <select id="filterDestination" disabled><option>Semua Data</option></select>
+      </div>
+
+      <ul class="sb-nav" id="sbNav">
+        <li class="sb-nav-item active" data-tab="scheduled">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          Scheduled <span class="cnt" id="navCntScheduled">0</span>
+        </li>
+        <li class="sb-nav-item" data-tab="loading">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg>
+          Loading <span class="cnt" id="navCntLoading">0</span>
+        </li>
+        <li class="sb-nav-item" data-tab="ondelivery">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M14 9h4l4 4v4a1 1 0 0 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg>
+          On Delivery <span class="cnt" id="navCntOnDelivery">0</span>
+        </li>
+        <li class="sb-nav-item" data-tab="unloading">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 16V8"/></svg>
+          Unloading <span class="cnt" id="navCntUnloading">0</span>
+        </li>
+        <li class="sb-nav-item" data-tab="delivered">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          Delivered <span class="cnt" id="navCntDelivered">0</span>
+        </li>
+      </ul>
+
+      <div class="sb-foot">
+        <div class="sb-foot-item" id="btnShareLink">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.9M8.6 13.5l6.8 3.9"/></svg>
+          Share Link
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="shell-main">
+      <div class="banner-tahap1">
+        Tahap 1: kerangka tampilan "Delivery Trucking". Data pengiriman sungguhan, login customer, dan peta live GPS menyusul di tahap berikutnya -- lihat README.
+      </div>
+
+      <div class="kpi-row">
+        <div class="kpi-card k-scheduled">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+          <div><div class="kpi-label">Scheduled</div><div class="kpi-value" id="kpiScheduled">0 Shipping</div></div>
+        </div>
+        <div class="kpi-card k-loading">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 8v8M8 12h8"/></svg></div>
+          <div><div class="kpi-label">Loading</div><div class="kpi-value" id="kpiLoading">0 Shipping</div></div>
+        </div>
+        <div class="kpi-card k-ondelivery">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M14 9h4l4 4v4a1 1 0 0 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></div>
+          <div><div class="kpi-label">On Delivery</div><div class="kpi-value" id="kpiOnDelivery">0 Shipping</div></div>
+        </div>
+        <div class="kpi-card k-unloading">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 16V8"/></svg></div>
+          <div><div class="kpi-label">Unloading</div><div class="kpi-value" id="kpiUnloading">0 Shipping</div></div>
+        </div>
+        <div class="kpi-card k-delivered">
+          <div class="kpi-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+          <div><div class="kpi-label">Delivered</div><div class="kpi-value" id="kpiDelivered">0 Shipping</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Shipping</h2></div>
+        <div class="tabs" id="tabsBar">
+          <button type="button" class="tab-btn active" data-tab="maps">Maps</button>
+          <button type="button" class="tab-btn" data-tab="scheduled">Scheduled</button>
+          <button type="button" class="tab-btn" data-tab="loading">Loading</button>
+          <button type="button" class="tab-btn" data-tab="ondelivery">On Delivery</button>
+          <button type="button" class="tab-btn" data-tab="unloading">Unloading</button>
+          <button type="button" class="tab-btn" data-tab="delivered">Delivered <span class="cnt" id="tabCntDelivered">0</span></button>
+        </div>
+        <div class="tab-content">
+          <div class="tab-pane active" data-pane="maps">
+            <div class="map-placeholder">
+              Peta live (posisi GPS Cartrack tiap armada) akan tampil di sini setelah Tahap berikutnya selesai disambungkan.
+            </div>
+          </div>
+          <div class="tab-pane" data-pane="scheduled"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
+          <div class="tab-pane" data-pane="loading"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
+          <div class="tab-pane" data-pane="ondelivery"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
+          <div class="tab-pane" data-pane="unloading"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
+          <div class="tab-pane" data-pane="delivered"><div class="empty-state">Belum ada data -- halaman ini aktif setelah data PKB disambungkan (Tahap 2).</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script>
+/* ========================================================================================
+   Delivery Trucking -- Sesi keduaratusenam, TAHAP 1 (skeleton).
+   File BARU & TERPISAH -- index.html dan marketing.html TIDAK disentuh sama sekali.
+
+   Firebase project SAMA PERSIS dengan LINTAS/LINTAS Marketing (supaya nanti Tahap 2 bisa langsung
+   baca data PKB yang sudah ada, real-time, tanpa proses sinkron manual).
+
+   Login Tahap 1 mendukung:
+   - Akun STAF (admin/staf kantor) -- pakai node 'accountsV2' yang SAMA PERSIS dengan LINTAS. Kalau
+     akun itu sudah disetujui admin di LINTAS, otomatis bisa langsung dipakai login di sini juga.
+     Terdeteksi dari input yang mengandung '@' (format email).
+   - Akun CUSTOMER -- BELUM aktif di Tahap 1 (node 'customerAccounts' + aturan keamanan Firebase
+     per-customer menyusul di Tahap 2/3, sesuai rencana yang disepakati: data pengiriman akan disusun
+     ulang per-customer supaya customer 1 secara teknis TIDAK BISA mengakses data customer 2). Kalau
+     ID yang dimasukkan tidak mengandung '@', ditampilkan pesan jelas bahwa fitur ini menyusul,
+     BUKAN pura-pura berhasil login.
+   ======================================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCb_tX42mot-cIgAAqJ0wpJX76632u34cM",
+  authDomain: "ekspedisi-jaya.firebaseapp.com",
+  databaseURL: "https://ekspedisi-jaya-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ekspedisi-jaya",
+  storageBucket: "ekspedisi-jaya.firebasestorage.app",
+  messagingSenderId: "438162300008",
+  appId: "1:438162300008:web:de5c1b897df03e08c42fdd",
+  measurementId: "G-F5ZMD8LJH5"
+};
+let fbDb = null;
+try{
+  firebase.initializeApp(firebaseConfig);
+  fbDb = firebase.database();
+}catch(err){
+  console.warn('Firebase gagal diinisialisasi:', err);
+}
+
+let accountsByUid = {};
+let accountsV2LoadedResolve = null;
+const accountsV2LoadedPromise = new Promise(resolve => { accountsV2LoadedResolve = resolve; });
+function attachAccountsV2Listener(){
+  if(!fbDb){ if(accountsV2LoadedResolve){ accountsV2LoadedResolve(); accountsV2LoadedResolve = null; } return; }
+  fbDb.ref('accountsV2').on('value', snap => {
+    accountsByUid = snap.val() || {};
+    if(accountsV2LoadedResolve){ accountsV2LoadedResolve(); accountsV2LoadedResolve = null; }
+  });
+}
+attachAccountsV2Listener();
+
+function showLogin(msg){
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appRoot').style.display = 'none';
+  document.getElementById('loginError').textContent = msg || '';
+  document.getElementById('loginForm').reset();
+}
+function showApp(rec){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appRoot').style.display = 'block';
+  document.getElementById('topbarUserLabel').textContent = (rec && (rec.nama || rec.email)) || 'Staf';
+}
+
+let suppressAuthStateHandler = false;
+async function handleAuthStateChange(user){
+  if(suppressAuthStateHandler){ if(!user) suppressAuthStateHandler = false; return; }
+  if(!user){ showLogin(); return; }
+  await accountsV2LoadedPromise;
+  const rec = accountsByUid[user.uid];
+  if(!rec || rec.approved !== true){
+    suppressAuthStateHandler = true;
+    firebase.auth().signOut();
+    showLogin('Akun belum disetujui admin, atau bukan akun staf LINTAS yang terdaftar.');
+    return;
+  }
+  showApp(rec);
+}
+if(fbDb){ firebase.auth().onAuthStateChanged(handleAuthStateChange); }
+
+document.getElementById('loginForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const id = document.getElementById('loginId').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('btnLoginSubmit');
+  errEl.textContent = '';
+
+  if(!id.includes('@')){
+    // Akun customer -- belum aktif di Tahap 1 (lihat catatan README). Diberi pesan jujur, bukan
+    // pura-pura berhasil masuk, supaya tidak membingungkan saat dicoba sebelum Tahap 2/3 selesai.
+    errEl.textContent = 'Login customer belum aktif -- menyusul setelah Tahap 2 (akun customer per-ID) selesai dibangun. Staf, gunakan email akun LINTAS Anda.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Memeriksa...';
+  try{
+    await firebase.auth().signInWithEmailAndPassword(id, pass);
+  }catch(err){
+    const pesan = {
+      'auth/invalid-email': 'Format email tidak valid.',
+      'auth/user-not-found': 'Akun tidak ditemukan.',
+      'auth/wrong-password': 'Password salah.',
+      'auth/invalid-credential': 'Email atau password salah.',
+      'auth/too-many-requests': 'Terlalu banyak percobaan gagal -- coba lagi beberapa saat lagi.',
+    };
+    errEl.textContent = (pesan[err.code]) || (err.message) || 'Gagal masuk, coba lagi.';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Log In';
+});
+
+document.getElementById('btnLogout').addEventListener('click', function(){
+  firebase.auth().signOut();
+});
+
+/* ---------- Navigasi tab (sidebar kiri + tab Shipping) -- murni UI di Tahap 1, belum ada data. ---------- */
+function activateTab(tab){
+  document.querySelectorAll('.sb-nav-item[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+  document.querySelectorAll('.tab-pane[data-pane]').forEach(el => el.classList.toggle('active', el.dataset.pane === tab));
+}
+document.querySelectorAll('.sb-nav-item[data-tab]').forEach(el => el.addEventListener('click', () => activateTab(el.dataset.tab)));
+document.querySelectorAll('.tab-btn[data-tab]').forEach(el => el.addEventListener('click', () => activateTab(el.dataset.tab)));
+
+document.getElementById('btnShareLink').addEventListener('click', function(){
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(window.location.href).catch(() => {});
+  }
+  alert('Link halaman ini disalin (fitur link khusus per-pengiriman menyusul setelah data tersambung).');
+});
+</script>
+</body>
+</html>
