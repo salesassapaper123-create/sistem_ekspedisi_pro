@@ -197,14 +197,6 @@
   .cust-acct-main .mono{color:var(--text-muted); font-size:12px;}
   .badge-active{background:var(--ok-100); color:var(--ok-500); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700;}
   .badge-inactive{background:var(--danger-100); color:var(--danger-500); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700;}
-  /* Sesi keduaratussebelas (fitur "Permintaan Unit") -- 2 badge tambahan untuk status "Diajukan"/"Diproses" */
-  .badge-info{background:var(--accent-100); color:var(--accent-700); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700;}
-  .badge-warn{background:var(--warn-100); color:var(--warn-500); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700;}
-  .ureq-status-select{
-    font-family:'Inter',sans-serif; font-size:12px; font-weight:700; padding:6px 10px; border-radius:999px;
-    border:1px solid var(--border-strong); background:#fff; color:var(--text); cursor:pointer;
-  }
-  .ureq-status-select:disabled{opacity:.5; cursor:default;}
 
   @media (max-width: 860px){
     .shell{flex-direction:column;}
@@ -318,14 +310,6 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Kelola Akun Customer
         </div>
-        <!-- Sesi keduaratussebelas (fitur "Permintaan Unit") -- TERLIHAT untuk staf MAUPUN customer (tidak
-             pakai kelas "staff-only"), karena customer boleh lihat status permintaan miliknya sendiri; yang
-             dibatasi staff-only cuma TOMBOL TAMBAH & FORM-nya di dalam panelnya (lihat di bawah). Data di
-             sini SENGAJA TERPISAH TOTAL dari po/records (tidak terkait PO/PKB LINTAS maupun Marketing). -->
-        <div class="sb-foot-item" id="btnUnitRequest">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h5"/><path d="M9 17h3M15 17v-3m-1.5 1.5h3"/></svg>
-          Permintaan Unit
-        </div>
         <div class="sb-foot-item" id="btnShareLink">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.9M8.6 13.5l6.8 3.9"/></svg>
           Share Link
@@ -417,59 +401,6 @@
           </form>
         </div>
       </div>
-
-      <!-- Sesi keduaratussebelas -- panel "Permintaan Unit", TERPISAH TOTAL dari po/records (TIDAK terkait
-           PO/PKB LINTAS/Marketing sama sekali). Dilihat staf (semua) & customer (cuma miliknya sendiri,
-           lewat query terindeks customerUid -- pola yang sama dengan records/po, lihat attachDataListeners
-           di bawah), menggantikan papan Shipping di area yang sama (pola sama persis dengan panel Kelola
-           Akun Customer). Tombol tambah & form-nya staff-only -- customer cuma bisa LIHAT status, lihat
-           README/diskusi dengan user kenapa customer tidak mengisi form ini sendiri (staf yang input atas
-           nama customer). -->
-      <div class="panel" id="unitRequestPanel" style="display:none;">
-        <div class="panel-head">
-          <h2>Permintaan Unit <button type="button" class="btn btn-secondary" id="btnBackToShippingFromUreq" style="float:right; padding:7px 12px; font-size:12px;">&larr; Kembali ke Shipping</button></h2>
-          <p class="hint" style="margin:-8px 0 14px; font-size:12.5px; color:var(--text-muted);">Catatan permintaan unit/armada dari customer -- khusus pencatatan internal di Delivery Tracking, TIDAK terkait ke PO/PKB LINTAS maupun Marketing.</p>
-        </div>
-        <div class="tab-content">
-          <div id="unitReqListWrap" style="margin-bottom:18px;"></div>
-          <button type="button" class="btn btn-secondary staff-only" id="btnShowAddUnitReq">+ Ajukan permintaan baru</button>
-          <form id="formAddUnitReq" class="staff-only" style="display:none; max-width:460px; margin-top:16px;">
-            <div class="field">
-              <label for="ureqCustomer">Customer</label>
-              <select id="ureqCustomer" required><option value="">-- pilih akun customer --</option></select>
-            </div>
-            <div class="field">
-              <label for="ureqTanggal">Tanggal dibutuhkan</label>
-              <input type="date" id="ureqTanggal" required>
-            </div>
-            <div class="field">
-              <label for="ureqJenisArmada">Jenis Armada <span class="hint-sm">(opsional)</span></label>
-              <input type="text" id="ureqJenisArmada" placeholder="cth. Tronton, Fuso, Trailer">
-            </div>
-            <div class="field">
-              <label for="ureqJumlah">Jumlah Unit</label>
-              <input type="number" id="ureqJumlah" min="1" value="1" required>
-            </div>
-            <div class="field">
-              <label for="ureqJemput">Lokasi Jemput <span class="hint-sm">(opsional)</span></label>
-              <input type="text" id="ureqJemput">
-            </div>
-            <div class="field">
-              <label for="ureqTujuan">Lokasi Tujuan <span class="hint-sm">(opsional)</span></label>
-              <input type="text" id="ureqTujuan">
-            </div>
-            <div class="field">
-              <label for="ureqCatatan">Catatan <span class="hint-sm">(opsional)</span></label>
-              <input type="text" id="ureqCatatan">
-            </div>
-            <div class="login-error" id="addUnitReqError" style="text-align:left;"></div>
-            <div style="display:flex; gap:10px;">
-              <button type="submit" class="btn btn-primary">Simpan permintaan</button>
-              <button type="button" class="btn btn-secondary" id="btnCancelAddUnitReq">Batal</button>
-            </div>
-          </form>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -482,11 +413,7 @@
 /* ========================================================================================
    Delivery Trucking -- Sesi keduaratusenam (TAHAP 1, skeleton) + Sesi keduaratustujuh (TAHAP 2,
    data PKB sungguhan + peta live) + Sesi keduaratusdelapan (TAHAP 3, akun customer per-ID, AMAN
-   lewat Firebase Security Rules -- bukan cuma disaring di tampilan) + Sesi keduaratussembilan
-   (PERBAIKAN BUG: login customer & papan customer gagal total di Tahap 3 -- akar masalahnya Realtime
-   Database TIDAK menyaring otomatis per-baris untuk listener biasa ke level koleksi, HARUS pakai query
-   terindeks (orderByChild+equalTo) untuk 'records'/'po', dan baca langsung path uid sendiri untuk
-   'customerAccounts' -- lihat README untuk penjelasan lengkap). File BARU & TERPISAH dari
+   lewat Firebase Security Rules -- bukan cuma disaring di tampilan). File BARU & TERPISAH dari
    index.html/marketing.html -- index.html HANYA disentuh untuk: (a) 2 baris tambahan di skrip Apps
    Script Cartrack (koordinat gpsLat/gpsLng mentah, Sesi keduaratustujuh), dan (b) teks Security Rules
    di panel Pengaturan > Keamanan Sistem (Sesi keduaratusdelapan, lihat README) -- perilaku LINTAS
@@ -543,14 +470,6 @@ try{
 let currentSessionIsCustomer = false;
 let currentCustomerUid = null;
 
-/* Sesi keduaratussepuluh -- dipakai supaya handleAuthStateChange bisa membedakan 2 jenis "user jadi null":
-   (a) memang belum pernah login / baru buka halaman -> layar login kosong seperti biasa, VS
-   (b) SEMPAT berhasil login di tab ini, lalu tiba-tiba "lepas" sendiri (lihat catatan panjang di
-   handleAuthStateChange) -- kasus (b) dikasih pesan yang lebih membantu, bukan kosong, supaya customer
-   yang awam tidak bingung kenapa tiba-tiba balik ke layar login. Direset begitu login (showApp) & begitu
-   user SENGAJA klik Logout sendiri (supaya logout manual tetap kosong seperti biasa, bukan pesan error). */
-let hadActiveSessionThisPageLoad = false;
-
 /* App Firebase KEDUA, sama persis polanya dengan index.html (lihat komentar di sana) -- dipakai HANYA
    saat staf membuat akun customer baru dari panel "Kelola Akun Customer", supaya sesi login staf yang
    sedang aktif TIDAK ikut "terlempar" jadi akun customer yang baru dibuat (createUserWithEmailAndPassword
@@ -597,14 +516,12 @@ function attachAccountsV2Listener(){
 attachAccountsV2Listener();
 
 /* Node BARU (Sesi keduaratusdelapan) -- akun customer, dikelola staf lewat panel "Kelola Akun Customer".
-   Disimpan {uid: {nama, loginId, email, approved, createdAt, createdBy}}. Listener KOLEKSI PENUH ini
-   HANYA benar-benar terisi untuk sesi STAF (dipakai render panel kelola akun) -- untuk sesi CUSTOMER,
-   request ke level koleksi ini DITOLAK TOTAL oleh Security Rules (bukan dikembalikan versi tersaring,
-   lihat catatan panjang di handleAuthStateChange, Sesi keduaratussembilan), jadi customerAccountsByUid
-   akan selalu {} untuk sesi customer -- itu SENGAJA & TIDAK APA-APA, karena verifikasi akun customer
-   di handleAuthStateChange SUDAH TIDAK memakai variabel ini lagi (dibaca langsung lewat path uid-nya
-   sendiri). Dipasang dari awal (bukan cuma setelah login) supaya panel Kelola Akun Customer langsung
-   siap begitu staf membukanya. */
+   Disimpan {uid: {nama, loginId, email, approved, createdAt, createdBy}}. Untuk sesi STAF, listener ini
+   kebagian SELURUH daftar (dipakai render panel kelola akun). Untuk sesi CUSTOMER, Security Rules hanya
+   mengizinkan baca entri miliknya sendiri -- objeknya otomatis hanya berisi {uid-nya-sendiri: {...}}
+   (bukan error, itu memang caranya Firebase menyaring node berdasarkan Rules per-anak). Dipasang dari
+   awal (bukan cuma setelah login) supaya proses cek customerAccountsByUid[user.uid] di
+   handleAuthStateChange tidak perlu menunggu listener terpasang dulu. */
 let customerAccountsByUid = {};
 let customerAccountsLoadedResolve = null;
 const customerAccountsLoadedPromise = new Promise(resolve => { customerAccountsLoadedResolve = resolve; });
@@ -613,7 +530,7 @@ function attachCustomerAccountsListener(){
   fbDb.ref('customerAccounts').on('value', snap => {
     customerAccountsByUid = snap.val() || {};
     if(customerAccountsLoadedResolve){ customerAccountsLoadedResolve(); customerAccountsLoadedResolve = null; }
-    if(currentSessionIsCustomer === false){ renderCustomerAcctList(); populateUreqCustomerDropdown(); } // Sesi keduaratussebelas -- dropdown customer di form Permintaan Unit ikut diisi ulang begitu daftar akun customer berubah
+    if(currentSessionIsCustomer === false) renderCustomerAcctList();
   }, () => {
     customerAccountsByUid = {};
     if(customerAccountsLoadedResolve){ customerAccountsLoadedResolve(); customerAccountsLoadedResolve = null; }
@@ -637,7 +554,6 @@ function applySessionRoleUi(isCustomer){
   if(isCustomer) document.getElementById('customerMgmtPanel').style.display = 'none';
 }
 function showApp(rec, isCustomer){
-  hadActiveSessionThisPageLoad = true; // Sesi keduaratussepuluh -- lihat catatan di deklarasi variabel ini
   currentSessionIsCustomer = !!isCustomer;
   currentCustomerUid = isCustomer ? (firebase.auth().currentUser && firebase.auth().currentUser.uid) : null;
   document.getElementById('loginScreen').style.display = 'none';
@@ -648,88 +564,17 @@ function showApp(rec, isCustomer){
   initMap();
 }
 
-// Sesi keduaratussepuluh: baca 1 path dengan percobaan ulang (retry) kalau gagal -- jaga-jaga terhadap
-// gangguan JARINGAN SEBENTAR (bukan penolakan Rules) saat proses baca persis di detik-detik awal setelah
-// login, misalnya koneksi lagi lambat/putus-nyambung sesaat. INI TIDAK MENOLONG kalau permintaannya
-// memang diblokir TOTAL & konsisten (misal oleh ekstensi ad-blocker/privasi di browser customer -- lihat
-// catatan panjang di handleAuthStateChange di bawah), karena percobaan ulang akan gagal lagi dengan
-// sebab yang sama persis -- tapi tetap berguna untuk kasus gangguan jaringan yang sifatnya sementara.
-function readOnceWithRetry(ref, attemptsLeft, delayMs){
-  attemptsLeft = attemptsLeft == null ? 3 : attemptsLeft;
-  delayMs = delayMs == null ? 400 : delayMs;
-  return ref.once('value').catch(err => {
-    if(attemptsLeft <= 1) throw err;
-    return new Promise(resolve => setTimeout(resolve, delayMs)).then(() => readOnceWithRetry(ref, attemptsLeft - 1, delayMs));
-  });
-}
-
 let suppressAuthStateHandler = false;
 async function handleAuthStateChange(user){
   if(suppressAuthStateHandler){ if(!user) suppressAuthStateHandler = false; return; }
-  if(!user){
-    // Sesi keduaratussepuluh -- BUG PERBAIKAN: sebelumnya di sini SELALU `showLogin()` kosong tanpa
-    // pesan, baik untuk (a) halaman baru dibuka/belum pernah login (normal, kosong memang benar), MAUPUN
-    // (b) sesi yang TADINYA sudah berhasil login di tab ini tapi tiba-tiba "lepas" sendiri -- customer
-    // yang mengalami (b) cuma melihat layar login kosong tanpa petunjuk apapun, bingung kenapa. Ditemukan
-    // lewat laporan user: login berhasil (showApp sempat tampil), lalu dalam 1-2 detik balik ke layar
-    // login TANPA pesan -- ditelusuri lewat DevTools Console browser user, ketemu penyebabnya: SEBUAH
-    // EKSTENSI BROWSER (ad-blocker/anti-pelacak) di komputer user memblokir permintaan jaringan yang
-    // dipakai Firebase Authentication (dikonfirmasi: masalah HILANG total begitu dicoba di jendela
-    // Incognito, yang otomatis mematikan ekstensi). Ini BUKAN bug di server/Rules/kode aplikasi -- kalau
-    // ekstensi di browser SESEORANG memblokir permintaan ke domain Google/Firebase, tidak ada kode
-    // aplikasi manapun yang bisa memaksa permintaan itu tetap berhasil (sama seperti situs web manapun
-    // tidak bisa memaksa tembus ad-blocker). LINTAS/LINTAS Marketing (index.html/marketing.html) TIDAK
-    // kena masalah ini karena keduanya masih pakai Firebase Anonymous Auth untuk semua orang (siapapun
-    // otomatis "login" tanpa password sungguhan, sejak dulu TIDAK ada keamanan per-akun di level
-    // database -- lihat diskusi sesi kesepuluh di README) -- jalur jaringan yang dipakai beda & rupanya
-    // tidak kena blokir ekstensi yang sama. Delivery Tracking SENGAJA memakai Firebase Authentication
-    // SUNGGUHAN per akun (bukan anonim) KHUSUS supaya Security Rules betul-betul bisa membatasi data per
-    // customer (dibangun Sesi keduaratusdelapan) -- mundur ke pola anonim lagi akan MEMBUKA KEMBALI celah
-    // keamanan itu (sembarang customer bisa baca data customer lain), jadi BUKAN solusi yang dipakai di
-    // sini. Yang BISA diperbaiki: bedakan kasus (a) vs (b) pakai `hadActiveSessionThisPageLoad`, dan kasih
-    // pesan yang membantu untuk kasus (b) supaya customer yang awam tidak bingung & tau harus ngapain.
-    if(hadActiveSessionThisPageLoad){
-      hadActiveSessionThisPageLoad = false;
-      showLogin('Sesi login terputus tiba-tiba. Ini biasanya disebabkan ekstensi browser (ad-blocker/anti-pelacak) yang memblokir koneksi ke server, atau jaringan internet yang bermasalah -- BUKAN akun Anda yang salah. Coba: matikan dulu ekstensi ad-blocker/privasi di browser, atau buka halaman ini lewat jendela Incognito/Private, atau coba browser lain -- lalu login ulang.');
-    }else{
-      showLogin();
-    }
-    return;
-  }
-  await accountsV2LoadedPromise;
+  if(!user){ showLogin(); return; }
+  await Promise.all([accountsV2LoadedPromise, customerAccountsLoadedPromise]);
   const staffRec = accountsByUid[user.uid];
-  // Sesi keduaratusduabelas -- BUG PERBAIKAN: sebelumnya di sini cek `staffRec.approved === true`
-  // (strict). Di LINTAS (index.html) sendiri, cek akun yang BOLEH login itu LEBIH LONGGAR --
-  // accountRole()/accountApproved() di index.html menganggap field 'role' yang KOSONG/tidak ada
-  // sebagai 'admin', dan field 'approved' yang KOSONG/tidak ada (bukan eksplisit false) TETAP
-  // dianggap disetujui (lihat accountApproved(a){ return a.approved !== false; }). Ini relevan untuk
-  // akun admin PALING LAMA/akun induk yang datanya di 'accountsV2' memang tidak pernah diisi field
-  // 'approved' secara eksplisit sejak awal (akses penuhnya berasal dari role:'admin', bukan dari
-  // field approved) -- akun semacam itu TETAP bisa login normal di LINTAS, tapi dengan cek strict di
-  // sini jadi DITOLAK ("Akun belum disetujui admin") padahal akunnya valid & aktif. Diperbaiki supaya
-  // persis sama longgarnya dengan LINTAS: akun dianggap boleh login kalau role-nya 'admin' ATAU
-  // approved-nya TIDAK eksplisit false (undefined/true dianggap boleh, cuma false yang ditolak).
-  if(staffRec && (staffRec.role === 'admin' || staffRec.approved !== false)){
+  if(staffRec && staffRec.approved === true){
     showApp(staffRec, false);
     return;
   }
-  // Sesi keduaratussembilan -- BUG PERBAIKAN: sebelumnya di sini mengandalkan customerAccountsByUid
-  // dari attachCustomerAccountsListener() (listener KOLEKSI PENUH ke 'customerAccounts'). Ternyata
-  // Realtime Database TIDAK menyaring otomatis per-anak untuk listener biasa (.on('value')) di level
-  // INDUK -- kalau .read di level induk itu sendiri FALSE (seperti untuk akun customer, yang cuma
-  // boleh baca entrinya SENDIRI), SELURUH request listener itu DITOLAK (bukan dikembalikan versi
-  // tersaring), jadi customerAccountsByUid[user.uid] SELALU undefined untuk sesi customer -- biarpun
-  // akunnya sudah benar & disetujui. Ini akar masalah laporan user "notif belum disetujui" padahal
-  // akunnya sudah dibuat & Rules sudah dipublish. Diperbaiki: baca LANGSUNG path uid-nya sendiri
-  // (customerAccounts/<uid>) lewat .once('value') -- ini SELALU benar karena rule $uid.read ("auth.uid
-  // === $uid") dievaluasi persis di path yang diminta, bukan di level koleksi induknya.
-  let custRec = null;
-  try{
-    const snap = await readOnceWithRetry(fbDb.ref('customerAccounts/' + user.uid)); // Sesi keduaratussepuluh: pakai retry
-    custRec = snap.val();
-  }catch(err){
-    custRec = null; // ditolak Rules (bukan akun customer yang valid), atau permintaan tetap gagal setelah 3x coba
-  }
+  const custRec = customerAccountsByUid[user.uid];
   if(custRec && custRec.approved === true){
     showApp(custRec, true);
     return;
@@ -764,7 +609,6 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 });
 
 document.getElementById('btnLogout').addEventListener('click', function(){
-  hadActiveSessionThisPageLoad = false; // Sesi keduaratussepuluh -- logout SENGAJA oleh user, layar login tetap kosong (bukan pesan "terputus")
   firebase.auth().signOut();
   currentSessionIsCustomer = false;
   currentCustomerUid = null;
@@ -852,62 +696,23 @@ function waktuLalu(iso){
 let records = [];
 let kendaraanList = [];
 let poList = [];
-let unitRequests = []; // Sesi keduaratussebelas -- TERPISAH TOTAL dari records/po, lihat catatan di atasnya
 let dataListenersAttached = false;
 function attachDataListeners(){
   if(dataListenersAttached || !fbDb) return;
   dataListenersAttached = true;
-  // Sesi keduaratussembilan -- BUG PERBAIKAN: sesi CUSTOMER WAJIB pakai query terindeks
-  // (orderByChild + equalTo), BUKAN listener polos ke seluruh koleksi seperti sesi staf. Realtime
-  // Database mengevaluasi ".read" per-ANAK HANYA kalau requestnya berupa query terindeks seperti ini --
-  // listener polos ke level koleksi (fbDb.ref('records').on(...)) dievaluasi SEKALI untuk SELURUH
-  // koleksi, dan untuk akun customer itu SELALU false (DITOLAK total, bukan dikembalikan versi
-  // tersaring) -- akibatnya papan customer selalu kosong walau Rules & datanya sudah benar. Field
-  // 'customerUid' di 'records' (diduplikasi langsung dari po.customerUid saat PKB dibuat -- lihat
-  // marketing.html/index.html) & di 'po' dipakai sebagai kunci query ini, cocok dengan syarat di
-  // Security Rules. Sesi STAF TIDAK berubah sama sekali -- tetap listener polos seperti sebelumnya.
-  const recordsRef = currentSessionIsCustomer
-    ? fbDb.ref('records').orderByChild('customerUid').equalTo(currentCustomerUid)
-    : fbDb.ref('records');
-  const poRef = currentSessionIsCustomer
-    ? fbDb.ref('po').orderByChild('customerUid').equalTo(currentCustomerUid)
-    : fbDb.ref('po');
-
-  recordsRef.on('value', snap => {
+  fbDb.ref('records').on('value', snap => {
     records = fbToArray(snap.val()) || [];
     populateFilterOptions();
     renderBoard();
   });
-  // Node 'kendaraan' TETAP listener polos untuk SEMUA sesi (termasuk customer) -- Rules-nya memang
-  // sengaja blanket-true untuk siapapun yang sudah login & approved (lihat README soal alasannya),
-  // jadi tidak kena masalah "per-anak" di atas.
   fbDb.ref('kendaraan').on('value', snap => {
     kendaraanList = fbToArray(snap.val()) || [];
     renderMapMarkers();
   });
-  poRef.on('value', snap => {
+  fbDb.ref('po').on('value', snap => {
     poList = fbToArray(snap.val()) || [];
     renderBoard();
   });
-
-  // Sesi keduaratussebelas -- node BARU 'unitRequests', SENGAJA TERPISAH TOTAL dari records/po (tidak
-  // terkait PO/PKB LINTAS/Marketing sama sekali). Pola baca sama persis dengan records/po di atas: sesi
-  // customer WAJIB pakai query terindeks (bukan listener polos) supaya Rules mengevaluasi per-baris,
-  // bukan ditolak total di level koleksi -- lihat catatan panjang Sesi keduaratussembilan di atas.
-  const unitReqRef = currentSessionIsCustomer
-    ? fbDb.ref('unitRequests').orderByChild('customerUid').equalTo(currentCustomerUid)
-    : fbDb.ref('unitRequests');
-  unitReqRef.on('value', snap => {
-    unitRequests = unitRequestsToArray(snap.val());
-    renderUnitRequests();
-  });
-}
-// 'unitRequests' disimpan pakai push-key (string acak dari Firebase), BUKAN array bernomor seperti
-// records/po/kendaraan (itu gaya lama/legacy di sistem ini) -- makanya pakai konversi sendiri (bukan
-// fbToArray()), meniru pola customerAccountsArray() yang juga pakai key asli sebagai field 'id'.
-function unitRequestsToArray(val){
-  if(!val) return [];
-  return Object.keys(val).map(k => Object.assign({ id: k }, val[k]));
 }
 
 /* ---------- Filter Origin/Destination (Sesi keduaratustujuh) -- diisi dari data PKB aktif sungguhan,
@@ -1155,7 +960,6 @@ function renderCustomerAcctList(){
 
 document.getElementById('btnCustomerMgmt').addEventListener('click', function(){
   document.getElementById('customerMgmtPanel').style.display = '';
-  document.getElementById('unitRequestPanel').style.display = 'none'; // Sesi keduaratussebelas -- jaga-jaga supaya 2 panel tidak kebuka bareng
   document.getElementById('bannerInfo').style.display = 'none';
   document.querySelector('.kpi-row').style.display = 'none';
   document.getElementById('tabsBar').closest('.panel').style.display = 'none';
@@ -1213,127 +1017,6 @@ document.getElementById('formAddCustomerAcct').addEventListener('submit', async 
     renderCustomerAcctList();
   }catch(err){
     errEl.textContent = mapFbAuthErr(err);
-  }finally{
-    btn.disabled = false;
-  }
-});
-
-/* ====================== Permintaan Unit (Sesi keduaratussebelas) ======================
-   SENGAJA TERPISAH TOTAL dari po/records/PKB -- tidak terkait LINTAS maupun Marketing sama sekali (lihat
-   diskusi dengan user: Delivery Tracking murni buat MONITORING, pencatatan pengiriman sungguhan tetap satu-
-   satunya lewat PKB seperti biasa; "Permintaan Unit" ini cuma catatan permintaan awal dari customer,
-   dikelola staf, berdiri sendiri). Node Firebase: 'unitRequests', key push() acak (bukan array bernomor
-   seperti records/po) -- lihat unitRequestsToArray() di atas. Tombol tambah & form staff-only (customer
-   cuma MELIHAT status miliknya sendiri, tidak pernah menulis ke node ini -- lihat Security Rules). */
-const UREQ_STATUS_LABEL = { diajukan: 'Diajukan', diproses: 'Diproses', selesai: 'Selesai', ditolak: 'Ditolak' };
-const UREQ_STATUS_BADGE_CLASS = { diajukan: 'badge-info', diproses: 'badge-warn', selesai: 'badge-active', ditolak: 'badge-inactive' };
-function buildUnitReqCard(r){
-  const statusKey = UREQ_STATUS_LABEL[r.status] ? r.status : 'diajukan';
-  // Sesi customer cuma lihat badge (baca saja); sesi staf dapat dropdown buat ubah status langsung.
-  const statusControl = currentSessionIsCustomer
-    ? `<span class="${UREQ_STATUS_BADGE_CLASS[statusKey]}">${esc(UREQ_STATUS_LABEL[statusKey])}</span>`
-    : `<select class="ureq-status-select" data-id="${esc(r.id)}">${Object.keys(UREQ_STATUS_LABEL).map(k => `<option value="${k}"${k === statusKey ? ' selected' : ''}>${UREQ_STATUS_LABEL[k]}</option>`).join('')}</select>`;
-  return `<div class="ship-card">
-    <div class="ship-card-main">
-      <div class="ship-card-title">${esc(r.jenisArmada || 'Permintaan Unit')} <span class="mono">${esc(r.jumlahUnit || 1)} unit</span></div>
-      <div class="ship-card-sub">
-        ${!currentSessionIsCustomer ? `<span><b>Customer:</b> ${esc(r.customerNama || '-')}</span>` : ''}
-        <span><b>Tanggal dibutuhkan:</b> ${esc(fmtDate(r.tglDibutuhkan))}</span>
-        <span><b>Rute:</b> ${esc(r.lokasiJemput || '-')} &rarr; ${esc(r.lokasiTujuan || '-')}</span>
-        ${r.catatan ? `<span><b>Catatan:</b> ${esc(r.catatan)}</span>` : ''}
-      </div>
-    </div>
-    <div class="ship-card-actions">${statusControl}</div>
-  </div>`;
-}
-function renderUnitRequests(){
-  const wrap = document.getElementById('unitReqListWrap');
-  if(!wrap) return;
-  const list = unitRequests.slice().sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
-  if(list.length === 0){
-    wrap.innerHTML = `<div class="empty-state">Belum ada permintaan unit${currentSessionIsCustomer ? ' yang diajukan untuk Anda' : ''}.</div>`;
-    return;
-  }
-  wrap.innerHTML = `<div class="ship-list">${list.map(buildUnitReqCard).join('')}</div>`;
-  wrap.querySelectorAll('.ureq-status-select').forEach(sel => sel.addEventListener('change', function(){
-    const id = this.dataset.id;
-    const newStatus = this.value;
-    this.disabled = true;
-    fbDb.ref('unitRequests/' + id).update({ status: newStatus, updatedAt: new Date().toISOString() })
-      .catch(() => { alert('Gagal mengubah status -- coba lagi.'); })
-      .finally(() => { this.disabled = false; });
-  }));
-}
-function populateUreqCustomerDropdown(){
-  const sel = document.getElementById('ureqCustomer');
-  if(!sel) return;
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">-- pilih akun customer --</option>' + customerAccountsArray().map(c => `<option value="${esc(c.uid)}">${esc(c.nama)} (${esc(c.loginId)})</option>`).join('');
-  if(cur && customerAccountsByUid[cur]) sel.value = cur;
-}
-
-document.getElementById('btnUnitRequest').addEventListener('click', function(){
-  document.getElementById('unitRequestPanel').style.display = '';
-  document.getElementById('customerMgmtPanel').style.display = 'none'; // jaga-jaga supaya 2 panel tidak kebuka bareng
-  document.getElementById('bannerInfo').style.display = 'none';
-  document.querySelector('.kpi-row').style.display = 'none';
-  document.getElementById('tabsBar').closest('.panel').style.display = 'none';
-  renderUnitRequests();
-  populateUreqCustomerDropdown();
-});
-document.getElementById('btnBackToShippingFromUreq').addEventListener('click', function(){
-  document.getElementById('unitRequestPanel').style.display = 'none';
-  document.getElementById('bannerInfo').style.display = '';
-  document.querySelector('.kpi-row').style.display = '';
-  document.getElementById('tabsBar').closest('.panel').style.display = '';
-});
-document.getElementById('btnShowAddUnitReq').addEventListener('click', function(){
-  document.getElementById('formAddUnitReq').style.display = '';
-  this.style.display = 'none';
-  document.getElementById('addUnitReqError').textContent = '';
-  populateUreqCustomerDropdown();
-});
-document.getElementById('btnCancelAddUnitReq').addEventListener('click', function(){
-  document.getElementById('formAddUnitReq').style.display = 'none';
-  document.getElementById('formAddUnitReq').reset();
-  document.getElementById('btnShowAddUnitReq').style.display = '';
-});
-document.getElementById('formAddUnitReq').addEventListener('submit', async function(e){
-  e.preventDefault();
-  const errEl = document.getElementById('addUnitReqError');
-  errEl.textContent = '';
-  const custUid = document.getElementById('ureqCustomer').value;
-  const custRec = custUid ? customerAccountsByUid[custUid] : null;
-  if(!custUid || !custRec){ errEl.textContent = 'Pilih akun customer terlebih dahulu.'; return; }
-  const tanggal = document.getElementById('ureqTanggal').value;
-  const jenisArmada = document.getElementById('ureqJenisArmada').value.trim();
-  const jumlah = parseInt(document.getElementById('ureqJumlah').value, 10) || 1;
-  const jemput = document.getElementById('ureqJemput').value.trim();
-  const tujuan = document.getElementById('ureqTujuan').value.trim();
-  const catatan = document.getElementById('ureqCatatan').value.trim();
-
-  const btn = this.querySelector('button[type="submit"]');
-  btn.disabled = true;
-  try{
-    const staffAcc = accountsByUid[(firebase.auth().currentUser && firebase.auth().currentUser.uid) || ''];
-    await fbDb.ref('unitRequests').push({
-      customerUid: custUid,
-      customerNama: custRec.nama || '',
-      tglDibutuhkan: tanggal || null,
-      jenisArmada: jenisArmada,
-      jumlahUnit: jumlah,
-      lokasiJemput: jemput,
-      lokasiTujuan: tujuan,
-      catatan: catatan,
-      status: 'diajukan',
-      createdAt: new Date().toISOString(),
-      createdBy: (staffAcc && staffAcc.email) || '',
-    });
-    this.reset();
-    this.style.display = 'none';
-    document.getElementById('btnShowAddUnitReq').style.display = '';
-  }catch(err){
-    errEl.textContent = 'Gagal menyimpan -- coba lagi.';
   }finally{
     btn.disabled = false;
   }
