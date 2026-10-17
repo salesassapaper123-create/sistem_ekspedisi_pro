@@ -698,7 +698,18 @@ async function handleAuthStateChange(user){
   }
   await accountsV2LoadedPromise;
   const staffRec = accountsByUid[user.uid];
-  if(staffRec && staffRec.approved === true){
+  // Sesi keduaratusduabelas -- BUG PERBAIKAN: sebelumnya di sini cek `staffRec.approved === true`
+  // (strict). Di LINTAS (index.html) sendiri, cek akun yang BOLEH login itu LEBIH LONGGAR --
+  // accountRole()/accountApproved() di index.html menganggap field 'role' yang KOSONG/tidak ada
+  // sebagai 'admin', dan field 'approved' yang KOSONG/tidak ada (bukan eksplisit false) TETAP
+  // dianggap disetujui (lihat accountApproved(a){ return a.approved !== false; }). Ini relevan untuk
+  // akun admin PALING LAMA/akun induk yang datanya di 'accountsV2' memang tidak pernah diisi field
+  // 'approved' secara eksplisit sejak awal (akses penuhnya berasal dari role:'admin', bukan dari
+  // field approved) -- akun semacam itu TETAP bisa login normal di LINTAS, tapi dengan cek strict di
+  // sini jadi DITOLAK ("Akun belum disetujui admin") padahal akunnya valid & aktif. Diperbaiki supaya
+  // persis sama longgarnya dengan LINTAS: akun dianggap boleh login kalau role-nya 'admin' ATAU
+  // approved-nya TIDAK eksplisit false (undefined/true dianggap boleh, cuma false yang ditolak).
+  if(staffRec && (staffRec.role === 'admin' || staffRec.approved !== false)){
     showApp(staffRec, false);
     return;
   }
