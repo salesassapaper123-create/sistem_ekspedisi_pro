@@ -1449,6 +1449,17 @@
                   <input type="text" id="poNamaCustomer" list="customerDatalist" placeholder="cth. PT Contoh Kertas" required>
                 </div>
                 <div class="field">
+                  <!-- Sesi keduaratusdelapan (TAHAP 3 Live Tracking per-customer): opsional -- kalau dipilih,
+                       PO ini (dan DO/PKB yang nanti dibuat di atasnya) otomatis bisa dilihat di aplikasi
+                       "Delivery Trucking" (tracking.html) oleh akun customer yang bersangkutan SAJA (dikunci
+                       lewat Firebase Security Rules via field customerUid, bukan cuma disembunyikan di
+                       tampilan). Akun customer dibuat admin/staf dari tracking.html > "Kelola Akun Customer". -->
+                  <label for="poCustomerAkun">Akun Customer Live Tracking <span class="hint">(opsional)</span></label>
+                  <select id="poCustomerAkun">
+                    <option value="">- Belum dikaitkan -</option>
+                  </select>
+                </div>
+                <div class="field">
                   <label for="poSales">Sales</label>
                   <input type="text" id="poSales" placeholder="cth. Budi" required>
                 </div>
@@ -2286,6 +2297,25 @@ document.getElementById('formBarangInput').addEventListener('submit', function(e
    belum ada yang menulis ke situ dari Marketing. */
 let poList = [];
 let records = [];
+/* customerAccounts (Sesi keduaratusdelapan, TAHAP 3 Live Tracking) -- dikelola dari tracking.html, di
+   sini HANYA dibaca read-only untuk mengisi dropdown "Akun Customer Live Tracking" di form Tambah PO.
+   Disimpan sebagai objek {uid: {...}} (BUKAN lewat fbToArray -- uid Firebase Auth bukan angka berurutan,
+   jadi key-nya wajib dipertahankan apa adanya, sama seperti pola accountsByUid di index.html/tracking.html). */
+let customerAccountsByUid = {};
+function customerAccountsArray(){
+  return Object.keys(customerAccountsByUid || {})
+    .map(uid => Object.assign({ uid: uid }, customerAccountsByUid[uid]))
+    .sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+}
+function populatePoCustomerAkunDropdown(){
+  const sel = document.getElementById('poCustomerAkun');
+  if(!sel) return;
+  const prev = sel.value;
+  const list = customerAccountsArray();
+  sel.innerHTML = '<option value="">- Belum dikaitkan -</option>' +
+    list.map(c => `<option value="${esc(c.uid)}">${esc(c.nama || c.email || c.uid)}</option>`).join('');
+  if(prev && list.some(c => c.uid === prev)) sel.value = prev;
+}
 // Sesi keduaratussatu: savePO() SENGAJA DIBIARKAN TIDAK DIPANGGIL LAGI DI MANAPUN (dipertahankan di
 // sini cuma sebagai catatan sejarah) -- SEMUA mutasi /po sekarang lewat fbUpdateItemInList/
 // fbAppendToList (transaksi atomic). JANGAN panggil fungsi ini lagi di kode baru -- overwrite SELURUH
@@ -2871,20 +2901,37 @@ document.getElementById('formPoEdit').addEventListener('submit', async function(
   const fileInput = document.getElementById('poEditFotoInput');
   const file = fileInput.files[0];
 
+  // Sesi keduaratuslima: tambah teks "Menyimpan..." di tombol -- sebelumnya cuma di-disable tanpa
+  // teks berubah, jadi kalau prosesnya lambat (koneksi lemah, atau data PO banyak foto terlampir)
+  // tombolnya terlihat diam/tidak bereaksi, bikin user mengira macet padahal sebenarnya lagi proses.
+  const btnTextAsli = btn.textContent;
   btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
   let fotoPO = item.fotoPO || null; /* default: pertahankan foto lama */
   try{
     if(file) fotoPO = await compressImageFile(file, 1000, 0.65);
   }catch(err){
     errEl.textContent = 'Gagal memproses foto PO: ' + (err.message || err);
     btn.disabled = false;
+    btn.textContent = btnTextAsli;
     return;
   }
 
+  // Sesi keduaratuslima: BUG -- cek duplikat No. CO sebelumnya jalan TERUS setiap kali Simpan diklik,
+  // bahkan kalau field No. CO sama sekali TIDAK diubah (beda dari fitur "Edit No. CO" versi lama yang
+  // skip pengecekan kalau nilainya tidak berubah). Akibatnya kalau kebetulan ada 2 PO dengan No. CO
+  // sama di data (sisa dari bug lama sebelum diperbaiki), SETIAP KALI admin edit PO itu -- walau cuma
+  // ganti Harga/Ukuran/GSM/Tonase, tidak sentuh No. CO -- muncul kotak konfirmasi browser (window.confirm)
+  // menanyakan duplikat No. CO. Kotak itu MEMBLOKIR seluruh halaman sampai dijawab, dan kalau ter-skip/
+  // ter-klik Cancel tanpa sadar, tombol "Simpan perubahan" jadi terlihat seperti tidak bereaksi sama
+  // sekali -- inilah laporan user "tidak bisa klik perubahan apakah ada bug". Diperbaiki: pengecekan
+  // duplikat SEKARANG hanya jalan kalau No. CO memang DIUBAH dari nilai aslinya.
   const newNoCO = document.getElementById('poEditNoCO').value.trim();
-  const duplikat = newNoCO && poList.find(x => String(x.id) !== String(targetId) && (x.noCO || '') === newNoCO);
+  const noCoBerubah = newNoCO !== (item.noCO || '');
+  const duplikat = noCoBerubah && newNoCO && poList.find(x => String(x.id) !== String(targetId) && (x.noCO || '') === newNoCO);
   if(duplikat && !confirm(`No. CO "${newNoCO}" sudah dipakai PO ${duplikat.noPO || '-'} (${duplikat.namaCustomer || '-'}).\n\nTetap lanjutkan? (akan ada 2 PO dengan No. CO yang sama)`)){
     btn.disabled = false;
+    btn.textContent = btnTextAsli;
     return;
   }
 
@@ -2904,6 +2951,7 @@ document.getElementById('formPoEdit').addEventListener('submit', async function(
 
   fbUpdateItemInList('po', targetId, serverItem => Object.assign(serverItem, newData)).then(result => {
     btn.disabled = false;
+    btn.textContent = btnTextAsli;
     if(!result || result.committed === false){
       showToast('Gagal menyimpan perubahan data PO -- coba lagi.', 'danger');
       return;
@@ -2947,6 +2995,7 @@ document.getElementById('formPOInput').addEventListener('submit', async function
     tanggalCO: document.getElementById('poTanggalCO').value,
     noPO: document.getElementById('poNoPO').value.trim().toUpperCase(),
     namaCustomer: document.getElementById('poNamaCustomer').value.trim(),
+    customerUid: document.getElementById('poCustomerAkun').value || null,
     sales: document.getElementById('poSales').value.trim(),
     gsm: document.getElementById('poGsm').value.trim(),
     ukuran: document.getElementById('poUkuran').value.trim(),
@@ -3646,6 +3695,14 @@ function attachDataListeners(){
     driverList = arr ? fbFilterTombstoned('driver', arr) : [];
     if(currentViewName() === 'input') populatePkbNopolSopirDropdowns();
   });
+  /* Akun customer Live Tracking (Sesi keduaratusdelapan) -- dikelola dari tracking.html, read-only di
+     sini. Kalau akun yang sedang login di Marketing ini TIDAK punya akses baca node ini (semestinya
+     tidak mungkin terjadi untuk akun staf accountsV2, tapi dijaga tetap aman kalau suatu saat ada akun
+     campuran), gagal diam-diam -- dropdown-nya tetap tampil cuma dengan opsi "Belum dikaitkan". */
+  fbDb.ref('customerAccounts').on('value', snap => {
+    customerAccountsByUid = snap.val() || {};
+    if(currentViewName() === 'po-input') populatePoCustomerAkunDropdown();
+  }, () => { customerAccountsByUid = {}; });
   /* Ongkos Borongan -- object {table1,table2} (BUKAN array biasa, jadi tidak lewat fbToArray/
      fbFilterTombstoned seperti kendaraan/driver di atas), dikelola LINTAS, dibaca READ-ONLY di sini
      cuma untuk saran rute+tarif vendor luar di Input PKB. */
@@ -3679,6 +3736,7 @@ function goTo(view){
   if(view === 'po-monitoring') renderPOMonitoring();
   if(view === 'barang') renderBarang();
   if(view === 'rekap-pengiriman') renderRekapPengiriman();
+  if(view === 'po-input') populatePoCustomerAkunDropdown();
   if(view === 'input'){
     populatePkbNopolSopirDropdowns();
     populatePkbNoCODropdown();

@@ -3768,7 +3768,7 @@ function syncOdometerFromCartrack(){
         if (!isNaN(d.getTime())) waktuIso = d.toISOString();
       }
 
-      dataMap[plate] = { km: odometerKm, lokasi: lokasi, status: status, waktu: waktuIso };
+      dataMap[plate] = { km: odometerKm, lokasi: lokasi, status: status, waktu: waktuIso, lat: (lat != null ? Number(lat) : null), lng: (lng != null ? Number(lng) : null) };
     });
 
     var patchPayload = {};
@@ -3788,6 +3788,15 @@ function syncOdometerFromCartrack(){
         patchPayload[idx + '/gpsWaktuUpdate'] = d.waktu;
       }
       if (d.status) patchPayload[idx + '/gpsStatus'] = d.status;
+      // gpsLat/gpsLng (Sesi keduaratustujuh): koordinat MENTAH dari Cartrack, ditulis TERPISAH dari
+      // "gpsLokasi" (yang tetap teks alamat hasil reverse-geocode, dipakai apa adanya di Monitoring
+      // Armada -- TIDAK diubah). Field baru ini KHUSUS supaya aplikasi "Delivery Trucking"
+      // (tracking.html) bisa menaruh pin armada di peta sungguhan -- ditulis bareng waktu yang sama
+      // dengan di atas supaya selalu menggambarkan momen fix GPS yang sama juga.
+      if (d.waktu && d.lat != null && d.lng != null){
+        patchPayload[idx + '/gpsLat'] = d.lat;
+        patchPayload[idx + '/gpsLng'] = d.lng;
+      }
       updatedCount++;
     });
 
@@ -3870,17 +3879,32 @@ function syncOdometerFromCartrack(){
         ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (auth.uid === $uid && !data.exists() && newData.child('role').val() === 'user' && newData.child('approved').val() === false && newData.child('bisaKonfirmasiPO').val() === false && newData.child('dataInputRestricted').val() === false && newData.child('bisaEditRekapDO').val() === false && newData.child('bisaEditNoReimburse').val() === false && newData.child('bisaTutupPOMarketing').val() === false) || (auth.uid === $uid && data.exists() && newData.child('role').val() === data.child('role').val() && newData.child('approved').val() === data.child('approved').val() && newData.child('bisaKonfirmasiPO').val() === data.child('bisaKonfirmasiPO').val() && newData.child('dataInputRestricted').val() === data.child('dataInputRestricted').val() && newData.child('bisaEditRekapDO').val() === data.child('bisaEditRekapDO').val() && newData.child('bisaEditNoReimburse').val() === data.child('bisaEditNoReimburse').val() && newData.child('bisaTutupPOMarketing').val() === data.child('bisaTutupPOMarketing').val() && newData.child('email').val() === data.child('email').val()))"
       }
     },
+    "customerAccounts": {
+      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || root.child('accountsV2').child(auth.uid).child('approved').val() === true)",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || root.child('accountsV2').child(auth.uid).child('approved').val() === true)"
+      }
+    },
     "accounts": {
       ".read": "auth != null",
       ".write": false
     },
     "records": {
-      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))",
+      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true) || (root.child('customerAccounts').child(auth.uid).child('approved').val() === true && data.child('poId').exists() && root.child('po').child(data.child('poId').val()).child('customerUid').val() === auth.uid))",
       ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))"
     },
     "records_backup": {
       ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))",
       ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))"
+    },
+    "po": {
+      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('approved').val() === true || (root.child('customerAccounts').child(auth.uid).child('approved').val() === true && data.child('customerUid').val() === auth.uid))",
+      ".write": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true"
+    },
+    "kendaraan": {
+      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('approved').val() === true || root.child('customerAccounts').child(auth.uid).child('approved').val() === true)",
+      ".write": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true"
     },
     "$other": {
       ".read": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true",
@@ -3889,7 +3913,8 @@ function syncOdometerFromCartrack(){
   }
 }</textarea>
               <button type="button" class="btn btn-secondary" id="btnCopyFbRules" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin aturan</button>
-              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan nama & akses dari akun lama untuk bahan pertimbangan admin. Node <span class="mono">records</span> (dan <span class="mono">records_backup</span> — lihat tab "Backup Data DO") punya aturan sendiri (terpisah dari <span class="mono">$other</span>) supaya bisa menambahkan syarat <span class="mono">dataInputRestricted</span> khusus untuk data ini — node lain (kendaraan, driver, PO, dll) TIDAK ikut terpengaruh fitur pembatasan ini, tetap memakai aturan <span class="mono">$other</span> seperti biasa.</p>
+              <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan nama & akses dari akun lama untuk bahan pertimbangan admin. Node <span class="mono">records</span> (dan <span class="mono">records_backup</span> — lihat tab "Backup Data DO") punya aturan sendiri (terpisah dari <span class="mono">$other</span>) supaya bisa menambahkan syarat <span class="mono">dataInputRestricted</span> khusus untuk data ini. Node <span class="mono">po</span> dan <span class="mono">kendaraan</span> juga punya aturan sendiri sejak Tahap 3 Live Tracking per-customer (lihat paragraf di bawah) — node lain di luar daftar ini (driver, barang, dll) tetap memakai aturan <span class="mono">$other</span> seperti biasa.</p>
+              <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Tahap 3 Live Tracking per-customer (node <span class="mono">customerAccounts</span>):</b> akun customer (dibuat dari <span class="mono">tracking.html</span> &gt; "Kelola Akun Customer") disimpan terpisah dari akun staf, dengan izin baca sendiri-sendiri. Supaya customer 1 secara TEKNIS tidak bisa membaca data customer 2 (bukan cuma disembunyikan di tampilan): aturan <span class="mono">.read</span> pada <span class="mono">records</span> &amp; <span class="mono">po</span> menambahkan syarat khusus akun customer — hanya boleh baca entri yang field <span class="mono">customerUid</span>-nya (di <span class="mono">po</span>, atau dicari lewat <span class="mono">poId</span> untuk <span class="mono">records</span>) cocok dengan uid akun customer itu sendiri. Hak TULIS <span class="mono">records</span>/<span class="mono">po</span> TIDAK berubah sama sekali untuk akun customer (tetap hanya staf yang bisa menulis). Node <span class="mono">kendaraan</span> (posisi GPS mentah armada, tanpa konteks customer mana pun) sengaja TETAP bisa dibaca semua akun yang sudah login (staf maupun customer) — penyaringan "customer cuma lihat pin kirimannya sendiri" dilakukan di aplikasi (tracking.html), bukan di Rules, karena nopol/koordinat sendiri bukan data rahasia milik customer tertentu.</p>
               <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Pemulihan darurat:</b> kalau suatu saat node <span class="mono">accountsV2</span> sampai kosong sama sekali tanpa satu pun akun admin (misalnya karena database ter-reset), Rules di atas TIDAK mengizinkan siapa pun mem-promosikan diri sendiri jadi admin lagi lewat aplikasi (itu memang sengaja, itulah yang diperbaiki di sini) — satu-satunya jalan adalah admin project Firebase menambahkan field <span class="mono">role: "admin"</span> dan <span class="mono">approved: true</span> secara manual lewat tab <b>Data</b> di Realtime Database (akses lewat Firebase Console selalu diizinkan, tidak terikat Rules ini).</p>
             </div>
           </div>

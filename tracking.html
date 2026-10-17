@@ -169,6 +169,35 @@
   .ship-note{font-size:11.5px; color:var(--text-muted); font-style:italic;}
   .leaflet-popup-content{font-size:12.5px; line-height:1.5;}
 
+  /* ===== Kelola Akun Customer (Sesi keduaratusdelapan, TAHAP 3) -- staff-only ===== */
+  .staff-only.hidden-role{display:none !important;}
+  .btn{
+    border-radius:9px; padding:10px 16px; font-size:13px; font-weight:700; cursor:pointer;
+    border:1px solid transparent; font-family:inherit;
+  }
+  .btn-primary{background:var(--accent-500); color:#fff;}
+  .btn-primary:hover{background:var(--accent-700);}
+  .btn-secondary{background:#fff; border-color:var(--border-strong); color:var(--text);}
+  .btn-secondary:hover{border-color:var(--accent-500); color:var(--accent-700);}
+  .btn:disabled{opacity:.55; cursor:default;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--text);}
+  .field .hint-sm{font-weight:500; color:var(--text-muted); text-transform:none; letter-spacing:0;}
+  .field input, .field select{
+    width:100%; padding:10px 12px; border:1px solid var(--border-strong); border-radius:8px;
+    font-size:13.5px; font-family:inherit; color:var(--text); background:#fff;
+  }
+  .field input:focus, .field select:focus{outline:none; border-color:var(--accent-500);}
+  .cust-acct-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    border:1px solid var(--border); border-radius:10px; padding:12px 14px; margin-bottom:8px;
+  }
+  .cust-acct-main{font-size:13px;}
+  .cust-acct-main b{font-weight:700;}
+  .cust-acct-main .mono{color:var(--text-muted); font-size:12px;}
+  .badge-active{background:var(--ok-100); color:var(--ok-500); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700;}
+  .badge-inactive{background:var(--danger-100); color:var(--danger-500); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700;}
+
   @media (max-width: 860px){
     .shell{flex-direction:column;}
     .shell-sidebar{width:100%; min-height:auto; border-right:none; border-bottom:1px solid var(--border);}
@@ -275,6 +304,12 @@
       </ul>
 
       <div class="sb-foot">
+        <!-- Sesi keduaratusdelapan (TAHAP 3) -- hanya terlihat untuk sesi STAF (disembunyikan lewat kelas
+             "hidden-role" oleh applySessionRoleUi() saat sesi customer login, lihat script di bawah). -->
+        <div class="sb-foot-item staff-only" id="btnCustomerMgmt">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Kelola Akun Customer
+        </div>
         <div class="sb-foot-item" id="btnShareLink">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.5l6.8-3.9M8.6 13.5l6.8 3.9"/></svg>
           Share Link
@@ -288,8 +323,8 @@
 
     <!-- MAIN -->
     <div class="shell-main">
-      <div class="banner-tahap1" id="bannerInfo">
-        Tahap 2: data PKB sungguhan sudah tersambung. Status pakai 4 tahap yang sudah berjalan di LINTAS (Dijadwalkan/Dalam Perjalanan/Sampai Tujuan/Selesai) -- tidak ada field status baru, jadi seluruh riwayat PKB lama & baru otomatis ikut muncul. Menandai "Selesai" (perlu isi tonase &amp; hitung pendapatan) tetap lewat Rekap Data di LINTAS seperti biasa -- lihat README.
+      <div class="banner-tahap1 staff-only" id="bannerInfo">
+        Status pakai 4 tahap yang sudah berjalan di LINTAS (Dijadwalkan/Dalam Perjalanan/Sampai Tujuan/Selesai). Menandai "Selesai" (perlu isi tonase &amp; hitung pendapatan) tetap lewat Rekap Data di LINTAS seperti biasa. Mau beri customer akses lihat kiriman mereka sendiri? Buat akunnya dari "Kelola Akun Customer" di sidebar, lalu kaitkan ke PO-nya dari LINTAS Marketing &gt; Tambah SO/PO -- lihat README.
       </div>
 
       <div class="kpi-row">
@@ -331,6 +366,41 @@
           <div class="tab-pane" data-pane="delivered"><div id="listDelivered"></div></div>
         </div>
       </div>
+
+      <!-- Sesi keduaratusdelapan (TAHAP 3) -- panel admin "Kelola Akun Customer", staff-only. Disembunyikan
+           total dari sesi customer (kelas "hidden-role"), dan dari sesi staf JUGA default disembunyikan
+           (toggleCustomerMgmtPanel()) -- baru tampil begitu diklik dari sidebar, menggantikan papan
+           Shipping di area yang sama supaya layout tetap sederhana (bukan tab baru di dalam papan Shipping,
+           karena ini konsepnya beda -- kelola login, bukan data pengiriman). -->
+      <div class="panel staff-only" id="customerMgmtPanel" style="display:none;">
+        <div class="panel-head">
+          <h2>Kelola Akun Customer <button type="button" class="btn btn-secondary" id="btnBackToShipping" style="float:right; padding:7px 12px; font-size:12px;">&larr; Kembali ke Shipping</button></h2>
+          <p class="hint" style="margin:-8px 0 14px; font-size:12.5px; color:var(--text-muted);">Buat login khusus per customer supaya mereka hanya bisa melihat pengiriman miliknya sendiri di Live Tracking. Setelah akun dibuat, kaitkan PO customer tersebut ke akun ini lewat LINTAS Marketing &gt; Tambah SO/PO (dropdown "Akun Customer Live Tracking"). PO/PKB yang sudah ada sebelum akun dibuat TIDAK otomatis ikut terkait.</p>
+        </div>
+        <div class="tab-content">
+          <div id="customerAcctListWrap" style="margin-bottom:18px;"></div>
+          <button type="button" class="btn btn-secondary" id="btnShowAddCustomerAcct">+ Tambah akun customer baru</button>
+          <form id="formAddCustomerAcct" style="display:none; max-width:400px; margin-top:16px;">
+            <div class="field">
+              <label for="newCustNama">Nama customer</label>
+              <input type="text" id="newCustNama" placeholder="cth. PT Contoh Kertas" required>
+            </div>
+            <div class="field">
+              <label for="newCustLoginId">ID Login <span class="hint-sm">(tanpa spasi/simbol, cth. CUST001)</span></label>
+              <input type="text" id="newCustLoginId" placeholder="cth. CUST001" required pattern="[A-Za-z0-9_-]{3,30}">
+            </div>
+            <div class="field">
+              <label for="newCustPass">Password</label>
+              <input type="password" id="newCustPass" required minlength="6">
+            </div>
+            <div class="login-error" id="addCustomerAcctError" style="text-align:left;"></div>
+            <div style="display:flex; gap:10px;">
+              <button type="submit" class="btn btn-primary">Simpan akun</button>
+              <button type="button" class="btn btn-secondary" id="btnCancelAddCustomerAcct">Batal</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -342,10 +412,13 @@
 <script>
 /* ========================================================================================
    Delivery Trucking -- Sesi keduaratusenam (TAHAP 1, skeleton) + Sesi keduaratustujuh (TAHAP 2,
-   data PKB sungguhan + peta live). File BARU & TERPISAH dari index.html/marketing.html -- SELURUH
-   perubahan di sini cuma menambah file ini sendiri; index.html HANYA disentuh untuk 2 baris
-   tambahan pada skrip Apps Script Cartrack (simpan koordinat gpsLat/gpsLng mentah, lihat README
-   Sesi keduaratustujuh) -- perilaku Monitoring Armada LINTAS sendiri TIDAK berubah sama sekali.
+   data PKB sungguhan + peta live) + Sesi keduaratusdelapan (TAHAP 3, akun customer per-ID, AMAN
+   lewat Firebase Security Rules -- bukan cuma disaring di tampilan). File BARU & TERPISAH dari
+   index.html/marketing.html -- index.html HANYA disentuh untuk: (a) 2 baris tambahan di skrip Apps
+   Script Cartrack (koordinat gpsLat/gpsLng mentah, Sesi keduaratustujuh), dan (b) teks Security Rules
+   di panel Pengaturan > Keamanan Sistem (Sesi keduaratusdelapan, lihat README) -- perilaku LINTAS
+   sendiri TIDAK berubah. marketing.html disentuh untuk 1 dropdown baru opsional di form Tambah PO
+   ("Akun Customer Live Tracking", field po.customerUid, Sesi keduaratusdelapan).
 
    Firebase project SAMA PERSIS dengan LINTAS/LINTAS Marketing -- papan status & peta di sini
    membaca data PKB ('records'), armada ('kendaraan'), dan PO ('po') yang sudah ada, real-time,
@@ -355,11 +428,22 @@
    - Akun STAF (admin/staf kantor) -- pakai node 'accountsV2' yang SAMA PERSIS dengan LINTAS. Kalau
      akun itu sudah disetujui admin di LINTAS, otomatis bisa langsung dipakai login di sini juga.
      Terdeteksi dari input yang mengandung '@' (format email).
-   - Akun CUSTOMER -- BELUM aktif di Tahap 1 (node 'customerAccounts' + aturan keamanan Firebase
-     per-customer menyusul di Tahap 2/3, sesuai rencana yang disepakati: data pengiriman akan disusun
-     ulang per-customer supaya customer 1 secara teknis TIDAK BISA mengakses data customer 2). Kalau
-     ID yang dimasukkan tidak mengandung '@', ditampilkan pesan jelas bahwa fitur ini menyusul,
-     BUKAN pura-pura berhasil login.
+   - Akun CUSTOMER (BARU, Sesi keduaratusdelapan) -- dibuat STAF lewat panel "Kelola Akun Customer" di
+     sidebar (bukan pendaftaran sendiri). ID login SENGAJA pendek & tanpa '@' (cth. "CUST001") supaya
+     gampang dibagikan -- di belakang layar dikonversi jadi alamat email internal palsu (lihat
+     customerLoginIdToEmail()) karena Firebase Auth butuh format email. Setelah akun dibuat, staf
+     mengaitkan PO customer tsb ke akun ini dari LINTAS Marketing > Tambah SO/PO (dropdown baru). Hanya
+     PO yang DIKAITKAN SETELAH akun dibuat yang muncul di akun customer-nya -- PO lama TIDAK migrasi
+     otomatis (keputusan yang diambil sengaja, lebih aman & cepat dibangun daripada mencocokkan nama
+     teks lama satu-satu). Keamanan diwujudkan di 2 lapis: (1) Firebase Security Rules (lapis
+     SUNGGUHAN -- customer 1 secara TEKNIS tidak bisa membaca 'records'/'po' milik customer lain, bukan
+     cuma disembunyikan di tampilan) dan (2) UI: tombol ubah status & panel kelola akun disembunyikan
+     dari sesi customer. Pengecualian yang disengaja: node 'kendaraan' (posisi GPS mentah seluruh
+     armada, TANPA konteks customer mana pun) tetap bisa dibaca semua akun yang sudah login -- peta di
+     sesi customer tetap HANYA menampilkan pin yang relevan ke kiriman mereka sendiri, tapi itu
+     penyaringan di aplikasi (bukan di Security Rules) karena nopol/koordinat mentah sendiri bukan
+     "data pengiriman customer lain". Lihat README Sesi keduaratusdelapan untuk rincian lengkap +
+     teks Security Rules baru yang WAJIB ditempel ulang di Firebase Console.
    ======================================================================================== */
 const firebaseConfig = {
   apiKey: "AIzaSyCb_tX42mot-cIgAAqJ0wpJX76632u34cM",
@@ -379,6 +463,46 @@ try{
   console.warn('Firebase gagal diinisialisasi:', err);
 }
 
+/* Sesi keduaratusdelapan: dideklarasikan DI SINI (bukan di dekat showApp()/applySessionRoleUi() di
+   bawah) supaya tidak ada risiko "Cannot access before initialization" -- listener Firebase di bawah
+   (attachCustomerAccountsListener) sudah membaca variabel ini begitu callback-nya terpanggil, dan pada
+   SDK tertentu/skenario tertentu callback itu bisa terpanggil lebih cepat dari yang dikira. */
+let currentSessionIsCustomer = false;
+let currentCustomerUid = null;
+
+/* App Firebase KEDUA, sama persis polanya dengan index.html (lihat komentar di sana) -- dipakai HANYA
+   saat staf membuat akun customer baru dari panel "Kelola Akun Customer", supaya sesi login staf yang
+   sedang aktif TIDAK ikut "terlempar" jadi akun customer yang baru dibuat (createUserWithEmailAndPassword
+   otomatis login sebagai akun barunya kalau dijalankan lewat app utama). */
+let fbSecondaryApp = null;
+function secondaryAuth(){
+  if(!fbSecondaryApp) fbSecondaryApp = firebase.initializeApp(firebaseConfig, 'Secondary');
+  return fbSecondaryApp.auth();
+}
+function mapFbAuthErr(err){
+  const pesan = {
+    'auth/invalid-email': 'Format ID/email tidak valid.',
+    'auth/user-not-found': 'Akun tidak ditemukan.',
+    'auth/wrong-password': 'Password salah.',
+    'auth/invalid-credential': 'ID/email atau password salah.',
+    'auth/invalid-login-credentials': 'ID/email atau password salah.',
+    'auth/too-many-requests': 'Terlalu banyak percobaan gagal -- coba lagi beberapa saat lagi.',
+    'auth/network-request-failed': 'Gagal terhubung ke server. Cek koneksi internet.',
+    'auth/email-already-in-use': 'ID login ini sudah dipakai akun lain -- pakai ID lain.',
+    'auth/weak-password': 'Password minimal 6 karakter.',
+  };
+  return (err && pesan[err.code]) || (err && err.message) || 'Gagal, coba lagi.';
+}
+
+/* Sesi keduaratusdelapan (TAHAP 3): ID login customer SENGAJA dibuat pendek & tanpa format email
+   (cth. "CUST001") supaya gampang diingat & dibagikan -- di belakang layar tetap dikonversi jadi
+   alamat email palsu (TIDAK pernah dipakai mengirim email sungguhan) karena Firebase Authentication
+   mengharuskan format email untuk signIn/createUser. Domain ini cuma label internal. */
+const CUSTOMER_LOGIN_DOMAIN = '@pelanggan.lintas.id';
+function customerLoginIdToEmail(id){
+  return String(id || '').trim().toLowerCase().replace(/\s+/g, '') + CUSTOMER_LOGIN_DOMAIN;
+}
+
 let accountsByUid = {};
 let accountsV2LoadedResolve = null;
 const accountsV2LoadedPromise = new Promise(resolve => { accountsV2LoadedResolve = resolve; });
@@ -387,9 +511,32 @@ function attachAccountsV2Listener(){
   fbDb.ref('accountsV2').on('value', snap => {
     accountsByUid = snap.val() || {};
     if(accountsV2LoadedResolve){ accountsV2LoadedResolve(); accountsV2LoadedResolve = null; }
-  });
+  }, () => { if(accountsV2LoadedResolve){ accountsV2LoadedResolve(); accountsV2LoadedResolve = null; } });
 }
 attachAccountsV2Listener();
+
+/* Node BARU (Sesi keduaratusdelapan) -- akun customer, dikelola staf lewat panel "Kelola Akun Customer".
+   Disimpan {uid: {nama, loginId, email, approved, createdAt, createdBy}}. Untuk sesi STAF, listener ini
+   kebagian SELURUH daftar (dipakai render panel kelola akun). Untuk sesi CUSTOMER, Security Rules hanya
+   mengizinkan baca entri miliknya sendiri -- objeknya otomatis hanya berisi {uid-nya-sendiri: {...}}
+   (bukan error, itu memang caranya Firebase menyaring node berdasarkan Rules per-anak). Dipasang dari
+   awal (bukan cuma setelah login) supaya proses cek customerAccountsByUid[user.uid] di
+   handleAuthStateChange tidak perlu menunggu listener terpasang dulu. */
+let customerAccountsByUid = {};
+let customerAccountsLoadedResolve = null;
+const customerAccountsLoadedPromise = new Promise(resolve => { customerAccountsLoadedResolve = resolve; });
+function attachCustomerAccountsListener(){
+  if(!fbDb){ if(customerAccountsLoadedResolve){ customerAccountsLoadedResolve(); customerAccountsLoadedResolve = null; } return; }
+  fbDb.ref('customerAccounts').on('value', snap => {
+    customerAccountsByUid = snap.val() || {};
+    if(customerAccountsLoadedResolve){ customerAccountsLoadedResolve(); customerAccountsLoadedResolve = null; }
+    if(currentSessionIsCustomer === false) renderCustomerAcctList();
+  }, () => {
+    customerAccountsByUid = {};
+    if(customerAccountsLoadedResolve){ customerAccountsLoadedResolve(); customerAccountsLoadedResolve = null; }
+  });
+}
+attachCustomerAccountsListener();
 
 function showLogin(msg){
   document.getElementById('loginScreen').style.display = 'flex';
@@ -397,10 +544,22 @@ function showLogin(msg){
   document.getElementById('loginError').textContent = msg || '';
   document.getElementById('loginForm').reset();
 }
-function showApp(rec){
+
+// (currentSessionIsCustomer / currentCustomerUid dideklarasikan di dekat inisialisasi Firebase di atas)
+function applySessionRoleUi(isCustomer){
+  // Sembunyikan SEMUA elemen staff-only (nav "Kelola Akun Customer" + panel kelola akunnya sendiri) dari
+  // sesi customer. Papan Shipping/KPI/Maps TETAP tampil untuk customer -- itu memang bagian yang
+  // mereka boleh lihat, cuma datanya sendiri sudah tersaring otomatis lewat Security Rules.
+  document.querySelectorAll('.staff-only').forEach(el => el.classList.toggle('hidden-role', isCustomer));
+  if(isCustomer) document.getElementById('customerMgmtPanel').style.display = 'none';
+}
+function showApp(rec, isCustomer){
+  currentSessionIsCustomer = !!isCustomer;
+  currentCustomerUid = isCustomer ? (firebase.auth().currentUser && firebase.auth().currentUser.uid) : null;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appRoot').style.display = 'block';
-  document.getElementById('topbarUserLabel').textContent = (rec && (rec.nama || rec.email)) || 'Staf';
+  document.getElementById('topbarUserLabel').textContent = (rec && rec.nama) || (rec && rec.email) || (isCustomer ? 'Customer' : 'Staf');
+  applySessionRoleUi(currentSessionIsCustomer);
   attachDataListeners();
   initMap();
 }
@@ -409,15 +568,20 @@ let suppressAuthStateHandler = false;
 async function handleAuthStateChange(user){
   if(suppressAuthStateHandler){ if(!user) suppressAuthStateHandler = false; return; }
   if(!user){ showLogin(); return; }
-  await accountsV2LoadedPromise;
-  const rec = accountsByUid[user.uid];
-  if(!rec || rec.approved !== true){
-    suppressAuthStateHandler = true;
-    firebase.auth().signOut();
-    showLogin('Akun belum disetujui admin, atau bukan akun staf LINTAS yang terdaftar.');
+  await Promise.all([accountsV2LoadedPromise, customerAccountsLoadedPromise]);
+  const staffRec = accountsByUid[user.uid];
+  if(staffRec && staffRec.approved === true){
+    showApp(staffRec, false);
     return;
   }
-  showApp(rec);
+  const custRec = customerAccountsByUid[user.uid];
+  if(custRec && custRec.approved === true){
+    showApp(custRec, true);
+    return;
+  }
+  suppressAuthStateHandler = true;
+  firebase.auth().signOut();
+  showLogin(staffRec || custRec ? 'Akun ini sudah dinonaktifkan admin.' : 'Akun belum disetujui admin, atau bukan akun LINTAS/customer yang terdaftar.');
 }
 if(fbDb){ firebase.auth().onAuthStateChanged(handleAuthStateChange); }
 
@@ -429,26 +593,16 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
   const btn = document.getElementById('btnLoginSubmit');
   errEl.textContent = '';
 
-  if(!id.includes('@')){
-    // Akun customer -- belum aktif di Tahap 1 (lihat catatan README). Diberi pesan jujur, bukan
-    // pura-pura berhasil masuk, supaya tidak membingungkan saat dicoba sebelum Tahap 2/3 selesai.
-    errEl.textContent = 'Login customer belum aktif -- menyusul setelah Tahap 2 (akun customer per-ID) selesai dibangun. Staf, gunakan email akun LINTAS Anda.';
-    return;
-  }
+  // Sesi keduaratusdelapan: ID mengandung '@' = akun staf (email LINTAS asli). ID tanpa '@' = akun
+  // customer (ID pendek, dikonversi ke alamat email palsu internal -- lihat customerLoginIdToEmail()).
+  const emailToUse = id.includes('@') ? id : customerLoginIdToEmail(id);
 
   btn.disabled = true;
   btn.textContent = 'Memeriksa...';
   try{
-    await firebase.auth().signInWithEmailAndPassword(id, pass);
+    await firebase.auth().signInWithEmailAndPassword(emailToUse, pass);
   }catch(err){
-    const pesan = {
-      'auth/invalid-email': 'Format email tidak valid.',
-      'auth/user-not-found': 'Akun tidak ditemukan.',
-      'auth/wrong-password': 'Password salah.',
-      'auth/invalid-credential': 'Email atau password salah.',
-      'auth/too-many-requests': 'Terlalu banyak percobaan gagal -- coba lagi beberapa saat lagi.',
-    };
-    errEl.textContent = (pesan[err.code]) || (err.message) || 'Gagal masuk, coba lagi.';
+    errEl.textContent = mapFbAuthErr(err);
   }
   btn.disabled = false;
   btn.textContent = 'Log In';
@@ -456,6 +610,8 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 
 document.getElementById('btnLogout').addEventListener('click', function(){
   firebase.auth().signOut();
+  currentSessionIsCustomer = false;
+  currentCustomerUid = null;
 });
 
 /* ========================================================================================
@@ -595,12 +751,16 @@ function buildShipCard(r){
   const customer = recCustomerName(r);
   const tonase = recTotalTonase(r);
   const status = normalizeStatus(r.status);
-  const canAdvance = status === 'dijadwalkan' || status === 'jalan';
+  // Sesi keduaratusdelapan (TAHAP 3): sesi CUSTOMER tidak pernah dapat tombol ubah status -- cukup lihat
+  // label status apa adanya. Perilaku sesi STAF TIDAK berubah sama sekali dari Tahap 2.
+  const canAdvance = !currentSessionIsCustomer && (status === 'dijadwalkan' || status === 'jalan');
   const btn = canAdvance
     ? `<button type="button" class="ship-advance-btn" data-id="${esc(r.id)}">Maju ke ${esc(STATUS_LABEL_EN[nextStatus(status)])} &rarr;</button>`
-    : (status === 'tiba'
+    : (status === 'tiba' && !currentSessionIsCustomer
         ? `<span class="ship-note">Tandai Selesai lewat Rekap Data di LINTAS (perlu isi tonase)</span>`
-        : `<span class="ship-note">Selesai</span>`);
+        : (status === 'selesai'
+            ? `<span class="ship-note">Selesai</span>`
+            : `<span class="ship-note">${esc(STATUS_LABEL_EN[status])}</span>`));
   return `<div class="ship-card">
     <div class="ship-card-main">
       <div class="ship-card-title">${esc(r.noPKB || r.noDO || '(tanpa No. PKB)')} <span class="mono">${esc(r.nopol || '-')}</span></div>
@@ -712,8 +872,14 @@ function renderMapMarkers(){
   kendaraanList.forEach(k => {
     if(!k || !k.nopol) return;
     if(k.gpsLat == null || k.gpsLng == null){ withoutCoord++; return; }
-    withCoord++;
     const rec = recLatestActiveForNopol(k.nopol);
+    // Sesi keduaratusdelapan (TAHAP 3): sesi CUSTOMER cuma lihat pin armada yang SEDANG bawa kiriman
+    // miliknya sendiri -- "records" sudah otomatis tersaring lewat Security Rules jadi cuma berisi data
+    // customer itu sendiri, jadi recLatestActiveForNopol() di sini otomatis "null" untuk armada yang
+    // tidak sedang bawa kiriman customer ybs. Node "kendaraan" sendiri (posisi GPS mentah tanpa konteks
+    // customer mana pun) TETAP bisa dibaca semua akun yang sudah login -- lihat README soal alasannya.
+    if(currentSessionIsCustomer && !rec) return;
+    withCoord++;
     const waktu = waktuLalu(k.gpsWaktuUpdate);
     const popup = `<b>${esc(k.nopol)}</b><br>${esc(k.gpsLokasi || 'Lokasi tidak diketahui')}` +
       (waktu ? `<br><span style="color:#6b7385;">Update ${esc(waktu)}</span>` : '') +
@@ -723,7 +889,11 @@ function renderMapMarkers(){
   });
   const note = document.getElementById('mapGpsNote');
   if(note){
-    if(withoutCoord === 0 && withCoord === 0){
+    if(currentSessionIsCustomer){
+      note.textContent = withCoord === 0
+        ? 'Belum ada kiriman Anda yang sedang di jalan dengan posisi GPS aktif saat ini.'
+        : `${withCoord} kiriman Anda sedang tampil di peta, posisi ter-update otomatis.`;
+    }else if(withoutCoord === 0 && withCoord === 0){
       note.textContent = 'Belum ada data armada.';
     }else if(withoutCoord > 0){
       note.textContent = `${withCoord} armada tampil di peta. ${withoutCoord} armada lain belum mengirim koordinat GPS -- pastikan skrip Apps Script Cartrack yang terbaru (lihat index.html > Pengaturan) sudah ditempel & trigger-nya sudah jalan minimal sekali.`;
@@ -750,6 +920,106 @@ document.getElementById('btnShareLink').addEventListener('click', function(){
     navigator.clipboard.writeText(window.location.href).catch(() => {});
   }
   alert('Link halaman ini disalin (fitur link khusus per-pengiriman menyusul setelah data tersambung).');
+});
+
+/* ====================== Kelola Akun Customer (Sesi keduaratusdelapan, TAHAP 3) ======================
+   Staff-only -- disembunyikan total dari sesi customer lewat applySessionRoleUi(). Pola pembuatan akun
+   (secondaryAuth, supaya sesi staf yang login tidak ikut tergantikan) disalin dari panel "Akun terdaftar"
+   di index.html, lihat komentar di dekat definisi secondaryAuth() di atas. */
+function customerAccountsArray(){
+  return Object.keys(customerAccountsByUid || {})
+    .map(uid => Object.assign({ uid: uid }, customerAccountsByUid[uid]))
+    .sort((a, b) => (a.nama || '').localeCompare(b.nama || ''));
+}
+function renderCustomerAcctList(){
+  const wrap = document.getElementById('customerAcctListWrap');
+  if(!wrap) return;
+  const list = customerAccountsArray();
+  if(list.length === 0){
+    wrap.innerHTML = '<p class="hint" style="color:var(--text-muted); font-size:13px;">Belum ada akun customer. Buat yang pertama lewat tombol di bawah.</p>';
+    return;
+  }
+  wrap.innerHTML = list.map(c => `
+    <div class="cust-acct-row">
+      <div class="cust-acct-main">
+        <b>${esc(c.nama || '-')}</b> &middot; ID login: <span class="mono">${esc(c.loginId || '-')}</span>
+        <div style="margin-top:4px;">${c.approved ? '<span class="badge-active">Aktif</span>' : '<span class="badge-inactive">Nonaktif</span>'}</div>
+      </div>
+      <button type="button" class="btn btn-secondary cust-acct-toggle" data-uid="${esc(c.uid)}" data-approved="${c.approved ? '1' : '0'}" style="padding:7px 12px; font-size:12px;">${c.approved ? 'Nonaktifkan' : 'Aktifkan'}</button>
+    </div>
+  `).join('');
+  wrap.querySelectorAll('.cust-acct-toggle').forEach(btn => btn.addEventListener('click', function(){
+    const uid = this.dataset.uid;
+    const nowApproved = this.dataset.approved !== '1';
+    this.disabled = true;
+    fbDb.ref('customerAccounts/' + uid + '/approved').set(nowApproved)
+      .catch(() => { alert('Gagal menyimpan perubahan -- coba lagi.'); })
+      .finally(() => { this.disabled = false; });
+  }));
+}
+
+document.getElementById('btnCustomerMgmt').addEventListener('click', function(){
+  document.getElementById('customerMgmtPanel').style.display = '';
+  document.getElementById('bannerInfo').style.display = 'none';
+  document.querySelector('.kpi-row').style.display = 'none';
+  document.getElementById('tabsBar').closest('.panel').style.display = 'none';
+  renderCustomerAcctList();
+});
+document.getElementById('btnBackToShipping').addEventListener('click', function(){
+  document.getElementById('customerMgmtPanel').style.display = 'none';
+  document.getElementById('bannerInfo').style.display = '';
+  document.querySelector('.kpi-row').style.display = '';
+  document.getElementById('tabsBar').closest('.panel').style.display = '';
+});
+document.getElementById('btnShowAddCustomerAcct').addEventListener('click', function(){
+  document.getElementById('formAddCustomerAcct').style.display = '';
+  this.style.display = 'none';
+  document.getElementById('addCustomerAcctError').textContent = '';
+});
+document.getElementById('btnCancelAddCustomerAcct').addEventListener('click', function(){
+  document.getElementById('formAddCustomerAcct').style.display = 'none';
+  document.getElementById('formAddCustomerAcct').reset();
+  document.getElementById('btnShowAddCustomerAcct').style.display = '';
+});
+document.getElementById('formAddCustomerAcct').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const errEl = document.getElementById('addCustomerAcctError');
+  errEl.textContent = '';
+  const nama = document.getElementById('newCustNama').value.trim();
+  const loginIdRaw = document.getElementById('newCustLoginId').value.trim();
+  const pass = document.getElementById('newCustPass').value;
+
+  if(!/^[A-Za-z0-9_-]{3,30}$/.test(loginIdRaw)){ errEl.textContent = 'ID login 3-30 karakter, huruf/angka/garis bawah/strip saja (tanpa spasi).'; return; }
+  if(pass.length < 6){ errEl.textContent = 'Password minimal 6 karakter.'; return; }
+  if(customerAccountsArray().some(c => String(c.loginId || '').toLowerCase() === loginIdRaw.toLowerCase())){
+    errEl.textContent = 'ID login ini sudah dipakai akun customer lain.';
+    return;
+  }
+
+  const btn = this.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  const email = customerLoginIdToEmail(loginIdRaw);
+  try{
+    const cred = await secondaryAuth().createUserWithEmailAndPassword(email, pass);
+    const staffAcc = accountsByUid[(firebase.auth().currentUser && firebase.auth().currentUser.uid) || ''];
+    await fbDb.ref('customerAccounts/' + cred.user.uid).set({
+      nama: nama,
+      loginId: loginIdRaw,
+      email: email,
+      approved: true,
+      createdAt: new Date().toISOString(),
+      createdBy: (staffAcc && staffAcc.email) || '',
+    });
+    await secondaryAuth().signOut(); // bersihkan sesi di app kedua -- tidak berpengaruh ke sesi staf di app utama
+    this.reset();
+    this.style.display = 'none';
+    document.getElementById('btnShowAddCustomerAcct').style.display = '';
+    renderCustomerAcctList();
+  }catch(err){
+    errEl.textContent = mapFbAuthErr(err);
+  }finally{
+    btn.disabled = false;
+  }
 });
 </script>
 </body>
