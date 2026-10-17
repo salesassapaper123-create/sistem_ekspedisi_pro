@@ -3379,6 +3379,11 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
     jenisBarangList: detail.map(it => it.nama),
     jenisBarang: detail.map(it => it.nama).join(', '),
     poId: poIdVal,
+    // Sesi keduaratussembilan: customerUid DIDUPLIKASI langsung ke record (bukan cuma via poId -> po)
+    // supaya Security Rules & query tracking.html bisa baca record ini langsung pakai
+    // orderByChild('customerUid').equalTo(uid) -- lihat README soal kenapa baca lewat relasi poId tidak
+    // bisa disaring otomatis oleh Realtime Database untuk listener biasa (bukan query terindeks).
+    customerUid: poTerkait ? (poTerkait.customerUid || null) : null,
     noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
     pendapatan: 0,
     // Organik: 0, dilengkapi belakangan oleh LINTAS (desain awal, tidak berubah). Vendor Luar: dari

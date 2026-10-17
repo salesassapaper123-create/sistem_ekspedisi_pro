@@ -413,7 +413,11 @@
 /* ========================================================================================
    Delivery Trucking -- Sesi keduaratusenam (TAHAP 1, skeleton) + Sesi keduaratustujuh (TAHAP 2,
    data PKB sungguhan + peta live) + Sesi keduaratusdelapan (TAHAP 3, akun customer per-ID, AMAN
-   lewat Firebase Security Rules -- bukan cuma disaring di tampilan). File BARU & TERPISAH dari
+   lewat Firebase Security Rules -- bukan cuma disaring di tampilan) + Sesi keduaratussembilan
+   (PERBAIKAN BUG: login customer & papan customer gagal total di Tahap 3 -- akar masalahnya Realtime
+   Database TIDAK menyaring otomatis per-baris untuk listener biasa ke level koleksi, HARUS pakai query
+   terindeks (orderByChild+equalTo) untuk 'records'/'po', dan baca langsung path uid sendiri untuk
+   'customerAccounts' -- lihat README untuk penjelasan lengkap). File BARU & TERPISAH dari
    index.html/marketing.html -- index.html HANYA disentuh untuk: (a) 2 baris tambahan di skrip Apps
    Script Cartrack (koordinat gpsLat/gpsLng mentah, Sesi keduaratustujuh), dan (b) teks Security Rules
    di panel Pengaturan > Keamanan Sistem (Sesi keduaratusdelapan, lihat README) -- perilaku LINTAS
@@ -516,12 +520,14 @@ function attachAccountsV2Listener(){
 attachAccountsV2Listener();
 
 /* Node BARU (Sesi keduaratusdelapan) -- akun customer, dikelola staf lewat panel "Kelola Akun Customer".
-   Disimpan {uid: {nama, loginId, email, approved, createdAt, createdBy}}. Untuk sesi STAF, listener ini
-   kebagian SELURUH daftar (dipakai render panel kelola akun). Untuk sesi CUSTOMER, Security Rules hanya
-   mengizinkan baca entri miliknya sendiri -- objeknya otomatis hanya berisi {uid-nya-sendiri: {...}}
-   (bukan error, itu memang caranya Firebase menyaring node berdasarkan Rules per-anak). Dipasang dari
-   awal (bukan cuma setelah login) supaya proses cek customerAccountsByUid[user.uid] di
-   handleAuthStateChange tidak perlu menunggu listener terpasang dulu. */
+   Disimpan {uid: {nama, loginId, email, approved, createdAt, createdBy}}. Listener KOLEKSI PENUH ini
+   HANYA benar-benar terisi untuk sesi STAF (dipakai render panel kelola akun) -- untuk sesi CUSTOMER,
+   request ke level koleksi ini DITOLAK TOTAL oleh Security Rules (bukan dikembalikan versi tersaring,
+   lihat catatan panjang di handleAuthStateChange, Sesi keduaratussembilan), jadi customerAccountsByUid
+   akan selalu {} untuk sesi customer -- itu SENGAJA & TIDAK APA-APA, karena verifikasi akun customer
+   di handleAuthStateChange SUDAH TIDAK memakai variabel ini lagi (dibaca langsung lewat path uid-nya
+   sendiri). Dipasang dari awal (bukan cuma setelah login) supaya panel Kelola Akun Customer langsung
+   siap begitu staf membukanya. */
 let customerAccountsByUid = {};
 let customerAccountsLoadedResolve = null;
 const customerAccountsLoadedPromise = new Promise(resolve => { customerAccountsLoadedResolve = resolve; });
@@ -568,13 +574,29 @@ let suppressAuthStateHandler = false;
 async function handleAuthStateChange(user){
   if(suppressAuthStateHandler){ if(!user) suppressAuthStateHandler = false; return; }
   if(!user){ showLogin(); return; }
-  await Promise.all([accountsV2LoadedPromise, customerAccountsLoadedPromise]);
+  await accountsV2LoadedPromise;
   const staffRec = accountsByUid[user.uid];
   if(staffRec && staffRec.approved === true){
     showApp(staffRec, false);
     return;
   }
-  const custRec = customerAccountsByUid[user.uid];
+  // Sesi keduaratussembilan -- BUG PERBAIKAN: sebelumnya di sini mengandalkan customerAccountsByUid
+  // dari attachCustomerAccountsListener() (listener KOLEKSI PENUH ke 'customerAccounts'). Ternyata
+  // Realtime Database TIDAK menyaring otomatis per-anak untuk listener biasa (.on('value')) di level
+  // INDUK -- kalau .read di level induk itu sendiri FALSE (seperti untuk akun customer, yang cuma
+  // boleh baca entrinya SENDIRI), SELURUH request listener itu DITOLAK (bukan dikembalikan versi
+  // tersaring), jadi customerAccountsByUid[user.uid] SELALU undefined untuk sesi customer -- biarpun
+  // akunnya sudah benar & disetujui. Ini akar masalah laporan user "notif belum disetujui" padahal
+  // akunnya sudah dibuat & Rules sudah dipublish. Diperbaiki: baca LANGSUNG path uid-nya sendiri
+  // (customerAccounts/<uid>) lewat .once('value') -- ini SELALU benar karena rule $uid.read ("auth.uid
+  // === $uid") dievaluasi persis di path yang diminta, bukan di level koleksi induknya.
+  let custRec = null;
+  try{
+    const snap = await fbDb.ref('customerAccounts/' + user.uid).once('value');
+    custRec = snap.val();
+  }catch(err){
+    custRec = null; // ditolak Rules (bukan akun customer yang valid) -- bukan error aplikasi
+  }
   if(custRec && custRec.approved === true){
     showApp(custRec, true);
     return;
@@ -700,16 +722,35 @@ let dataListenersAttached = false;
 function attachDataListeners(){
   if(dataListenersAttached || !fbDb) return;
   dataListenersAttached = true;
-  fbDb.ref('records').on('value', snap => {
+  // Sesi keduaratussembilan -- BUG PERBAIKAN: sesi CUSTOMER WAJIB pakai query terindeks
+  // (orderByChild + equalTo), BUKAN listener polos ke seluruh koleksi seperti sesi staf. Realtime
+  // Database mengevaluasi ".read" per-ANAK HANYA kalau requestnya berupa query terindeks seperti ini --
+  // listener polos ke level koleksi (fbDb.ref('records').on(...)) dievaluasi SEKALI untuk SELURUH
+  // koleksi, dan untuk akun customer itu SELALU false (DITOLAK total, bukan dikembalikan versi
+  // tersaring) -- akibatnya papan customer selalu kosong walau Rules & datanya sudah benar. Field
+  // 'customerUid' di 'records' (diduplikasi langsung dari po.customerUid saat PKB dibuat -- lihat
+  // marketing.html/index.html) & di 'po' dipakai sebagai kunci query ini, cocok dengan syarat di
+  // Security Rules. Sesi STAF TIDAK berubah sama sekali -- tetap listener polos seperti sebelumnya.
+  const recordsRef = currentSessionIsCustomer
+    ? fbDb.ref('records').orderByChild('customerUid').equalTo(currentCustomerUid)
+    : fbDb.ref('records');
+  const poRef = currentSessionIsCustomer
+    ? fbDb.ref('po').orderByChild('customerUid').equalTo(currentCustomerUid)
+    : fbDb.ref('po');
+
+  recordsRef.on('value', snap => {
     records = fbToArray(snap.val()) || [];
     populateFilterOptions();
     renderBoard();
   });
+  // Node 'kendaraan' TETAP listener polos untuk SEMUA sesi (termasuk customer) -- Rules-nya memang
+  // sengaja blanket-true untuk siapapun yang sudah login & approved (lihat README soal alasannya),
+  // jadi tidak kena masalah "per-anak" di atas.
   fbDb.ref('kendaraan').on('value', snap => {
     kendaraanList = fbToArray(snap.val()) || [];
     renderMapMarkers();
   });
-  fbDb.ref('po').on('value', snap => {
+  poRef.on('value', snap => {
     poList = fbToArray(snap.val()) || [];
     renderBoard();
   });
