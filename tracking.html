@@ -474,6 +474,14 @@ try{
 let currentSessionIsCustomer = false;
 let currentCustomerUid = null;
 
+/* Sesi keduaratussepuluh -- dipakai supaya handleAuthStateChange bisa membedakan 2 jenis "user jadi null":
+   (a) memang belum pernah login / baru buka halaman -> layar login kosong seperti biasa, VS
+   (b) SEMPAT berhasil login di tab ini, lalu tiba-tiba "lepas" sendiri (lihat catatan panjang di
+   handleAuthStateChange) -- kasus (b) dikasih pesan yang lebih membantu, bukan kosong, supaya customer
+   yang awam tidak bingung kenapa tiba-tiba balik ke layar login. Direset begitu login (showApp) & begitu
+   user SENGAJA klik Logout sendiri (supaya logout manual tetap kosong seperti biasa, bukan pesan error). */
+let hadActiveSessionThisPageLoad = false;
+
 /* App Firebase KEDUA, sama persis polanya dengan index.html (lihat komentar di sana) -- dipakai HANYA
    saat staf membuat akun customer baru dari panel "Kelola Akun Customer", supaya sesi login staf yang
    sedang aktif TIDAK ikut "terlempar" jadi akun customer yang baru dibuat (createUserWithEmailAndPassword
@@ -560,6 +568,7 @@ function applySessionRoleUi(isCustomer){
   if(isCustomer) document.getElementById('customerMgmtPanel').style.display = 'none';
 }
 function showApp(rec, isCustomer){
+  hadActiveSessionThisPageLoad = true; // Sesi keduaratussepuluh -- lihat catatan di deklarasi variabel ini
   currentSessionIsCustomer = !!isCustomer;
   currentCustomerUid = isCustomer ? (firebase.auth().currentUser && firebase.auth().currentUser.uid) : null;
   document.getElementById('loginScreen').style.display = 'none';
@@ -570,10 +579,54 @@ function showApp(rec, isCustomer){
   initMap();
 }
 
+// Sesi keduaratussepuluh: baca 1 path dengan percobaan ulang (retry) kalau gagal -- jaga-jaga terhadap
+// gangguan JARINGAN SEBENTAR (bukan penolakan Rules) saat proses baca persis di detik-detik awal setelah
+// login, misalnya koneksi lagi lambat/putus-nyambung sesaat. INI TIDAK MENOLONG kalau permintaannya
+// memang diblokir TOTAL & konsisten (misal oleh ekstensi ad-blocker/privasi di browser customer -- lihat
+// catatan panjang di handleAuthStateChange di bawah), karena percobaan ulang akan gagal lagi dengan
+// sebab yang sama persis -- tapi tetap berguna untuk kasus gangguan jaringan yang sifatnya sementara.
+function readOnceWithRetry(ref, attemptsLeft, delayMs){
+  attemptsLeft = attemptsLeft == null ? 3 : attemptsLeft;
+  delayMs = delayMs == null ? 400 : delayMs;
+  return ref.once('value').catch(err => {
+    if(attemptsLeft <= 1) throw err;
+    return new Promise(resolve => setTimeout(resolve, delayMs)).then(() => readOnceWithRetry(ref, attemptsLeft - 1, delayMs));
+  });
+}
+
 let suppressAuthStateHandler = false;
 async function handleAuthStateChange(user){
   if(suppressAuthStateHandler){ if(!user) suppressAuthStateHandler = false; return; }
-  if(!user){ showLogin(); return; }
+  if(!user){
+    // Sesi keduaratussepuluh -- BUG PERBAIKAN: sebelumnya di sini SELALU `showLogin()` kosong tanpa
+    // pesan, baik untuk (a) halaman baru dibuka/belum pernah login (normal, kosong memang benar), MAUPUN
+    // (b) sesi yang TADINYA sudah berhasil login di tab ini tapi tiba-tiba "lepas" sendiri -- customer
+    // yang mengalami (b) cuma melihat layar login kosong tanpa petunjuk apapun, bingung kenapa. Ditemukan
+    // lewat laporan user: login berhasil (showApp sempat tampil), lalu dalam 1-2 detik balik ke layar
+    // login TANPA pesan -- ditelusuri lewat DevTools Console browser user, ketemu penyebabnya: SEBUAH
+    // EKSTENSI BROWSER (ad-blocker/anti-pelacak) di komputer user memblokir permintaan jaringan yang
+    // dipakai Firebase Authentication (dikonfirmasi: masalah HILANG total begitu dicoba di jendela
+    // Incognito, yang otomatis mematikan ekstensi). Ini BUKAN bug di server/Rules/kode aplikasi -- kalau
+    // ekstensi di browser SESEORANG memblokir permintaan ke domain Google/Firebase, tidak ada kode
+    // aplikasi manapun yang bisa memaksa permintaan itu tetap berhasil (sama seperti situs web manapun
+    // tidak bisa memaksa tembus ad-blocker). LINTAS/LINTAS Marketing (index.html/marketing.html) TIDAK
+    // kena masalah ini karena keduanya masih pakai Firebase Anonymous Auth untuk semua orang (siapapun
+    // otomatis "login" tanpa password sungguhan, sejak dulu TIDAK ada keamanan per-akun di level
+    // database -- lihat diskusi sesi kesepuluh di README) -- jalur jaringan yang dipakai beda & rupanya
+    // tidak kena blokir ekstensi yang sama. Delivery Tracking SENGAJA memakai Firebase Authentication
+    // SUNGGUHAN per akun (bukan anonim) KHUSUS supaya Security Rules betul-betul bisa membatasi data per
+    // customer (dibangun Sesi keduaratusdelapan) -- mundur ke pola anonim lagi akan MEMBUKA KEMBALI celah
+    // keamanan itu (sembarang customer bisa baca data customer lain), jadi BUKAN solusi yang dipakai di
+    // sini. Yang BISA diperbaiki: bedakan kasus (a) vs (b) pakai `hadActiveSessionThisPageLoad`, dan kasih
+    // pesan yang membantu untuk kasus (b) supaya customer yang awam tidak bingung & tau harus ngapain.
+    if(hadActiveSessionThisPageLoad){
+      hadActiveSessionThisPageLoad = false;
+      showLogin('Sesi login terputus tiba-tiba. Ini biasanya disebabkan ekstensi browser (ad-blocker/anti-pelacak) yang memblokir koneksi ke server, atau jaringan internet yang bermasalah -- BUKAN akun Anda yang salah. Coba: matikan dulu ekstensi ad-blocker/privasi di browser, atau buka halaman ini lewat jendela Incognito/Private, atau coba browser lain -- lalu login ulang.');
+    }else{
+      showLogin();
+    }
+    return;
+  }
   await accountsV2LoadedPromise;
   const staffRec = accountsByUid[user.uid];
   if(staffRec && staffRec.approved === true){
@@ -592,10 +645,10 @@ async function handleAuthStateChange(user){
   // === $uid") dievaluasi persis di path yang diminta, bukan di level koleksi induknya.
   let custRec = null;
   try{
-    const snap = await fbDb.ref('customerAccounts/' + user.uid).once('value');
+    const snap = await readOnceWithRetry(fbDb.ref('customerAccounts/' + user.uid)); // Sesi keduaratussepuluh: pakai retry
     custRec = snap.val();
   }catch(err){
-    custRec = null; // ditolak Rules (bukan akun customer yang valid) -- bukan error aplikasi
+    custRec = null; // ditolak Rules (bukan akun customer yang valid), atau permintaan tetap gagal setelah 3x coba
   }
   if(custRec && custRec.approved === true){
     showApp(custRec, true);
@@ -631,6 +684,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 });
 
 document.getElementById('btnLogout').addEventListener('click', function(){
+  hadActiveSessionThisPageLoad = false; // Sesi keduaratussepuluh -- logout SENGAJA oleh user, layar login tetap kosong (bukan pesan "terputus")
   firebase.auth().signOut();
   currentSessionIsCustomer = false;
   currentCustomerUid = null;
