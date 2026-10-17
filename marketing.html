@@ -2408,6 +2408,28 @@ function compressImageFile(file, maxDim, quality){
     reader.readAsDataURL(file);
   });
 }
+/* Sesi keduaratustigabelas -- PERBAIKAN BESAR: foto PO TIDAK LAGI disimpan menempel di objek PO (field
+   'fotoPO' lama berisi base64 penuh, bisa ratusan KB). Objek PO sekarang cuma simpan flag ringan
+   'hasFotoPO' (true/false) -- foto sesungguhnya dipindah ke node terpisah 'poFotos/<id>' yang HANYA
+   diambil saat memang dibutuhkan (klik "Lihat", atau buka form Edit yang memang punya foto), lewat
+   .once('value') satu PO saja -- BUKAN ikut kebawa tiap kali listener/transaksi node 'po' (yang
+   mencakup SEMUA PO) jalan. Node 'po' ini SAMA PERSIS dengan yang dipakai index.html (satu Firebase
+   project) -- lihat catatan lengkap/latar belakang (kuota Download Firebase jebol 34+ GB/17 hari) di
+   index.html dekat fungsi ini. Perbaikan ini WAJIB ada di index.html DAN marketing.html sekaligus
+   karena dua-duanya baca/tulis node 'po' yang sama. */
+function fetchPoFoto(id){
+  if(!fbDb || !id) return Promise.resolve(null);
+  return fbDb.ref('poFotos/' + id).once('value').then(snap => snap.val()).catch(err => {
+    console.warn('Gagal mengambil foto PO dari server:', err);
+    return null;
+  });
+}
+function savePoFoto(id, base64){
+  if(!fbDb || !id) return Promise.resolve();
+  return fbAuthReadyPromise.then(() => fbDb.ref('poFotos/' + id).set(base64)).catch(err => {
+    console.warn('Gagal menyimpan foto PO ke server:', err);
+  });
+}
 function updatePoBadge(){
   const badge = document.getElementById('poBadge');
   if(!badge) return;
@@ -2502,7 +2524,7 @@ function renderPO(){
         <td class="sv-num" style="${sisaPO < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? Number(sisaPO).toLocaleString('id-ID') + ' kg' : '-'}</td>` : ''}
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
         <td>${p.statusKirim ? esc(p.statusKirim) : '-'}</td>
-        <td>${p.fotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
+        <td>${p.hasFotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
         <td>${poStatusBadge(p.status || 'menunggu')}${poHabis ? `<div style="margin-top:4px;"><span class="badge badge-done"><span class="badge-dot"></span>PO Habis</span></div>` : ''}${closed ? `<div style="margin-top:4px;"><span class="badge badge-legal-warn"><span class="badge-dot"></span>Ditutup</span></div>` : ''}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
         <td class="row-actions">
           ${(admin && (p.status || 'menunggu') === 'menunggu') ? `
@@ -2536,9 +2558,17 @@ function renderPO(){
       <td colspan="5"></td>
     </tr></tfoot></table></div>`;
 
-  wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', function(){
+  wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', async function(){
     const item = poList.find(x => String(x.id) === String(this.dataset.id));
-    if(item && item.fotoPO) window.open(item.fotoPO, '_blank');
+    if(!item || !item.hasFotoPO) return;
+    const btnTextAsli = this.textContent;
+    this.disabled = true;
+    this.textContent = 'Memuat...';
+    const foto = await fetchPoFoto(item.id);
+    this.disabled = false;
+    this.textContent = btnTextAsli;
+    if(foto) window.open(foto, '_blank');
+    else showToast('Gagal memuat foto PO dari server -- coba lagi.', 'danger');
   }));
   if(admin){
     /* Sesi keseratustujuhpuluhtujuh & keseratustujuhpuluhdelapan: ACC, Tolak, Tutup, dan Buka Kembali PO
@@ -2829,7 +2859,7 @@ function renderPOMonitoring(){
    di atas & README). Modal ini SENGAJA tidak menyentuh field status/catatanTolak/dikonfirmasiOleh/
    closed dkk -- murni koreksi data, tidak mengubah status konfirmasi PO. */
 let poEditTargetId = null;
-function openPoEditModal(id){
+async function openPoEditModal(id){
   const item = poList.find(x => String(x.id) === String(id));
   if(!item) return;
   poEditTargetId = id;
@@ -2846,14 +2876,19 @@ function openPoEditModal(id){
   document.getElementById('poEditFotoInput').value = '';
   document.getElementById('poEditFotoError').textContent = '';
   const previewWrap = document.getElementById('poEditFotoPreviewWrap');
-  if(item.fotoPO){
-    document.getElementById('poEditFotoPreviewImg').src = item.fotoPO;
-    previewWrap.style.display = '';
-  }else{
-    previewWrap.style.display = 'none';
-  }
+  previewWrap.style.display = 'none';
   const overlay = document.getElementById('poEditModalOverlay');
   if(overlay) overlay.classList.add('show');
+  // Sesi keduaratustigabelas: foto (kalau ada) diambil ON-DEMAND di sini, BUKAN dari item.fotoPO lagi
+  // (sudah dipindah ke node terpisah 'poFotos/<id>'). Dicek ulang poEditTargetId === id setelah await
+  // supaya tidak menimpa preview PO lain kalau user sempat tutup modal/buka PO lain selagi loading.
+  if(item.hasFotoPO){
+    const foto = await fetchPoFoto(item.id);
+    if(foto && poEditTargetId === id){
+      document.getElementById('poEditFotoPreviewImg').src = foto;
+      previewWrap.style.display = '';
+    }
+  }
 }
 function closePoEditModal(){
   poEditTargetId = null;
@@ -2907,9 +2942,9 @@ document.getElementById('formPoEdit').addEventListener('submit', async function(
   const btnTextAsli = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Menyimpan...';
-  let fotoPO = item.fotoPO || null; /* default: pertahankan foto lama */
+  let fotoBaru = null; /* null = tidak ganti foto, foto lama (kalau ada) tetap dipakai apa adanya */
   try{
-    if(file) fotoPO = await compressImageFile(file, 1000, 0.65);
+    if(file) fotoBaru = await compressImageFile(file, 1000, 0.65);
   }catch(err){
     errEl.textContent = 'Gagal memproses foto PO: ' + (err.message || err);
     btn.disabled = false;
@@ -2946,8 +2981,13 @@ document.getElementById('formPoEdit').addEventListener('submit', async function(
     tonase: Number(document.getElementById('poEditTonase').value) || 0,
     harga: Number(document.getElementById('poEditHarga').value) || 0,
     statusKirim: document.getElementById('poEditStatusKirim').value,
-    fotoPO: fotoPO,
   };
+  // Sesi keduaratustigabelas: foto baru (kalau ada) disimpan ke node TERPISAH 'poFotos/<id>', BUKAN ke
+  // field fotoPO di dalam 'po' lagi -- lihat catatan di fetchPoFoto()/savePoFoto().
+  if(fotoBaru){
+    newData.hasFotoPO = true;
+    await savePoFoto(targetId, fotoBaru);
+  }
 
   fbUpdateItemInList('po', targetId, serverItem => Object.assign(serverItem, newData)).then(result => {
     btn.disabled = false;
@@ -2980,17 +3020,21 @@ document.getElementById('formPOInput').addEventListener('submit', async function
   const fileInput = document.getElementById('poFotoInput');
   const file = fileInput.files[0];
   btn.disabled = true;
-  let fotoPO = null;
+  let fotoBaru = null;
   try{
-    if(file) fotoPO = await compressImageFile(file, 1000, 0.65);
+    if(file) fotoBaru = await compressImageFile(file, 1000, 0.65);
   }catch(err){
     errEl.textContent = 'Gagal memproses foto PO: ' + (err.message || err);
     btn.disabled = false;
     return;
   }
   const acc = currentAccount();
+  // Sesi keduaratustigabelas: id digenerate DULU supaya foto (kalau ada) bisa langsung disimpan ke
+  // node terpisah 'poFotos/<id>' dengan id yang sama persis -- lihat catatan di fetchPoFoto()/savePoFoto().
+  const newPoId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  if(fotoBaru) await savePoFoto(newPoId, fotoBaru);
   const newItem = {
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    id: newPoId,
     noCO: '',
     tanggalCO: document.getElementById('poTanggalCO').value,
     noPO: document.getElementById('poNoPO').value.trim().toUpperCase(),
@@ -3002,7 +3046,7 @@ document.getElementById('formPOInput').addEventListener('submit', async function
     tonase: Number(document.getElementById('poTonase').value) || 0,
     harga: Number(document.getElementById('poHarga').value) || 0,
     statusKirim: document.getElementById('poStatusKirim').value,
-    fotoPO: fotoPO,
+    hasFotoPO: !!fotoBaru,
     status: 'menunggu',
     catatanTolak: '',
     dikonfirmasiOleh: '',
@@ -3379,6 +3423,11 @@ document.getElementById('formPKB').addEventListener('submit', function(e){
     jenisBarangList: detail.map(it => it.nama),
     jenisBarang: detail.map(it => it.nama).join(', '),
     poId: poIdVal,
+    // Sesi keduaratussembilan: customerUid DIDUPLIKASI langsung ke record (bukan cuma via poId -> po)
+    // supaya Security Rules & query tracking.html bisa baca record ini langsung pakai
+    // orderByChild('customerUid').equalTo(uid) -- lihat README soal kenapa baca lewat relasi poId tidak
+    // bisa disaring otomatis oleh Realtime Database untuk listener biasa (bukan query terindeks).
+    customerUid: poTerkait ? (poTerkait.customerUid || null) : null,
     noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
     pendapatan: 0,
     // Organik: 0, dilengkapi belakangan oleh LINTAS (desain awal, tidak berubah). Vendor Luar: dari

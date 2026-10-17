@@ -3891,8 +3891,9 @@ function syncOdometerFromCartrack(){
       ".write": false
     },
     "records": {
-      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true) || (root.child('customerAccounts').child(auth.uid).child('approved').val() === true && data.child('poId').exists() && root.child('po').child(data.child('poId').val()).child('customerUid').val() === auth.uid))",
-      ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))"
+      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true) || (root.child('customerAccounts').child(auth.uid).child('approved').val() === true && data.child('customerUid').val() === auth.uid))",
+      ".write": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))",
+      ".indexOn": ["customerUid"]
     },
     "records_backup": {
       ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('role').val() === 'admin' || (root.child('accountsV2').child(auth.uid).child('approved').val() === true && root.child('accountsV2').child(auth.uid).child('dataInputRestricted').val() !== true))",
@@ -3900,11 +3901,21 @@ function syncOdometerFromCartrack(){
     },
     "po": {
       ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('approved').val() === true || (root.child('customerAccounts').child(auth.uid).child('approved').val() === true && data.child('customerUid').val() === auth.uid))",
+      ".write": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true",
+      ".indexOn": ["customerUid"]
+    },
+    "poFotos": {
+      ".read": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true",
       ".write": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true"
     },
     "kendaraan": {
       ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('approved').val() === true || root.child('customerAccounts').child(auth.uid).child('approved').val() === true)",
       ".write": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true"
+    },
+    "unitRequests": {
+      ".read": "auth != null && (root.child('accountsV2').child(auth.uid).child('approved').val() === true || (root.child('customerAccounts').child(auth.uid).child('approved').val() === true && data.child('customerUid').val() === auth.uid))",
+      ".write": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true",
+      ".indexOn": ["customerUid"]
     },
     "$other": {
       ".read": "auth != null && root.child('accountsV2').child(auth.uid).child('approved').val() === true",
@@ -3914,7 +3925,15 @@ function syncOdometerFromCartrack(){
 }</textarea>
               <button type="button" class="btn btn-secondary" id="btnCopyFbRules" style="margin-top:8px; padding:8px 12px; font-size:12px;">Salin aturan</button>
               <p class="hint" style="line-height:1.7; margin-top:14px;">Catatan: aturan <span class="mono">"accounts"</span> (node lama) sengaja dikunci baca-saja (<span class="mono">.write: false</span>) — tidak dihapus, cuma dibekukan, supaya proses "daftar ulang pakai email yang sama" (lihat panel Akun terdaftar di bawah) masih bisa mencocokkan nama & akses dari akun lama untuk bahan pertimbangan admin. Node <span class="mono">records</span> (dan <span class="mono">records_backup</span> — lihat tab "Backup Data DO") punya aturan sendiri (terpisah dari <span class="mono">$other</span>) supaya bisa menambahkan syarat <span class="mono">dataInputRestricted</span> khusus untuk data ini. Node <span class="mono">po</span> dan <span class="mono">kendaraan</span> juga punya aturan sendiri sejak Tahap 3 Live Tracking per-customer (lihat paragraf di bawah) — node lain di luar daftar ini (driver, barang, dll) tetap memakai aturan <span class="mono">$other</span> seperti biasa.</p>
-              <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Tahap 3 Live Tracking per-customer (node <span class="mono">customerAccounts</span>):</b> akun customer (dibuat dari <span class="mono">tracking.html</span> &gt; "Kelola Akun Customer") disimpan terpisah dari akun staf, dengan izin baca sendiri-sendiri. Supaya customer 1 secara TEKNIS tidak bisa membaca data customer 2 (bukan cuma disembunyikan di tampilan): aturan <span class="mono">.read</span> pada <span class="mono">records</span> &amp; <span class="mono">po</span> menambahkan syarat khusus akun customer — hanya boleh baca entri yang field <span class="mono">customerUid</span>-nya (di <span class="mono">po</span>, atau dicari lewat <span class="mono">poId</span> untuk <span class="mono">records</span>) cocok dengan uid akun customer itu sendiri. Hak TULIS <span class="mono">records</span>/<span class="mono">po</span> TIDAK berubah sama sekali untuk akun customer (tetap hanya staf yang bisa menulis). Node <span class="mono">kendaraan</span> (posisi GPS mentah armada, tanpa konteks customer mana pun) sengaja TETAP bisa dibaca semua akun yang sudah login (staf maupun customer) — penyaringan "customer cuma lihat pin kirimannya sendiri" dilakukan di aplikasi (tracking.html), bukan di Rules, karena nopol/koordinat sendiri bukan data rahasia milik customer tertentu.</p>
+              <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Tahap 3 Live Tracking per-customer (node <span class="mono">customerAccounts</span>):</b> akun customer (dibuat dari <span class="mono">tracking.html</span> &gt; "Kelola Akun Customer") disimpan terpisah dari akun staf, dengan izin baca sendiri-sendiri (cuma boleh baca entri uid-nya sendiri). Supaya customer 1 secara TEKNIS tidak bisa membaca data customer 2 (bukan cuma disembunyikan di tampilan): aturan <span class="mono">.read</span> pada <span class="mono">records</span> &amp; <span class="mono">po</span> menambahkan syarat khusus akun customer — hanya boleh baca entri yang field <span class="mono">customerUid</span>-nya cocok dengan uid akun customer itu sendiri (field ini diduplikasi langsung ke <span class="mono">records</span> saat PKB dibuat, bukan cuma dicari lewat <span class="mono">poId</span>, supaya bisa dipakai query terindeks — lihat catatan di bawah). Hak TULIS <span class="mono">records</span>/<span class="mono">po</span> TIDAK berubah sama sekali untuk akun customer (tetap hanya staf yang bisa menulis). Node <span class="mono">kendaraan</span> (posisi GPS mentah armada, tanpa konteks customer mana pun) sengaja TETAP bisa dibaca semua akun yang sudah login (staf maupun customer) — penyaringan "customer cuma lihat pin kirimannya sendiri" dilakukan di aplikasi (tracking.html), bukan di Rules, karena nopol/koordinat sendiri bukan data rahasia milik customer tertentu.</p>
+              <p class="hint" style="line-height:1.7; margin-top:10px; padding:10px; border-left:3px solid var(--amber-600, #b9740a); background:#fff8ec;"><b>Catatan penting (Sesi keduaratussembilan, perbaikan bug):</b> Realtime Database TIDAK menyaring otomatis isi koleksi per-baris untuk permintaan baca BIASA (<span class="mono">.on('value')</span> langsung ke <span class="mono">records</span>/<span class="mono">po</span>) — kalau aturan <span class="mono">.read</span> di level koleksi itu sendiri bernilai salah untuk akun yang minta (seperti akun customer), SELURUH permintaan ditolak, bukan dikembalikan versi tersaring. Supaya akun customer tetap bisa membaca entri MILIKNYA SAJA, <span class="mono">tracking.html</span> memakai query terindeks (<span class="mono">orderByChild('customerUid').equalTo(uid)</span>) khusus untuk sesi customer — makanya field <span class="mono">".indexOn": ["customerUid"]</span> ditambahkan ke <span class="mono">records</span> &amp; <span class="mono">po</span> di atas. Field ini WAJIB ikut ter-publish bersama Rules supaya query tersebut berfungsi.</p>
+              <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Sesi keduaratussebelas — node <span class="mono">unitRequests</span> (fitur "Permintaan Unit" BARU, khusus <span class="mono">tracking.html</span>):</b> dipakai staf untuk mencatat permintaan unit/armada dari customer LANGSUNG di Delivery Tracking — SENGAJA TERPISAH TOTAL dari <span class="mono">po</span>/<span class="mono">records</span> (tidak terkait sama sekali ke PO/PKB LINTAS maupun Marketing, tidak ada menu/tampilan baru apapun yang ditambahkan ke LINTAS/Marketing). Aturan bacanya sama persis polanya dengan <span class="mono">po</span> (staf yang approved boleh baca semua, customer cuma boleh baca entri miliknya sendiri lewat field <span class="mono">customerUid</span> + query terindeks), tulisnya cuma staf (customer tidak pernah menulis ke node ini).</p>
+              <p class="hint" style="line-height:1.7; margin-top:10px; padding:10px; border-left:3px solid var(--amber-600, #b9740a); background:#fff8ec;"><b>Sesi keduaratustigabelas — node <span class="mono">poFotos</span> (perbaikan kuota Firebase jebol):</b> foto PO (field <span class="mono">fotoPO</span> lama) TIDAK LAGI disimpan menempel di data <span class="mono">po</span> — dipindah ke node terpisah <span class="mono">poFotos/&lt;id&gt;</span> yang cuma dibaca satu-per-satu saat memang dibutuhkan (klik "Lihat"/buka Edit PO yang ada fotonya), bukan ikut terbawa tiap kali koleksi <span class="mono">po</span> dibaca/ditulis ulang. Ini memperbaiki pemakaian kuota <b>Download</b> Firebase Realtime Database yang sempat jebol jauh di atas batas gratis bulanan (34+ GB cuma dalam ~17 hari) — penyebabnya: setiap PO yang punya foto bikin SELURUH koleksi <span class="mono">po</span> (termasuk semua foto PO lain) ikut terkirim ulang penuh setiap kali ADA SATU SAJA PO yang berubah, ke setiap orang yang sedang buka LINTAS/Marketing. Field <span class="mono">hasFotoPO</span> (boolean kecil) menggantikan <span class="mono">fotoPO</span> di data <span class="mono">po</span> sebagai penanda "PO ini ada fotonya". Aturan baca/tulisnya sama persis dengan <span class="mono">po</span> (staf approved), tanpa cabang customer (customer tidak pernah perlu lihat foto PO). <b>PO lama yang fotonya masih menempel (belum pindah) tetap bisa dibaca normal seperti biasa</b> — supaya ikut hemat juga, jalankan tombol migrasi 1x di bawah ini.</p>
+              <div style="margin-top:10px; padding:12px; border:1px solid var(--border-strong); border-radius:10px;">
+                <p class="hint" style="margin:0 0 8px;"><b>Migrasi foto PO lama ke <span class="mono">poFotos</span> (jalankan 1x saja):</b> memindahkan foto yang masih menempel di PO-PO lama ke node <span class="mono">poFotos</span>, supaya pemakaian kuota ke depannya ikut hemat untuk data lama juga. Aman dijalankan berkali-kali (PO yang sudah pernah dipindah otomatis dilewati) — tapi cukup sekali saja biasanya sudah cukup.</p>
+                <button type="button" class="btn btn-secondary" id="btnMigratePoFotos">Jalankan migrasi foto PO</button>
+                <span id="migratePoFotosStatus" class="hint" style="margin-left:10px;"></span>
+              </div>
               <p class="hint" style="line-height:1.7; margin-top:10px;"><b>Pemulihan darurat:</b> kalau suatu saat node <span class="mono">accountsV2</span> sampai kosong sama sekali tanpa satu pun akun admin (misalnya karena database ter-reset), Rules di atas TIDAK mengizinkan siapa pun mem-promosikan diri sendiri jadi admin lagi lewat aplikasi (itu memang sengaja, itulah yang diperbaiki di sini) — satu-satunya jalan adalah admin project Firebase menambahkan field <span class="mono">role: "admin"</span> dan <span class="mono">approved: true</span> secara manual lewat tab <b>Data</b> di Realtime Database (akses lewat Firebase Console selalu diizinkan, tidak terikat Rules ini).</p>
             </div>
           </div>
@@ -7546,6 +7565,9 @@ document.getElementById('formDO').addEventListener('submit', function(e){
     jenisBarangList: jenisBarangListVal,
     jenisBarang: jenisBarangListVal.join(', '),
     poId: poIdVal,
+    // Sesi keduaratussembilan (Live Tracking per-customer): customerUid diduplikasi langsung ke record,
+    // sama seperti di marketing.html -- lihat komentar di sana / README untuk alasannya.
+    customerUid: poTerkait ? (poTerkait.customerUid || null) : null,
     noCOTerkait: poTerkait ? (poTerkait.noCO || '') : '',
     pendapatan: calcPendapatan(document.getElementById('jenisArmada').value, kotaVal, kirimBK ? tonase1Val : null, kirimRoll ? tonase2Val : null, kirimOCC ? tonase3Val : null),
     uangJalan: uangJalanValRaw,
@@ -10068,6 +10090,58 @@ document.getElementById('btnCopyFbRules').addEventListener('click', function(){
     showToast('Security Rules disalin', 'success');
   }
 });
+/* Sesi keduaratustigabelas -- migrasi 1x: pindahkan foto PO yang MASIH menempel di data 'po' (field
+   'fotoPO' lama, dari sebelum perbaikan kuota Firebase ini) ke node terpisah 'poFotos/<id>', supaya
+   PO-PO lama juga ikut hemat (bukan cuma PO baru yang dibuat setelah perbaikan ini). Aman dijalankan
+   berkali-kali -- PO yang field 'fotoPO'-nya sudah kosong (tidak pernah ada foto, ATAU sudah pernah
+   dipindah migrasi ini sebelumnya) otomatis dilewati di jalan berikutnya. */
+document.getElementById('btnMigratePoFotos').addEventListener('click', async function(){
+  const btn = this;
+  const statusEl = document.getElementById('migratePoFotosStatus');
+  if(!fbDb){ statusEl.textContent = 'Firebase belum terhubung.'; return; }
+  if(!confirm('Pindahkan semua foto PO lama ke penyimpanan terpisah sekarang? Butuh koneksi internet stabil, dan boleh makan waktu beberapa menit kalau datanya banyak -- jangan tutup/refresh halaman selama proses berjalan.')) return;
+  btn.disabled = true;
+  statusEl.textContent = 'Membaca data PO dari server...';
+  try{
+    const snap = await fbDb.ref('po').once('value');
+    const arr = fbToArray(snap.val()) || [];
+    const toMigrate = arr.filter(p => p && p.fotoPO);
+    if(toMigrate.length === 0){
+      statusEl.textContent = 'Tidak ada foto PO lama yang perlu dipindah -- semua sudah hemat.';
+      btn.disabled = false;
+      return;
+    }
+    let done = 0;
+    for(const p of toMigrate){
+      statusEl.textContent = `Memindahkan foto PO... (${done}/${toMigrate.length})`;
+      await fbDb.ref('poFotos/' + p.id).set(p.fotoPO);
+      done++;
+    }
+    // Semua foto sudah berhasil disalin ke poFotos -- baru SEKARANG hapus field fotoPO dari data 'po'
+    // (lewat transaksi, dibaca ulang dari server biar tidak menimpa perubahan lain yang mungkin terjadi
+    // bersamaan selama proses migrasi berjalan).
+    statusEl.textContent = 'Membersihkan data PO lama...';
+    await fbDb.ref('po').transaction(current => {
+      const curArr = fbToArray(current);
+      if(!curArr) return current;
+      return curArr.map(p => {
+        if(p && p.fotoPO){
+          const copy = Object.assign({}, p);
+          copy.hasFotoPO = true;
+          delete copy.fotoPO;
+          return copy;
+        }
+        return p;
+      });
+    });
+    statusEl.textContent = `Selesai -- ${toMigrate.length} foto PO berhasil dipindah & data lama sudah dibersihkan.`;
+    showToast('Migrasi foto PO selesai', 'success');
+  }catch(err){
+    console.warn('Gagal migrasi foto PO:', err);
+    statusEl.textContent = 'Gagal migrasi: ' + (err.message || err) + ' -- coba klik lagi.';
+  }
+  btn.disabled = false;
+});
 (function initWaSettings(){
   const savedNomor = localStorage.getItem(WA_NOMOR_KEY);
   if(savedNomor) document.getElementById('waNomorAdmin').value = savedNomor;
@@ -10916,6 +10990,37 @@ function compressImageFile(file, maxDim, quality){
     reader.readAsDataURL(file);
   });
 }
+/* Sesi keduaratustigabelas -- PERBAIKAN BESAR: foto PO TIDAK LAGI disimpan menempel di objek PO (field
+   'fotoPO' lama berisi base64 penuh, bisa ratusan KB). Objek PO sekarang cuma simpan flag ringan
+   'hasFotoPO' (true/false, beberapa byte saja) -- foto sesungguhnya dipindah ke node terpisah
+   'poFotos/<id>' yang HANYA diambil saat memang dibutuhkan (klik "Lihat", atau buka form Edit yang
+   memang punya foto), lewat .once('value') satu PO saja -- BUKAN ikut kebawa tiap kali listener/
+   transaksi node 'po' (yang mencakup SEMUA PO) jalan.
+   LATAR BELAKANG: ditemukan project Firebase sudah pakai 34+ GB kuota Download gratis bulanan (dari
+   batas yang jauh lebih kecil) cuma dalam ~17 hari, sampai Firebase mulai membatasi/menolak sebagian
+   permintaan (termasuk bikin login staf di Delivery Tracking gagal acak tanpa pesan error yang jelas).
+   Akar masalahnya: SETIAP kali SATU SAJA PO berubah/ditambah di mana pun, kode lama (savePO/
+   fbUpdateItemInList/fbAppendToList) menulis ULANG & menyinkron ULANG SELURUH koleksi 'po' -- termasuk
+   SEMUA foto PO lain yang tidak berubah sama sekali -- ke SETIAP orang yang sedang buka LINTAS/
+   Marketing saat itu. Dengan ratusan PO yang masing-masing ada foto, ini jadi puluhan GB lalu-lintas
+   data cuma dari perubahan kecil yang berulang-ulang. Memindah foto keluar dari koleksi 'po' membuat
+   koleksi itu jadi jauh lebih kecil (cuma teks), tanpa mengubah pola penulisan whole-collection yang
+   sudah ada (itu sendiri aman, cuma mahal kalau isinya berisi data besar seperti foto).
+   Lihat juga: migrasi 1x untuk foto PO LAMA yang masih menempel di data (migratePoFotosToSeparateNode,
+   tombol di Pengaturan > Keamanan Sistem) -- supaya PO lama juga ikut hemat, bukan cuma PO baru. */
+function fetchPoFoto(id){
+  if(!fbDb || !id) return Promise.resolve(null);
+  return fbDb.ref('poFotos/' + id).once('value').then(snap => snap.val()).catch(err => {
+    console.warn('Gagal mengambil foto PO dari server:', err);
+    return null;
+  });
+}
+function savePoFoto(id, base64){
+  if(!fbDb || !id) return Promise.resolve();
+  return fbAuthReadyPromise.then(() => fbDb.ref('poFotos/' + id).set(base64)).catch(err => {
+    console.warn('Gagal menyimpan foto PO ke server:', err);
+  });
+}
 function updatePoBadge(){
   const badge = document.getElementById('poBadge');
   if(!badge) return;
@@ -10986,7 +11091,7 @@ function renderPO(){
         <td class="sv-num" style="${sisaPO < 0 ? 'color:#c0392b; font-weight:700;' : ''}">${p.tonase ? Number(sisaPO).toLocaleString('id-ID') + ' kg' : '-'}</td>` : ''}
         <td class="sv-num">${p.harga ? rupiah(p.harga) : '-'}</td>
         <td>${p.statusKirim ? esc(p.statusKirim) : '-'}</td>
-        <td>${p.fotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
+        <td>${p.hasFotoPO ? `<button type="button" class="btn btn-secondary po-lihat-foto" data-id="${p.id}" style="padding:5px 10px; font-size:11.5px;">Lihat</button>` : '-'}</td>
         <td>${poStatusBadge(p.status || 'menunggu')}${poHabis ? `<div style="margin-top:4px;"><span class="badge badge-done"><span class="badge-dot"></span>PO Habis</span></div>` : ''}${closed ? `<div style="margin-top:4px;"><span class="badge badge-legal-warn"><span class="badge-dot"></span>Ditutup</span></div>` : ''}${(p.status === 'ditolak' && p.catatanTolak) ? `<div class="hint" style="margin-top:4px; max-width:180px;">${esc(p.catatanTolak)}</div>` : ''}</td>
         <td class="row-actions">
           ${(admin || bisaKonfirmasi) ? `
@@ -11020,9 +11125,17 @@ function renderPO(){
       <td colspan="5"></td>
     </tr></tfoot></table></div>`;
 
-  wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', function(){
+  wrap.querySelectorAll('.po-lihat-foto').forEach(btn => btn.addEventListener('click', async function(){
     const item = poList.find(x => String(x.id) === String(this.dataset.id));
-    if(item && item.fotoPO) openPoFotoModal(item.fotoPO);
+    if(!item || !item.hasFotoPO) return;
+    const btnTextAsli = this.textContent;
+    this.disabled = true;
+    this.textContent = 'Memuat...';
+    const foto = await fetchPoFoto(item.id);
+    this.disabled = false;
+    this.textContent = btnTextAsli;
+    if(foto) openPoFotoModal(foto);
+    else showToast('Gagal memuat foto PO dari server -- coba lagi.', 'danger');
   }));
   wrap.querySelectorAll('.po-edit').forEach(btn => btn.addEventListener('click', function(){
     openPoEditModal(this.dataset.id);
@@ -11371,7 +11484,7 @@ document.getElementById('formPoTolak').addEventListener('submit', function(e){
 
 /* ---------- MODAL: EDIT PO (perbaiki data yang salah input, tidak mengubah status/ACC) ---------- */
 let poEditTargetId = null;
-function openPoEditModal(id){
+async function openPoEditModal(id){
   const item = poList.find(x => String(x.id) === String(id));
   if(!item) return;
   poEditTargetId = id;
@@ -11388,14 +11501,20 @@ function openPoEditModal(id){
   document.getElementById('poEditFotoInput').value = '';
   document.getElementById('poEditFotoError').textContent = '';
   const previewWrap = document.getElementById('poEditFotoPreviewWrap');
-  if(item.fotoPO){
-    document.getElementById('poEditFotoPreviewImg').src = item.fotoPO;
-    previewWrap.style.display = '';
-  }else{
-    previewWrap.style.display = 'none';
-  }
+  previewWrap.style.display = 'none';
   const overlay = document.getElementById('poEditModalOverlay');
   if(overlay) overlay.classList.add('show');
+  // Sesi keduaratustigabelas: foto (kalau ada) diambil ON-DEMAND di sini, BUKAN dari item.fotoPO lagi
+  // (sudah dipindah ke node terpisah 'poFotos/<id>' -- lihat catatan di fetchPoFoto()). Dicek ulang
+  // poEditTargetId === id setelah await supaya tidak menimpa preview PO lain kalau user sempat tutup
+  // modal / buka PO lain selagi foto masih dimuat dari server.
+  if(item.hasFotoPO){
+    const foto = await fetchPoFoto(item.id);
+    if(foto && poEditTargetId === id){
+      document.getElementById('poEditFotoPreviewImg').src = foto;
+      previewWrap.style.display = '';
+    }
+  }
 }
 function closePoEditModal(){
   poEditTargetId = null;
@@ -11443,9 +11562,9 @@ document.getElementById('formPoEdit').addEventListener('submit', async function(
   const file = fileInput.files[0];
 
   btn.disabled = true;
-  let fotoPO = item.fotoPO || null; /* default: pertahankan foto lama */
+  let fotoBaru = null; /* null = tidak ganti foto, foto lama (kalau ada) tetap dipakai apa adanya */
   try{
-    if(file) fotoPO = await compressImageFile(file, 1000, 0.65);
+    if(file) fotoBaru = await compressImageFile(file, 1000, 0.65);
   }catch(err){
     errEl.textContent = 'Gagal memproses foto PO: ' + (err.message || err);
     btn.disabled = false;
@@ -11462,7 +11581,12 @@ document.getElementById('formPoEdit').addEventListener('submit', async function(
   item.tonase = Number(document.getElementById('poEditTonase').value) || 0;
   item.harga = Number(document.getElementById('poEditHarga').value) || 0;
   item.statusKirim = document.getElementById('poEditStatusKirim').value;
-  item.fotoPO = fotoPO;
+  // Sesi keduaratustigabelas: foto baru (kalau ada) disimpan ke node TERPISAH 'poFotos/<id>', BUKAN ke
+  // field item.fotoPO lagi -- lihat catatan panjang di fetchPoFoto()/savePoFoto().
+  if(fotoBaru){
+    item.hasFotoPO = true;
+    await savePoFoto(item.id, fotoBaru);
+  }
 
   savePO();
   btn.disabled = false;
@@ -11502,9 +11626,9 @@ document.getElementById('formPOInput').addEventListener('submit', async function
   const file = fileInput.files[0];
 
   btn.disabled = true;
-  let fotoPO = null;
+  let fotoBaru = null;
   try{
-    if(file) fotoPO = await compressImageFile(file, 1000, 0.65);
+    if(file) fotoBaru = await compressImageFile(file, 1000, 0.65);
   }catch(err){
     errEl.textContent = 'Gagal memproses foto PO: ' + (err.message || err);
     btn.disabled = false;
@@ -11512,8 +11636,12 @@ document.getElementById('formPOInput').addEventListener('submit', async function
   }
 
   const acc = currentAccount();
+  // Sesi keduaratustigabelas: id digenerate DULU supaya foto (kalau ada) bisa langsung disimpan ke
+  // node terpisah 'poFotos/<id>' dengan id yang sama persis -- lihat catatan di fetchPoFoto()/savePoFoto().
+  const newPoId = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  if(fotoBaru) await savePoFoto(newPoId, fotoBaru);
   poList.push({
-    id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    id: newPoId,
     noCO: '', /* belum diisi -- otomatis dibuat sistem (format NNN-YY) saat SO/PO ini di-ACC */
     tanggalCO: document.getElementById('poTanggalCO').value,
     noPO: document.getElementById('poNoPO').value.trim().toUpperCase(),
@@ -11524,7 +11652,7 @@ document.getElementById('formPOInput').addEventListener('submit', async function
     tonase: Number(document.getElementById('poTonase').value) || 0,
     harga: Number(document.getElementById('poHarga').value) || 0,
     statusKirim: document.getElementById('poStatusKirim').value,
-    fotoPO: fotoPO,
+    hasFotoPO: !!fotoBaru,
     status: 'menunggu',
     catatanTolak: '',
     dikonfirmasiOleh: '',
@@ -11646,7 +11774,7 @@ function excelCellToDateStr(val){
             tonase: Number(cellAt(row, headerInfo.col.tonase)) || 0,
             harga: Number(cellAt(row, headerInfo.col.harga)) || 0,
             statusKirim: '',
-            fotoPO: null,
+            hasFotoPO: false,
             status: 'dikonfirmasi',
             catatanTolak: '',
             dikonfirmasiOleh: (acc ? acc.email : '') + ' (impor data historis)',
